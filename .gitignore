@@ -18,9 +18,9 @@ plan.md
 *.txt
 !package.json
 
-# Images not needed in deploy
-QRCode.png
-hin-logo.png
+# Images not needed in deploy (only ignore root copies; public/ ones are kept)
+/QRCode.png
+/hin-logo.png
 
 # (netlify/ and netlify.toml included for auto-deploy)
 
