@@ -41,6 +41,18 @@ function fixMojibake(html) {
   return out;
 }
 
+function stripSvelteScripts(html) {
+  // Remove Svelte/SvelteKit hydration scripts and modulepreload — overlay handles UI.
+  // Keep CSS/font preloads (purely visual).
+  let out = html;
+  out = out.replace(/<link[^>]+rel=["']modulepreload["'][^>]*>/gi, "");
+  out = out.replace(/<script[^>]+type=["']module["'][^>]*>[\s\S]*?<\/script>/gi, "");
+  out = out.replace(/<script[^>]+src=["'][^"']*\/_app\/[^"']+["'][^>]*>\s*<\/script>/gi, "");
+  // Remove preconnect/dns-prefetch to dead Cognito/Cloudfront origins to silence errors
+  out = out.replace(/<link[^>]+(cognito-idp|difz6g2sivtgc)[^>]*>/gi, "");
+  return out;
+}
+
 function injectOverlay(html) {
   const tag = `
 <meta charset="utf-8">
@@ -84,7 +96,7 @@ const NO_OVERLAY = new Set(["../landing-new.html", "landing.html"]);
 async function writeRoute(route, html, { skipOverlay = false } = {}) {
   const outPath = route === "/" ? join(publicDir, "index.html") : join(publicDir, route.replace(/^\/+/, ""), "index.html");
   await mkdir(dirname(outPath), { recursive: true });
-  const final = skipOverlay ? html : injectOverlay(fixMojibake(html));
+  const final = skipOverlay ? html : stripSvelteScripts(injectOverlay(fixMojibake(html)));
   await writeFile(outPath, final, "utf8");
   console.log(`[export] ${route} -> ${outPath}${skipOverlay ? " (no overlay)" : ""}`);
 }
@@ -164,7 +176,7 @@ async function main() {
   })();</script>`;
   const detailOut = join(publicDir, "question-answer", "detail.html");
   await mkdir(dirname(detailOut), { recursive: true });
-  let detailFinal = injectOverlay(fixMojibake(detailHtml));
+  let detailFinal = stripSvelteScripts(injectOverlay(fixMojibake(detailHtml)));
   detailFinal = detailFinal.replace("</head>", substScript + "</head>");
   await writeFile(detailOut, detailFinal, "utf8");
   console.log(`[export] /question-answer/detail.html -> ${detailOut}`);
