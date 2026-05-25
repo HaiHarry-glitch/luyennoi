@@ -1,0 +1,275 @@
+﻿<!DOCTYPE html>
+<html lang="vi" data-theme="light">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>CÃ i Ä‘áº·t | Luyá»‡n NÃ³i</title>
+  <link href="/real/_app/immutable/assets/_layout-a55bae1d.css" rel="stylesheet">
+  <style>
+    body { font-family: 'Lexend', sans-serif; background: #f5f5fa; min-height: 100vh; }
+    .container { max-width: 600px; margin: 0 auto; padding: 2rem 1rem; }
+    .card { background: white; border-radius: 1rem; padding: 2rem; box-shadow: 0 2px 12px rgba(0,0,0,0.08); margin-bottom: 1.5rem; }
+    h1 { font-size: 1.5rem; font-weight: 700; color: #171717; margin-bottom: 0.5rem; }
+    h2 { font-size: 1.1rem; font-weight: 600; color: #d9381e; margin-bottom: 1rem; }
+    label { display: block; font-size: 0.9rem; color: #555; margin-bottom: 0.4rem; font-weight: 500; }
+    input[type=text], input[type=password] {
+      width: 100%; padding: 0.7rem 1rem; border: 1.5px solid #e0e0f0;
+      border-radius: 0.5rem; font-size: 0.95rem; outline: none; box-sizing: border-box;
+      transition: border-color 0.2s;
+    }
+    input:focus { border-color: #d9381e; }
+    .btn { display: inline-block; padding: 0.7rem 2rem; border-radius: 0.5rem; font-weight: 600; cursor: pointer; border: none; font-size: 0.95rem; }
+    .btn-primary { background: #d9381e; color: white; }
+    .btn-primary:hover { background: #4a0cd4; }
+    .btn-ghost { background: transparent; color: #d9381e; border: 1.5px solid #d9381e; margin-left: 0.5rem; }
+    .toast { display: none; margin-top: 1rem; padding: 0.7rem 1rem; border-radius: 0.5rem; font-size: 0.9rem; }
+    .toast.success { background: #d1fae5; color: #065f46; display: block; }
+    .toast.error { background: #ffffff; color: var(--red); display: block; }
+    .hint { font-size: 0.8rem; color: #888; margin-top: 0.3rem; }
+    .key-row { display: flex; gap: 0.5rem; align-items: center; margin-bottom: 0.8rem; }
+    .key-row input { flex: 1; }
+    .key-row .remove { background: #ffffff; color: var(--red); border: none; border-radius: 0.4rem; padding: 0.4rem 0.7rem; cursor: pointer; font-size: 0.85rem; }
+    .add-key { font-size: 0.9rem; color: #d9381e; background: none; border: 1.5px dashed #d9381e; border-radius: 0.5rem; padding: 0.5rem 1rem; cursor: pointer; width: 100%; margin-top: 0.5rem; }
+    .add-key:hover { background: #ffffff; }
+    nav-back { display: block; margin-bottom: 1.5rem; }
+    a.back { color: #d9381e; text-decoration: none; font-size: 0.9rem; }
+    a.back:hover { text-decoration: underline; }
+    .model-list { font-size: 0.85rem; color: #666; padding: 0.5rem; background: #f8f8ff; border-radius: 0.5rem; }
+    .model-list li { margin-bottom: 0.2rem; }
+    .badge { display: inline-block; font-size: 0.7rem; background: #d9381e; color: white; border-radius: 0.3rem; padding: 0.1rem 0.4rem; margin-left: 0.3rem; vertical-align: middle; }
+  </style>
+</head>
+<body>
+<div class="container">
+  <a class="back" href="/">â† Vá» trang chá»§</a>
+
+  <div style="margin-top:1.5rem; margin-bottom:2rem;">
+    <h1>âš™ï¸ CÃ i Ä‘áº·t</h1>
+    <p style="color:#666; font-size:0.9rem;">Quáº£n lÃ½ API keys vÃ  tuá»³ chá»n cÃ¡ nhÃ¢n.</p>
+  </div>
+
+  <!-- Gemini API Keys -->
+  <div class="card">
+    <h2>ðŸ”‘ Gemini API Keys</h2>
+    <p style="font-size:0.85rem; color:#666; margin-bottom:1rem;">
+      Nháº­p API key Gemini Ä‘á»ƒ dÃ¹ng chá»©c nÄƒng cháº¥m Ä‘iá»ƒm AI vÃ  gá»£i Ã½.<br>
+      Láº¥y key miá»…n phÃ­ táº¡i <a href="https://aistudio.google.com/app/apikey" target="_blank" style="color:#d9381e">Google AI Studio</a>.
+    </p>
+
+    <div style="background:#fff7ed;border:1.5px solid #fed7aa;border-radius:0.7rem;padding:1rem 1.2rem;margin-bottom:1.2rem;">
+      <div style="font-weight:700;color:#c2410c;font-size:0.95rem;margin-bottom:0.5rem;">🚀 Hướng dẫn lấy API Key (miễn phí)</div>
+      <ol style="margin:0;padding-left:1.4rem;font-size:0.85rem;color:#444;line-height:1.7;">
+        <li>Truy cập <a href="https://aistudio.google.com/app/apikey" target="_blank" style="color:#d9381e;font-weight:600;">🔗 Google AI Studio</a></li>
+        <li>Đăng nhập Google → bấm <b>"Create API Key"</b></li>
+        <li>Chọn project bất kì → copy key (bắt đầu bằng <code>AIza...</code>)</li>
+        <li>Dán vào ô bên dưới → bấm <b>Lưu keys</b></li>
+      </ol>
+      <p style="font-size:0.8rem;color:#888;margin:0.5rem 0 0;">ℹ Key miễn phí có giới hạn 60 request/phút. Thêm nhiều key để xoay vòng khi hết quota.</p>
+    </div>
+
+    <label>API Key chÃ­nh</label>
+    <div id="keyList"></div>
+    <button class="add-key" onclick="addKeyRow()">+ ThÃªm API key</button>
+
+    <div style="margin-top:1.5rem;">
+      <button class="btn btn-primary" onclick="saveKeys()">ðŸ’¾ LÆ°u keys</button>
+      <button class="btn btn-ghost" onclick="testKey()">ðŸ§ª Test key</button>
+    </div>
+    <div id="toast" class="toast"></div>
+    <div id="testResult" style="margin-top:0.8rem; font-size:0.85rem;"></div>
+  </div>
+
+  <!-- Model selection -->
+  <div class="card">
+    <h2>ðŸ¤– MÃ´ hÃ¬nh AI Gemini</h2>
+    <p style="font-size:0.85rem; color:#666; margin-bottom:0.8rem;">
+      <b>CÆ¡ cháº¿:</b> Há»‡ thá»‘ng dÃ¹ng <b>fallback 2 vÃ²ng</b> â€” vÃ²ng ngoÃ i duyá»‡t model, vÃ²ng trong duyá»‡t API key. Khi gáº·p <code>429 / 5xx</code> hoáº·c háº¿t quota thÃ¬ tá»± Ä‘á»™ng chuyá»ƒn sang model / key káº¿ tiáº¿p.<br>
+      <b>Máº·c Ä‘á»‹nh (khuyÃªn dÃ¹ng):</b> má»—i loáº¡i tÃ¡c vá»¥ dÃ¹ng nhÃ³m model phÃ¹ há»£p (xem báº£ng dÆ°á»›i). Náº¿u chá»n 1 model cá»¥ thá»ƒ, model Ä‘Ã³ sáº½ Ä‘Æ°á»£c gá»i Ä‘áº§u tiÃªn cho táº¥t cáº£ tÃ¡c vá»¥, cÃ¡c model cÃ²n láº¡i váº«n Ä‘Æ°á»£c fallback khi lá»—i.
+    </p>
+
+    <label>Cháº¿ Ä‘á»™ chá»n model</label>
+    <select id="modelSelect" style="width:100%; padding:0.7rem; border:1.5px solid #e0e0f0; border-radius:0.5rem; font-size:0.9rem; outline:none; background:white;">
+      <option value="">ðŸŽ¯ Tá»± Ä‘á»™ng theo tÃ¡c vá»¥ (Smart routing, khuyÃªn dÃ¹ng)</option>
+      <option value="gemini-3.5-flash">gemini-3.5-flash</option>
+      <option value="gemini-3-flash-preview">gemini-3-flash-preview</option>
+      <option value="gemini-3.1-flash-lite-preview">gemini-3.1-flash-lite-preview</option>
+      <option value="gemini-3.1-pro-preview">gemini-3.1-pro-preview</option>
+      <option value="gemini-2.5-pro">gemini-2.5-pro</option>
+      <option value="gemini-2.5-flash">gemini-2.5-flash</option>
+      <option value="gemini-2.5-flash-lite">gemini-2.5-flash-lite</option>
+    </select>
+    <button class="btn btn-primary" style="margin-top:0.8rem;" onclick="saveModel()">ðŸ’¾ LÆ°u model</button>
+    <div id="modelToast" class="toast"></div>
+
+    <p style="font-size:0.9rem; color:#171717; margin:1.4rem 0 0.4rem; font-weight:600;">ðŸ“Š PhÃ¢n nhÃ³m theo tÃ¡c vá»¥:</p>
+
+    <div class="model-list" style="margin-bottom:0.6rem;">
+      <div style="font-weight:600;color:#d9381e;margin-bottom:.3rem;">ðŸŽ¤ Cháº¥m phÃ¡t Ã¢m (audio scoring)</div>
+      <ul style="margin:0;padding-left:1.2rem;">
+        <li>gemini-3.5-flash <span class="badge">chÃ­nh</span></li>
+        <li>gemini-3-flash-preview</li>
+        <li>gemini-3.1-pro-preview</li>
+      </ul>
+    </div>
+
+    <div class="model-list" style="margin-bottom:0.6rem;">
+      <div style="font-weight:600;color:#d9381e;margin-bottom:.3rem;">ðŸ’¡ Táº¡o Ã½ / cÃ¢u máº«u (sample, note, expand, cue cards)</div>
+      <ul style="margin:0;padding-left:1.2rem;">
+        <li>gemini-3.1-flash-lite-preview <span class="badge">chÃ­nh</span></li>
+        <li>gemini-2.5-pro</li>
+      </ul>
+    </div>
+
+    <div class="model-list">
+      <div style="font-weight:600;color:#d9381e;margin-bottom:.3rem;">ðŸ“– Tra tá»« Ä‘iá»ƒn (vocab, dá»‹ch, phÃ¡t Ã¢m)</div>
+      <ul style="margin:0;padding-left:1.2rem;">
+        <li>gemini-2.5-flash-lite <span class="badge">chÃ­nh</span></li>
+        <li>gemini-2.5-flash</li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- Voice settings -->
+  <div class="card">
+    <h2>ðŸ”Š Giá»ng Ä‘á»c TTS</h2>
+    <p style="font-size:0.85rem; color:#666; margin-bottom:1rem;">Chá»n giá»ng Ä‘á»c tiáº¿ng Anh cho chá»©c nÄƒng nghe máº«u.</p>
+    <label>Giá»ng Ä‘á»c</label>
+    <select id="voiceSelect" style="width:100%; padding:0.7rem; border:1.5px solid #e0e0f0; border-radius:0.5rem; font-size:0.9rem; outline:none;">
+      <option value="">-- Äang táº£i giá»ng... --</option>
+    </select>
+    <button class="btn btn-ghost" style="margin-top:0.8rem;" onclick="testVoice()">â–¶ Nghe thá»­</button>
+    <button class="btn btn-primary" style="margin-top:0.8rem; margin-left:0.5rem;" onclick="saveVoice()">ðŸ’¾ LÆ°u giá»ng</button>
+    <div id="voiceToast" class="toast"></div>
+  </div>
+
+  <!-- Logout -->
+  <div class="card" style="text-align:center;">
+    <a href="/" style="color:#d9381e; font-weight:600;">â† Vá» trang chá»§</a>
+    &nbsp;&nbsp;|&nbsp;&nbsp;
+    <a href="/question-answer/part1" style="color:#d9381e;">Luyá»‡n Part 1</a>
+    &nbsp;&nbsp;|&nbsp;&nbsp;
+    <a href="/take-test/home" style="color:#d9381e;">Thi thá»­</a>
+  </div>
+</div>
+
+<script>
+const LS_KEY = "luyennoi.geminiKey";
+const LS_KEYS = "luyennoi.geminiKeys";
+const LS_VOICE = "ln.ttsVoice";
+const LS_MODEL = "luyennoi.geminiModel";
+const RETURN_TO = (() => {
+  try {
+    const next = new URLSearchParams(location.search).get("next") || "";
+    if (!next || !next.startsWith("/") || next.startsWith("//")) return "";
+    return next;
+  } catch { return ""; }
+})();
+
+function saveModel() {
+  const v = document.getElementById("modelSelect").value;
+  localStorage.setItem(LS_MODEL, v);
+  const t = document.getElementById("modelToast");
+  t.textContent = v ? ("âœ… ÄÃ£ chá»n model: " + v) : "âœ… ÄÃ£ báº­t cháº¿ Ä‘á»™ tá»± Ä‘á»™ng luÃ¢n phiÃªn";
+  t.className = "toast success";
+  setTimeout(() => t.className = "toast", 2500);
+}
+
+// Load saved keys
+function loadKeys() {
+  try {
+    const multi = JSON.parse(localStorage.getItem(LS_KEYS) || "[]");
+    const single = localStorage.getItem(LS_KEY) || "";
+    const all = multi.length ? multi : (single ? [single] : [""]);
+    return all;
+  } catch { return [""]; }
+}
+
+function addKeyRow(value = "") {
+  const row = document.createElement("div");
+  row.className = "key-row";
+  row.innerHTML = `
+    <input type="password" placeholder="AIza..." value="${value}" autocomplete="off">
+    <button class="remove" onclick="this.parentElement.remove()">âœ•</button>`;
+  document.getElementById("keyList").appendChild(row);
+}
+
+function saveKeys() {
+  const inputs = [...document.querySelectorAll("#keyList input")];
+  const keys = inputs.map(i => i.value.trim()).filter(Boolean);
+  if (keys.length === 0) { showToast("ChÆ°a nháº­p key!", "error"); return; }
+  localStorage.setItem(LS_KEYS, JSON.stringify(keys));
+  localStorage.setItem(LS_KEY, keys[0]); // primary key for overlay
+  showToast("âœ… ÄÃ£ lÆ°u " + keys.length + " key!", "success");
+  if (RETURN_TO) setTimeout(() => { location.href = RETURN_TO; }, 650);
+}
+
+async function testKey() {
+  const inputs = [...document.querySelectorAll("#keyList input")];
+  const key = inputs[0]?.value.trim();
+  if (!key) { showToast("Nháº­p key trÆ°á»›c!", "error"); return; }
+  document.getElementById("testResult").textContent = "â³ Äang test...";
+  try {
+    const r = await fetch("/api/gemini/assist", {
+      method: "POST",
+      headers: {"Content-Type": "application/json"},
+      body: JSON.stringify({ apiKey: key, kind: "sample", topic: "watches" })
+    });
+    const d = await r.json();
+    if (d.warning) throw new Error(d.warning);
+    document.getElementById("testResult").innerHTML = `âœ… Key hoáº¡t Ä‘á»™ng! Model: <b>${d.model || "ok"}</b>`;
+  } catch(e) {
+    document.getElementById("testResult").innerHTML = `âŒ Lá»—i: ${e.message}`;
+  }
+}
+
+function showToast(msg, type) {
+  const t = document.getElementById("toast");
+  t.textContent = msg;
+  t.className = "toast " + type;
+  setTimeout(() => t.className = "toast", 3000);
+}
+
+// Voice setup
+function loadVoices() {
+  const sel = document.getElementById("voiceSelect");
+  const voices = speechSynthesis.getVoices().filter(v => /en/i.test(v.lang));
+  if (!voices.length) return;
+  const saved = localStorage.getItem(LS_VOICE) || "";
+  sel.innerHTML = voices.map(v =>
+    `<option value="${v.name}" ${v.name === saved ? "selected" : ""}>${v.name} (${v.lang})</option>`
+  ).join("");
+}
+
+function testVoice() {
+  const name = document.getElementById("voiceSelect").value;
+  const u = new SpeechSynthesisUtterance("Hello, this is a test of the selected voice for IELTS practice.");
+  const v = speechSynthesis.getVoices().find(v => v.name === name);
+  if (v) u.voice = v;
+  u.lang = "en-GB"; u.rate = 0.9;
+  speechSynthesis.cancel();
+  speechSynthesis.speak(u);
+}
+
+function saveVoice() {
+  const name = document.getElementById("voiceSelect").value;
+  localStorage.setItem(LS_VOICE, name);
+  const t = document.getElementById("voiceToast");
+  t.textContent = "âœ… ÄÃ£ lÆ°u giá»ng: " + name;
+  t.className = "toast success";
+  setTimeout(() => t.className = "toast", 3000);
+}
+
+// Init
+const savedKeys = loadKeys();
+savedKeys.forEach(k => addKeyRow(k));
+speechSynthesis.onvoiceschanged = loadVoices;
+loadVoices();
+// Restore saved model selection
+const savedModel = localStorage.getItem(LS_MODEL) || "";
+const modelSel = document.getElementById("modelSelect");
+if (modelSel) modelSel.value = savedModel;
+</script>
+</body>
+</html>
+
+

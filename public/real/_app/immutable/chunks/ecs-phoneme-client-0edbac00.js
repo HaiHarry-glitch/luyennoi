@@ -1,0 +1,1 @@
+import{f as o,A as a}from"./utils-f18e705e.js";async function c(s){const e=new FormData;return e.append("s3Url",s),await(await o(`${a}/api/be/ecsWav2Phoneme`,{method:"POST",body:e},2)).json()}async function i(s,e){const n=new FormData;return n.append("s3Url",s),n.append("label",e),await(await o(`${a}/api/be/ecsWav2Phoneme`,{method:"POST",body:n},2)).json()}export{i as a,c as e};

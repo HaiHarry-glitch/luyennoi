@@ -1,0 +1,131 @@
+﻿<!DOCTYPE html>
+<html lang="vi" data-theme="light">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <link rel="icon" href="/real/favicon.png" type="image/png" />
+  <link href="/real/_app/immutable/assets/_layout-a55bae1d.css" rel="stylesheet">
+  <title>CÃ¢u Báº¡n thÃªm | Luyá»‡n NÃ³i</title>
+  <style>
+    body { font-family: Lexend, sans-serif; margin: 0; background: #fff; color: #171717; }
+    .layout { display: flex; min-height: 100vh; }
+    .sidebar { width: 14rem; border-right: 1px solid #eee; padding: 1rem; display: none; flex-direction: column; }
+    @media (min-width: 768px) { .sidebar { display: flex; } }
+    .sidebar a { display: flex; align-items: center; gap: .6rem; padding: .6rem .8rem; border-radius: .5rem; color: #171717; text-decoration: none; font-size: .9rem; margin-bottom: .3rem; }
+    .sidebar a.active, .sidebar a:hover { background: #ffffff; }
+    .sidebar .brand { display: flex; align-items: center; gap: .5rem; margin-bottom: 1.5rem; font-weight: 600; font-size: 1.1rem; }
+    .sidebar .brand img { width: 2.5rem; height: 2.5rem; }
+    .progress-box { margin-top: auto; }
+    .progress-circle { width: 5rem; height: 5rem; border: 4px solid #e9d5ff; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 1.4rem; font-weight: 700; color: #d9381e; margin: 0 auto 1rem; }
+    .progress-circle small { font-size: .7rem; font-weight: 400; color: #6b7280; }
+    .btn-upgrade { display: block; width: 100%; padding: .6rem; background: white; border: 1px solid #d9381e; color: #d9381e; border-radius: .6rem; text-align: center; text-decoration: none; font-weight: 600; cursor: pointer; }
+    .main { flex: 1; padding: 1.5rem; max-width: 1400px; }
+    .tabs { display: flex; gap: .6rem; margin-bottom: 1.5rem; flex-wrap: wrap; }
+    .tab { padding: .5rem 1.2rem; border: 1.5px solid #d1d5db; border-radius: 9999px; color: #171717; text-decoration: none; font-size: .9rem; font-weight: 600; background: white; }
+    .tab.active { border-color: #d9381e; background: #ffffff; color: #d9381e; }
+    .form-row { display: flex; gap: .5rem; align-items: center; margin-bottom: 1.5rem; flex-wrap: wrap; }
+    .form-input { flex: 1; min-width: 200px; padding: .7rem 1rem; border: 1.5px solid #d1d5db; border-radius: .5rem; font-size: .9rem; font-family: inherit; outline: none; }
+    .form-input:focus { border-color: #d9381e; }
+    .form-select { padding: .7rem .8rem; border: 1.5px solid #d1d5db; border-radius: .5rem; font-size: .9rem; font-family: inherit; outline: none; background: white; cursor: pointer; }
+    .btn-add { padding: .7rem 1.4rem; background: #d9381e; color: white; border: none; border-radius: .5rem; font-weight: 600; font-size: .9rem; cursor: pointer; font-family: inherit; }
+    .btn-add:hover { background: #4506cc; }
+    .q-list { display: flex; flex-direction: column; gap: .8rem; }
+    .q-card { display: flex; flex-direction: column; padding: 1rem 1.2rem; background: white; border: 1px solid #e5e7eb; border-radius: .6rem; cursor: pointer; transition: background .15s; gap: .8rem; }
+    .q-card:hover { background: #f9fafb; }
+    .q-card .q-text { font-size: .95rem; color: #171717; }
+    .q-card .q-meta { display: flex; gap: .5rem; align-items: center; }
+    .q-card .q-part { background: #d9381e; color: white; padding: .25rem .7rem; border-radius: 9999px; font-size: .72rem; font-weight: 600; }
+    .q-card .q-del { background: transparent; border: none; color: var(--red); cursor: pointer; font-size: .8rem; }
+    .empty { text-align: center; color: #9ca3af; padding: 3rem 1rem; font-size: .9rem; }
+  </style>
+</head>
+<body>
+  <div class="layout">
+    <aside class="sidebar">
+      <a href="/" class="brand"><img src="/real/cloudfront/media/logo.webp" alt="Luyá»‡n NÃ³i">Luyá»‡n NÃ³i</a>
+      <a href="/">ðŸ  Trang chá»§</a>
+      <a href="/question-answer" class="active">ðŸŽ™ï¸ Luyá»‡n theo cÃ¢u</a>
+      <a href="/take-test/home">ðŸ“‹ Thi thá»­</a>
+      <div class="progress-box">
+        <div class="progress-circle">0<small>/25</small></div>
+        <a href="/alphafeature/payment" class="btn-upgrade">Mua Xá»‹n</a>
+      </div>
+    </aside>
+    <main class="main">
+      <div class="tabs">
+        <a href="/question-answer/part1" class="tab">Luyá»‡n Part 1</a>
+        <a href="/question-answer/part2" class="tab">Luyá»‡n Part 2</a>
+        <a href="/question-answer/part3" class="tab">Luyá»‡n Part 3</a>
+        <a href="/question-answer/user-question" class="tab active">CÃ¢u Báº¡n thÃªm</a>
+      </div>
+      <form id="uq-form" class="form-row" onsubmit="return false;">
+        <input id="uq-input" class="form-input" type="text" placeholder="Nháº­p cÃ¢u há»i cá»§a báº¡n vÃ o Ä‘Ã¢y..." maxlength="300" required>
+        <select id="uq-part" class="form-select">
+          <option value="1">Part 1</option>
+          <option value="2">Part 2</option>
+          <option value="3">Part 3</option>
+        </select>
+        <button id="uq-add" class="btn-add" type="submit">ThÃªm CÃ¢u há»i</button>
+      </form>
+      <div id="uq-list" class="q-list"></div>
+    </main>
+  </div>
+  <script src="/real-overlay.js"></script>
+  <script>
+    (function() {
+      const KEY = "ln.userQuestions";
+      function load() { try { return JSON.parse(localStorage.getItem(KEY) || "[]"); } catch { return []; } }
+      function save(arr) { localStorage.setItem(KEY, JSON.stringify(arr)); }
+      function render() {
+        const list = document.getElementById("uq-list");
+        const items = load();
+        if (!items.length) {
+          list.innerHTML = '<div class="empty">ChÆ°a cÃ³ cÃ¢u há»i nÃ o. HÃ£y thÃªm cÃ¢u há»i Ä‘áº§u tiÃªn cá»§a báº¡n!</div>';
+          return;
+        }
+        list.innerHTML = items.map((q, i) => `
+          <div class="q-card" data-idx="${i}">
+            <div class="q-text">${q.text.replace(/</g,"&lt;")}</div>
+            <div class="q-meta">
+              <span class="q-part">PART ${q.part}</span>
+              <button class="q-del" data-del="${i}" type="button">XoÃ¡</button>
+            </div>
+          </div>`).join("");
+        // Wire clicks
+        list.querySelectorAll(".q-card").forEach(card => {
+          card.addEventListener("click", (e) => {
+            if (e.target.dataset.del !== undefined) return;
+            const idx = +card.dataset.idx;
+            const q = load()[idx];
+            location.href = `/question-answer/PART%20${q.part}~${encodeURIComponent(q.text)}`;
+          });
+        });
+        list.querySelectorAll("[data-del]").forEach(btn => {
+          btn.addEventListener("click", (e) => {
+            e.stopPropagation();
+            const idx = +btn.dataset.del;
+            const arr = load();
+            arr.splice(idx, 1);
+            save(arr);
+            render();
+          });
+        });
+      }
+      document.getElementById("uq-form").addEventListener("submit", () => {
+        const text = document.getElementById("uq-input").value.trim();
+        const part = document.getElementById("uq-part").value;
+        if (!text) return false;
+        const arr = load();
+        arr.unshift({ text, part, ts: Date.now() });
+        save(arr);
+        document.getElementById("uq-input").value = "";
+        render();
+        return false;
+      });
+      render();
+    })();
+  </script>
+</body>
+</html>
+
+

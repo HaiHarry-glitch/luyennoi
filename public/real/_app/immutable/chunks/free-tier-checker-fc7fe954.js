@@ -1,0 +1,1 @@
+import{e as r}from"./constants-021356d5.js";import{l as s,m as i}from"./stores-779ac2ce.js";async function f(t){if(!t)return;const e=t.length;e>r?s.set(!0):e>1&&e<10&&i.set(!0)}export{f as getHistoryCountAndSetIfFreeUserReachLimitStore};

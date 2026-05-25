@@ -1,0 +1,80 @@
+{
+  "aiChat": {
+    "endpoint": "/api/oai/chat",
+    "method": "POST",
+    "bodyShape": {
+      "prompt": "encrypted prompt payload"
+    },
+    "usedBy": [
+      "Cho minh cau mau",
+      "Tu vung chu de",
+      "Ghi chu - tao cau mau",
+      "Luyen phat am",
+      "Giai thich diem"
+    ]
+  },
+  "database": {
+    "endpoint": "/api/be/databases",
+    "method": "POST",
+    "bodyShape": {
+      "name": "operation name",
+      "body": "operation payload"
+    },
+    "observedNames": [
+      "get-all-user-info-by-pk",
+      "get-heartbeat-activity",
+      "update-heartbeat-activity",
+      "getAllUserData",
+      "updateUserAnswer",
+      "updateAIAnswer",
+      "updateUserQuestion",
+      "updateUserVocab",
+      "getUserNoteOfQuestion",
+      "updateUserNoteOfQuestion"
+    ]
+  },
+  "storage": {
+    "endpoint": "/api/be/storage",
+    "method": "POST",
+    "observedPurposes": [
+      "user-audio-upload",
+      "user-audio-download",
+      "media-upload"
+    ]
+  },
+  "recordingPipeline": [
+    "startRecording",
+    "finishedRecording",
+    "upload recorded audio via /api/be/storage",
+    "request scoring/transcript workflow",
+    "persist answer via /api/be/databases updateUserAnswer",
+    "render transcript, overall band, pronunciation, fluency, grammar, vocabulary feedback"
+  ],
+  "localGeminiClone": [
+    {
+      "feature": "AI scoring",
+      "endpoint": "/api/gemini/score-speaking",
+      "model": "gemini-2.5-pro"
+    },
+    {
+      "feature": "Sample answer / ideas",
+      "endpoint": "/api/gemini/assist",
+      "model": "gemini-2.5-flash"
+    },
+    {
+      "feature": "Vocabulary",
+      "endpoint": "/api/gemini/assist",
+      "model": "gemini-2.5-flash-lite"
+    },
+    {
+      "feature": "Pronunciation help",
+      "endpoint": "/api/gemini/assist",
+      "model": "gemini-3-flash-preview"
+    },
+    {
+      "feature": "Note to sample",
+      "endpoint": "/api/gemini/assist",
+      "model": "gemini-3.1-flash-lite-preview"
+    }
+  ]
+}

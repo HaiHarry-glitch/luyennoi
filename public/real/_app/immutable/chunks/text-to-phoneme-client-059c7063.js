@@ -1,0 +1,1 @@
+import{f as o,A as n}from"./utils-f18e705e.js";async function i(e){const t=new FormData;return t.append("text",e),await(await o(`${n}/api/be/textToPhoneme`,{method:"POST",body:t},3)).json()}export{i as t};

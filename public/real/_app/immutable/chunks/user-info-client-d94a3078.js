@@ -1,0 +1,1 @@
+import{d as t}from"./utils-client-34d27db7.js";const r="FOLLOWING_USER",o="FOLLOWING_USER";async function u(s){return await t({name:"update-user-info",body:s})}async function c(s){return await t({name:"get-all-user-info-by-pk",body:{pk:s}})}export{r as F,o as a,c as g,u};

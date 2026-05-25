@@ -1,0 +1,59 @@
+{
+  "user": {
+    "name": "Tài khoản",
+    "answered": 0,
+    "goal": 25,
+    "dayStreak": 0,
+    "band": 5.0
+  },
+  "today": {
+    "title": "Nhiệm vụ hôm nay",
+    "target": 25,
+    "text": "Ghi âm 25 câu trả lời nhé :}"
+  },
+  "tips": [
+    {
+      "title": "Trả lời thẳng vào trọng tâm",
+      "text": "Đừng vòng vo tam quốc, đau đầu lắm :}"
+    },
+    {
+      "title": "Sai sửa liền tay",
+      "text": "Chờ để lâu ngày, lỗi quen thành thói xấu, sửa khổ lắm á."
+    }
+  ],
+  "practice": {
+    "title": "Luyện theo câu",
+    "text": "Luyện theo FORECAST. Nhận sửa lỗi và đánh giá liên tục.",
+    "actions": [
+      { "label": "PART 1", "href": "/question-answer/part1" },
+      { "label": "PART 2", "href": "/question-answer/part2" },
+      { "label": "PART 3", "href": "/question-answer/part3" },
+      { "label": "Tự thêm câu", "href": "/question-answer/user-question" }
+    ]
+  },
+  "mockTest": {
+    "title": "Thi Thử",
+    "text": "Trả lời một bộ câu hỏi ngẫu nhiên. Cấu trúc giống bài thi thật.",
+    "actions": [
+      { "label": "PART 1", "href": "/take-test/part1" },
+      { "label": "PART 2", "href": "/take-test/part2" },
+      { "label": "PART 3", "href": "/take-test/part3" },
+      { "label": "FULL TEST", "href": "/take-test/full-test" },
+      { "label": "Tùy chọn đề", "href": "/take-test/custom-strict" }
+    ]
+  },
+  "features": [
+    { "label": "Luyện đọc", "href": "/reading" },
+    { "label": "Luyennoi theo lớp", "href": "/profile/teaching/landing-page" },
+    { "label": "Khóa học phát âm", "href": "/alphafeature/pronun" },
+    { "label": "Sổ từ vựng", "href": "/alphafeature/vocab" },
+    { "label": "Luyện S/es", "href": "/alphafeature/boxing" }
+  ],
+  "months": ["Dec", "Jan", "Feb", "Mar", "Apr", "May"],
+  "heatmap": [
+    0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+    0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+    0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,2,0,0,0,
+    0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,4,0,0,0
+  ]
+}

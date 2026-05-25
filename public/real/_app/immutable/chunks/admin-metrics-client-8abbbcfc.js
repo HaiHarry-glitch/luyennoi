@@ -1,0 +1,1 @@
+import{d as e}from"./utils-client-34d27db7.js";async function i(t){return await e({name:"update-admin-metrics",body:t})}async function r(t){return await e({name:"get-admin-metrics",body:t})}async function d(t){return await e({name:"get-admin-metrics-by-range-paginated",body:t})}export{d as a,r as g,i as u};

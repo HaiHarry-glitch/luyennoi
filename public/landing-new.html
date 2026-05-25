@@ -1,0 +1,1090 @@
+﻿<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>HIN Luyện Nói | IELTS Speaking AI — Miễn phí 100%</title>
+  <meta name="description" content="HIN Luyện Nói: luyện IELTS Speaking miễn phí với đề Forecast, AI chấm chi tiết, Smart IPA và thi thử chống gian lận.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,wght@0,700;0,900;1,700;1,900&family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+  <script src="/auth.js" defer></script>
+  <style>
+    /* ── TOKENS ── */
+    :root {
+      --bg: #F5F1E9; --card: #FDFCF9; --ink: #171717; --muted: #4b5563;
+      --red: #d9381e; --yellow: #FFD700; --green: var(--ink); --blue: var(--ink);
+      --shadow: 8px 8px 0 0 var(--ink);
+      --shadow-sm: 4px 4px 0 0 var(--ink);
+      --shadow-lg: 14px 14px 0 0 var(--ink);
+      --shadow-red: 10px 10px 0 0 var(--red);
+    }
+    *, *::before, *::after { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body { margin: 0; background: var(--bg); color: var(--ink); font-family: Inter, sans-serif; font-size: 18px; overflow-x: hidden; }
+    a { color: inherit; text-decoration: none; }
+    img { max-width: 100%; display: block; }
+    button { font-family: inherit; }
+
+    /* ── NAV ── */
+    .nav {
+      position: sticky; top: 0; z-index: 50;
+      display: flex; align-items: center; justify-content: space-between; gap: 1rem;
+      padding: .85rem clamp(1rem, 4vw, 3rem);
+      background: var(--bg); border-bottom: 3px solid var(--ink);
+    }
+    .brand { display: inline-flex; align-items: center; gap: .75rem; font: 900 1.05rem/1 Inter, sans-serif; }
+    .nav-logo { width: 44px; height: 44px; object-fit: cover; border: 3px solid var(--ink); background: white; box-shadow: var(--shadow-sm); }
+    .nav-links { display: flex; align-items: center; gap: 1.15rem; font: 800 .78rem/1 "JetBrains Mono", monospace; text-transform: uppercase; letter-spacing: .04em; }
+    .nav-links a:hover { color: var(--red); }
+
+    /* ── BUTTONS ── */
+    .btn {
+      display: inline-flex; align-items: center; justify-content: center; gap: .5rem;
+      border: 3px solid var(--ink); border-radius: 2px;
+      padding: 1rem 1.6rem; background: white; color: var(--ink);
+      box-shadow: var(--shadow-sm); font: 900 1rem/1 Inter, sans-serif;
+      text-transform: uppercase; cursor: pointer;
+      transition: transform .16s ease, box-shadow .16s ease;
+    }
+    .btn:hover { transform: translate(3px, 3px); box-shadow: 2px 2px 0 0 var(--ink); }
+    .btn-red { background: var(--red); color: white; box-shadow: 8px 8px 0 0 var(--ink); }
+    .btn-red:hover { transform: translate(4px, 4px); box-shadow: 4px 4px 0 0 var(--ink); }
+    .btn-dark { background: var(--ink); color: white; }
+    .btn-yellow { background: var(--yellow); color: var(--ink); }
+    .btn-lg { padding: 1.25rem 2.2rem; font-size: 1.1rem; border-width: 3px; box-shadow: 10px 10px 0 0 var(--ink); }
+    .btn-lg.btn-red { box-shadow: 10px 10px 0 0 var(--ink); }
+    .btn-hint { display: block; font: 600 .72rem/1 Inter, sans-serif; color: var(--muted); margin-top: .5rem; text-transform: none; }
+
+    /* ── LAYOUT ── */
+    .section {
+      position: relative; padding: clamp(3.5rem, 7vw, 7rem) clamp(1rem, 4vw, 3rem);
+      border-bottom: 3px solid var(--ink);
+    }
+    .section-paper { background: var(--bg); }
+    .section-paper::before {
+      content: ""; position: absolute; inset: 0; pointer-events: none; opacity: .38;
+      background-image: linear-gradient(rgba(23,23,23,.045) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(23,23,23,.045) 1px, transparent 1px);
+      background-size: 42px 42px;
+    }
+    .section-white { background: white; }
+    .section-dark { background: var(--ink); color: white; }
+    .section-dark h2, .section-dark h3 { color: white; }
+    .container { position: relative; z-index: 1; width: 100%; max-width: 1200px; margin: 0 auto; }
+    .two-col { display: grid; grid-template-columns: minmax(0, 1.1fr) minmax(0, .9fr); gap: clamp(2rem, 4vw, 4rem); align-items: center; }
+    .two-col > * { min-width: 0; }
+
+    /* ── STAMPS / BADGES ── */
+    .stamp {
+      display: inline-flex; width: fit-content; padding: 7px 11px; margin-bottom: 1.2rem;
+      border: 2px solid var(--ink); background: white; box-shadow: 3px 3px 0 0 var(--ink);
+      font: 900 10px/1 "JetBrains Mono", monospace; letter-spacing: .18em; text-transform: uppercase;
+    }
+    .stamp-red { background: var(--red); color: white; }
+    .stamp-yellow { background: var(--yellow); }
+
+    /* ── MARQUEE ── */
+    .marquee-wrap { overflow: hidden; border-top: 3px solid var(--ink); border-bottom: 3px solid var(--ink); background: var(--red); padding: .6rem 0; }
+    .marquee-track { display: flex; width: max-content; animation: marquee 18s linear infinite; }
+    .marquee-track span { white-space: nowrap; padding: 0 2.5rem; font: 900 .82rem/1 "JetBrains Mono", monospace; text-transform: uppercase; letter-spacing: .12em; color: white; }
+    .marquee-track span::after { content: "·"; margin-left: 2.5rem; }
+    @keyframes marquee { from { transform: translateX(0); } to { transform: translateX(-50%); } }
+
+    /* ── TYPOGRAPHY ── */
+    h1, h2, h3 { font-family: Fraunces, serif; margin: 0; letter-spacing: 0; }
+    h1 {
+      font-weight: 900; font-size: clamp(64px, 9vw, 130px);
+      line-height: .84; text-transform: uppercase; margin-bottom: 1.2rem;
+    }
+    h1 em {
+      font-style: italic; color: transparent;
+      background: linear-gradient(135deg, var(--red) 0%, #ff6b35 100%);
+      -webkit-background-clip: text; background-clip: text;
+    }
+    h2 { font-weight: 900; font-size: clamp(42px, 6vw, 88px); line-height: .91; text-transform: uppercase; margin-bottom: 1rem; }
+    h2 em { color: var(--red); font-style: italic; }
+    h3 { font-size: 1.75rem; line-height: 1.05; margin-bottom: .65rem; }
+    .lead { color: var(--ink); font-weight: 650; line-height: 1.65; font-size: clamp(1.05rem, 1.6vw, 1.25rem); max-width: 680px; }
+    .muted { color: var(--muted); line-height: 1.65; font-weight: 600; font-size: 1rem; }
+    .section-head { margin-bottom: 2.5rem; }
+    .section-head.center { text-align: center; display: grid; justify-items: center; margin-inline: auto; max-width: 900px; }
+
+    /* ── HERO ACTIONS ── */
+    .hero-actions { display: flex; gap: 1rem; flex-wrap: wrap; margin: 1.8rem 0 0; align-items: flex-start; }
+
+    /* ── TRUST STATS ── */
+    .trust { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: .85rem; max-width: 560px; margin-top: 1.6rem; }
+    .trust-item {
+      border: 3px solid var(--ink); padding: 1rem .85rem;
+      box-shadow: var(--shadow-sm); text-align: left;
+      font: 800 .78rem/1.4 "JetBrains Mono", monospace; text-transform: uppercase;
+    }
+    .trust-item:nth-child(1) { background: var(--yellow); }
+    .trust-item:nth-child(2) { background: #e0f2fe; }
+    .trust-item:nth-child(3) { background: #fffbe6; }
+    .trust-item b { display: block; font: 900 2.4rem/1 Fraunces, serif; margin-bottom: .3rem; color: var(--ink); }
+
+    /* ── HERO VISUAL ── */
+    .hero-visual { position: relative; }
+    .hero-screen {
+      background: white; border: 4px solid var(--ink); box-shadow: var(--shadow-lg);
+      overflow: hidden; transform: rotate(.8deg);
+    }
+    .hero-screen-bar {
+      display: flex; align-items: center; gap: .4rem; padding: .7rem 1rem;
+      background: #f1f0ec; border-bottom: 3px solid var(--ink);
+    }
+    .hero-dot { width: 13px; height: 13px; border-radius: 50%; border: 2px solid var(--ink); }
+    .hero-dot:nth-child(1) { background: var(--red); }
+    .hero-dot:nth-child(2) { background: var(--yellow); }
+    .hero-dot:nth-child(3) { background: var(--green); }
+    .hero-screen-url { flex: 1; background: white; border: 2px solid var(--ink); padding: .25rem .65rem; font: 700 .72rem/1.4 "JetBrains Mono", monospace; margin-left: .5rem; }
+    .hero-app { display: grid; grid-template-columns: 130px 1fr; min-height: 360px; }
+    .hero-sidebar { border-right: 3px solid var(--ink); padding: 1rem .75rem; background: #fdfcf9; display: grid; align-content: start; gap: .5rem; }
+    .hero-nav-item { display: flex; align-items: center; gap: .5rem; padding: .45rem .6rem; border: 2px solid transparent; font: 700 .72rem/1.3 Inter, sans-serif; border-radius: 2px; }
+    .hero-nav-item.active { background: var(--yellow); border-color: var(--ink); box-shadow: 2px 2px 0 var(--ink); }
+    .hero-nav-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--ink); flex-shrink: 0; }
+    .hero-main { padding: 1.1rem; display: flex; flex-direction: column; gap: 1rem; }
+    .hero-question-box { border: 3px solid var(--ink); padding: 1rem; background: #fff7c2; box-shadow: var(--shadow-sm); }
+    .hero-question-label { font: 900 .68rem/1 "JetBrains Mono", monospace; text-transform: uppercase; letter-spacing: .1em; color: var(--muted); margin-bottom: .4rem; }
+    .hero-question-text { font: 700 1rem/1.4 Inter, sans-serif; }
+    .hero-score-row { display: flex; align-items: center; gap: 1rem; }
+    .hero-score-circle {
+      width: 72px; height: 72px; border-radius: 50%; border: 3px solid var(--ink);
+      background: #06d6a0; display: grid; place-items: center;
+      font: 900 1.5rem/1 Fraunces, serif; flex-shrink: 0; box-shadow: 3px 3px 0 var(--ink);
+    }
+    .hero-feedback { flex: 1; }
+    .hero-bar { height: 14px; border: 2px solid var(--ink); margin: .3rem 0; }
+    .hero-bar:nth-child(1) { background: #bbf7d0; width: 85%; }
+    .hero-bar:nth-child(2) { background: var(--yellow); width: 70%; }
+    .hero-bar:nth-child(3) { background: #fecaca; width: 55%; }
+    .hero-fb-text { font: 600 .8rem/1.45 Inter, sans-serif; color: var(--muted); border: 2px solid var(--ink); padding: .5rem .65rem; background: white; }
+    .hero-rec-btn { display: inline-flex; align-items: center; gap: .5rem; background: var(--red); color: white; border: 2px solid var(--ink); padding: .5rem 1rem; font: 800 .8rem/1 Inter, sans-serif; box-shadow: 3px 3px 0 var(--ink); cursor: pointer; animation: pulseBtn 1.5s infinite; }
+    @keyframes pulseBtn { 0%,100%{opacity:1} 50%{opacity:.75} }
+
+    /* floating labels */
+    .float-label {
+      position: absolute; border: 3px solid var(--ink); padding: .5rem .85rem;
+      font: 900 .82rem/1 "JetBrains Mono", monospace; text-transform: uppercase;
+      box-shadow: var(--shadow-sm); z-index: 10; white-space: nowrap;
+      animation: floaty 3s ease-in-out infinite;
+    }
+    .fl-1 { top: -18px; right: 20px; background: var(--yellow); --r: -4deg; transform: rotate(-4deg); animation-delay: 0s; }
+    .fl-2 { bottom: 20px; left: -20px; background: #fffbe6; --r: 3deg; transform: rotate(3deg); animation-delay: 1.2s; }
+    .fl-3 { bottom: 80px; right: -10px; background: white; --r: -2deg; transform: rotate(-2deg); animation-delay: .6s; }
+    @keyframes floaty {
+      0%, 100% { transform: translateY(0) rotate(var(--r, 0deg)); }
+      50% { transform: translateY(-8px) rotate(var(--r, 0deg)); }
+    }
+
+    /* ── PAIN CARDS ── */
+    .pain-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1.5rem; }
+    .pain-card {
+      border: 3px solid var(--ink); padding: 1.8rem; box-shadow: var(--shadow);
+      position: relative; overflow: hidden; min-height: 230px;
+      display: flex; flex-direction: column; gap: .75rem;
+    }
+    .pain-card:nth-child(1) { background: white; }
+    .pain-card:nth-child(2) { background: #fff7c2; }
+    .pain-card:nth-child(3) { background: #fef2f2; }
+    .pain-card:nth-child(4) { background: #eef2ff; }
+    .pain-icon { font-size: 3.2rem; line-height: 1; margin-bottom: .2rem; }
+    .pain-card h3 { font-size: 1.65rem; }
+    .pain-card p { font-size: 1rem; line-height: 1.65; color: var(--muted); flex: 1; }
+    .pain-num {
+      position: absolute; top: 1.2rem; right: 1.2rem;
+      font: 900 4rem/1 Fraunces, serif; color: var(--ink); opacity: .07;
+    }
+
+    /* ── EXAM SECTION ── */
+    .exam-demo {
+      background: white; border: 4px solid var(--ink); box-shadow: var(--shadow-lg);
+      overflow: hidden;
+    }
+    .exam-header {
+      display: flex; justify-content: space-between; align-items: center;
+      padding: .9rem 1.25rem; border-bottom: 3px solid var(--ink); background: #fafaf5;
+      font: 900 .9rem/1 Inter, sans-serif;
+    }
+    .timer {
+      font: 900 1.35rem/1 "JetBrains Mono", monospace;
+      background: var(--yellow); border: 2px solid var(--ink);
+      padding: .4rem .75rem; box-shadow: 2px 2px 0 var(--ink);
+    }
+    .exam-body { padding: 1.25rem; }
+    .exam-part-badge {
+      display: inline-flex; background: var(--red); color: white;
+      border: 2px solid var(--ink); padding: .3rem .6rem;
+      font: 900 .7rem/1 "JetBrains Mono", monospace; text-transform: uppercase; margin-bottom: .75rem;
+      box-shadow: 2px 2px 0 var(--ink);
+    }
+    .exam-question { font: 900 1.25rem/1.35 Inter, sans-serif; margin-bottom: 1rem; }
+    .exam-status {
+      border: 2px solid var(--ink); padding: .6rem .9rem;
+      font: 700 .78rem/1.5 "JetBrains Mono", monospace; text-transform: uppercase;
+      background: #e0f2fe; margin-bottom: 1rem; transition: background .3s;
+    }
+    .exam-status.violation { background: #fef2f2; border-color: var(--red); }
+    .exam-actions { display: flex; gap: .75rem; }
+    .check-list { display: grid; gap: 1rem; margin: 1.5rem 0; }
+    .check-item {
+      display: grid; grid-template-columns: 52px 1fr; gap: .85rem; align-items: start;
+      border: 2px solid var(--ink); background: white; padding: .9rem; box-shadow: var(--shadow-sm);
+      opacity: 0; transform: translateX(-20px); transition: opacity .5s ease, transform .5s ease;
+    }
+    .check-item.visible { opacity: 1; transform: translateX(0); }
+    .check-item-icon { font-size: 1.6rem; text-align: center; padding-top: .1rem; }
+    .check-item p { margin: 0; font-size: .95rem; line-height: 1.55; }
+    .check-item b { display: block; margin-bottom: .2rem; }
+    .stats-strip { display: grid; grid-template-columns: repeat(3, 1fr); gap: .9rem; margin-top: 1.35rem; }
+    .mini-stat {
+      border: 3px solid var(--ink); padding: 1rem .85rem; text-align: center;
+      font: 800 .75rem/1.4 "JetBrains Mono", monospace; text-transform: uppercase;
+      box-shadow: var(--shadow-sm);
+    }
+    .mini-stat:nth-child(1) { background: var(--yellow); }
+    .mini-stat:nth-child(2) { background: #e0f2fe; }
+    .mini-stat:nth-child(3) { background: #fffbe6; }
+    .mini-stat b { display: block; font: 900 2.2rem/1 Fraunces, serif; margin-bottom: .3rem; color: var(--ink); }
+
+    /* ── IPA SECTION ── */
+    .ipa-visual {
+      border: 4px solid var(--ink); box-shadow: var(--shadow-lg); background: #fbfdff; overflow: hidden;
+    }
+    .ipa-visual-header {
+      padding: .75rem 1.1rem; background: #f1f0ec; border-bottom: 3px solid var(--ink);
+      font: 700 .8rem/1 "JetBrains Mono", monospace; text-transform: uppercase; letter-spacing: .08em;
+    }
+    .ipa-visual-body { padding: 1.4rem; }
+    .ipa-compare { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1.25rem; }
+    .ipa-col { border: 2px solid var(--ink); padding: .85rem; }
+    .ipa-col-label { font: 900 .68rem/1 "JetBrains Mono", monospace; text-transform: uppercase; letter-spacing: .1em; margin-bottom: .75rem; padding-bottom: .5rem; border-bottom: 2px solid var(--ink); }
+    .ipa-col-label.old { color: var(--red); }
+    .ipa-col-label.new { color: var(--green); }
+    .ipa-row-tokens { display: flex; flex-wrap: wrap; gap: .4rem .65rem; align-items: flex-end; line-height: 2; }
+    .tok { display: inline-grid; justify-items: center; min-width: max-content; font: 700 1rem/1 "JetBrains Mono", monospace; }
+    .tok small { font-size: .7rem; color: var(--blue); font-weight: 900; min-height: 1em; line-height: 1; }
+    .tok.highlight b { color: var(--red); border-bottom: 3px solid var(--red); }
+    .tok.dimmed { opacity: .35; }
+    .ipa-mini-cards { display: grid; grid-template-columns: repeat(3, 1fr); gap: .85rem; margin-top: 1rem; }
+    .ipa-mini { border: 2px solid var(--ink); background: white; padding: 1.1rem; box-shadow: 3px 3px 0 var(--ink); }
+    .ipa-mini-icon { font-size: 1.8rem; margin-bottom: .5rem; }
+    .ipa-mini h4 { font: 900 1rem/1.2 Fraunces, serif; margin: 0 0 .3rem; }
+    .ipa-mini p { font-size: .85rem; color: var(--muted); line-height: 1.5; margin: 0; }
+
+    /* ── AI FEEDBACK ── */
+    .feedback-card {
+      border: 4px solid var(--ink); background: white; box-shadow: var(--shadow-lg);
+      overflow: hidden;
+    }
+    .feedback-header {
+      padding: 1rem 1.4rem; background: var(--ink); color: white;
+      font: 900 .92rem/1 Inter, sans-serif; display: flex; justify-content: space-between; align-items: center;
+    }
+    .feedback-band {
+      background: #06d6a0; color: var(--ink); border: 2px solid white;
+      padding: .3rem .75rem; font: 900 1.1rem/1 Fraunces, serif; box-shadow: 2px 2px 0 white;
+    }
+    .feedback-body { padding: 1.4rem; }
+    .feedback-sentence { font: 700 .95rem/1.5 "JetBrains Mono", monospace; border: 2px solid var(--ink); padding: .75rem; background: #fafaf5; margin-bottom: 1.25rem; }
+    .score-bar { display: grid; grid-template-columns: 110px 1fr 48px; gap: .75rem; align-items: center; margin-bottom: .8rem; }
+    .score-bar-label { font: 800 .82rem/1 "JetBrains Mono", monospace; text-transform: uppercase; }
+    .score-bar-track { height: 34px; border: 2px solid var(--ink); position: relative; background: #f5f5f5; }
+    .score-bar-fill { position: absolute; inset: 0; transition: width .8s ease; }
+    .score-bar-fill.great { background: var(--green); }
+    .score-bar-fill.good { background: #86efac; }
+    .score-bar-fill.warn { background: var(--yellow); }
+    .score-bar-fill.bad { background: var(--red); }
+    .score-bar-val { font: 900 1rem/1 Fraunces, serif; text-align: right; }
+    .feedback-errors { margin-top: 1.1rem; border: 2px solid var(--ink); padding: .9rem; background: #fef2f2; }
+    .feedback-errors-label { font: 900 .72rem/1 "JetBrains Mono", monospace; text-transform: uppercase; letter-spacing: .1em; margin-bottom: .65rem; color: var(--red); }
+    .error-item { display: grid; grid-template-columns: 20px 1fr; gap: .5rem; margin-bottom: .5rem; font: 600 .9rem/1.55 Inter, sans-serif; }
+    .error-item::before { content: "→"; color: var(--red); font-weight: 900; }
+
+    /* ── TIMELINE ── */
+    .timeline { display: grid; grid-template-columns: repeat(4, 1fr); gap: 0; position: relative; margin: 2rem 0; }
+    .timeline::before { content: ""; position: absolute; top: 1.5rem; left: 12.5%; right: 12.5%; height: 3px; background: var(--ink); z-index: 0; }
+    .timeline-step { border: 3px solid var(--ink); background: white; padding: 1.1rem; position: relative; z-index: 1; }
+    .timeline-step + .timeline-step { border-left: none; }
+    .timeline-step b { display: block; color: var(--red); font: 900 1.6rem/1 "JetBrains Mono", monospace; margin-bottom: .5rem; }
+    .timeline-step h4 { font: 900 1.1rem/1.2 Fraunces, serif; margin: 0 0 .35rem; }
+    .timeline-step p { font-size: .88rem; color: var(--muted); margin: 0; line-height: 1.5; }
+
+    /* ── DRILL CARDS ── */
+    .drill-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1.5rem; }
+    .drill-card { border: 3px solid var(--ink); box-shadow: var(--shadow); display: flex; flex-direction: column; gap: 0; overflow: hidden; }
+    .drill-card:nth-child(1) { background: white; }
+    .drill-card:nth-child(2) { background: #fff7c2; }
+    .drill-card:nth-child(3) { background: #fef2f2; }
+    .drill-card:nth-child(4) { background: #eef2ff; }
+    .drill-card-body { padding: 1.6rem 1.6rem 1rem; flex: 1; }
+    .drill-icon { font-size: 2.8rem; line-height: 1; margin-bottom: .75rem; }
+    .drill-card h3 { font-size: 1.6rem; margin-bottom: .5rem; }
+    .drill-card p { font-size: .97rem; line-height: 1.6; color: var(--muted); margin: 0 0 1rem; }
+    .drill-stat { display: inline-flex; background: var(--ink); color: white; padding: .3rem .7rem; font: 900 .68rem/1 "JetBrains Mono", monospace; text-transform: uppercase; letter-spacing: .08em; margin-bottom: .9rem; }
+    .drill-example {
+      border: 2px solid var(--ink); background: white; padding: .85rem 1rem;
+      font: 800 .95rem/1.5 "JetBrains Mono", monospace; border-radius: 2px;
+      margin-bottom: 0;
+    }
+    .drill-example em { color: var(--red); font-style: normal; font-weight: 900; border-bottom: 2px solid var(--red); }
+    .drill-cta { display: block; background: var(--red); color: white; padding: 1.1rem 1.5rem; font: 900 .95rem/1 Inter, sans-serif; text-transform: uppercase; text-align: center; border-top: 3px solid var(--ink); box-shadow: none; transition: background .15s; }
+    .drill-cta:hover { background: #b8301a; }
+
+    /* ── IPA GRID (pronun) ── */
+    .ipa-phoneme-grid { display: grid; grid-template-columns: repeat(8, minmax(0, 1fr)); gap: 1rem; margin: 1.75rem 0; }
+    .ipa-phoneme-box {
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+      min-height: 96px; padding: .6rem .4rem;
+      border: 3px solid var(--ink); background: white; box-shadow: var(--shadow-sm);
+      font: 900 1.5rem/1 "JetBrains Mono", monospace;
+      transition: transform .16s, box-shadow .16s, background .16s;
+      cursor: pointer; text-decoration: none;
+    }
+    .ipa-phoneme-box small { display: block; font: 700 .65rem/1.3 Inter, sans-serif; color: var(--muted); text-align: center; margin-top: .4rem; text-transform: none; }
+    .ipa-phoneme-box:hover { transform: translate(3px,3px); box-shadow: 1px 1px 0 var(--ink); background: var(--yellow); }
+
+    /* ── FEATURE GRID ── */
+    .feature-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 1.25rem; }
+    .feature-card { border: 3px solid var(--ink); padding: 1.6rem; box-shadow: var(--shadow); display: flex; flex-direction: column; gap: .6rem; }
+    .feature-card:nth-child(1) { background: white; }
+    .feature-card:nth-child(2) { background: #fff7c2; grid-column: span 2; }
+    .feature-card:nth-child(3) { background: #fef2f2; }
+    .feature-card:nth-child(4) { background: #eef2ff; }
+    .feature-card:nth-child(5) { background: white; }
+    .feature-card:nth-child(6) { background: #ffffff; }
+    .feature-icon { font-size: 2.2rem; line-height: 1; }
+    .feature-card h3 { font-size: 1.45rem; margin: 0; }
+    .feature-card p { font-size: .97rem; color: var(--muted); line-height: 1.6; margin: 0; }
+
+    /* ── COMPARE TABLE ── */
+    .compare-wrap { border: 3px solid var(--ink); overflow-x: auto; box-shadow: var(--shadow-lg); }
+    table { width: 100%; border-collapse: collapse; min-width: 680px; }
+    th, td { border: 2px solid var(--ink); padding: 1rem 1.1rem; text-align: left; vertical-align: middle; }
+    thead th:first-child { background: var(--ink); color: white; font: 900 .85rem/1.3 "JetBrains Mono", monospace; text-transform: uppercase; }
+    thead th:nth-child(2) { background: #f5f5f5; font: 900 .85rem/1.3 "JetBrains Mono", monospace; text-transform: uppercase; }
+    thead th:nth-child(3) { background: var(--yellow); font: 900 .85rem/1.3 "JetBrains Mono", monospace; text-transform: uppercase; }
+    tbody tr:nth-child(odd) td:first-child { background: #fafaf5; }
+    tbody tr:nth-child(even) td:first-child { background: white; }
+    tbody td:nth-child(2) { color: var(--muted); font-size: .95rem; }
+    tbody td:nth-child(3) { background: #ffffff; font-weight: 800; }
+    tbody tr:hover td { background: #fffaeb; }
+    .yes { color: var(--green); font-weight: 900; font-size: 1.1rem; }
+    .no { color: var(--red); font-weight: 900; font-size: 1.1rem; }
+    td b { display: block; font-size: .85rem; }
+
+    /* ── DONATE ── */
+    .donate-grid { display: grid; grid-template-columns: 1.2fr .8fr; gap: clamp(2rem, 4vw, 4rem); align-items: center; }
+    .donate-card {
+      border: 4px solid white; background: #262626; box-shadow: 6px 6px 0 0 rgba(255,255,255,.35);
+      padding: 2rem; display: flex; flex-direction: column; align-items: center; text-align: center; gap: 1rem;
+    }
+    .donate-card img { width: 240px; border: 4px solid white; box-shadow: 4px 4px 0 0 rgba(255,255,255,.5); background: white; }
+    .donate-label { font: 900 .78rem/1 "JetBrains Mono", monospace; text-transform: uppercase; letter-spacing: .15em; background: white; color: var(--ink); padding: .4rem .8rem; border: 2px solid white; margin-bottom: -.5rem; }
+    .donate-card h3 { color: white; font-size: 1.5rem; margin: 0; }
+    .donate-card p { color: rgba(255,255,255,.75); font-size: .95rem; line-height: 1.65; margin: 0; }
+
+    /* ── FOOTER ── */
+    .site-footer {
+      border-top: 3px solid rgba(255,255,255,.25); margin-top: 3rem; padding-top: 1.75rem;
+      display: grid; grid-template-columns: 1.2fr 1fr auto; gap: 1rem; align-items: center;
+      font: 800 .76rem/1.5 "JetBrains Mono", monospace; color: rgba(255,255,255,.75);
+    }
+    .footer-brand { display: flex; gap: .9rem; align-items: center; }
+    .footer-brand img { width: 52px; height: 52px; border: 3px solid rgba(255,255,255,.6); object-fit: cover; }
+    .footer-brand strong { color: white; font-size: .85rem; }
+    .footer-links { display: flex; gap: .8rem; flex-wrap: wrap; }
+    .footer-links a { padding: .35rem .6rem; border: 1px solid rgba(255,255,255,.25); }
+    .footer-links a:hover { background: rgba(255,255,255,.1); color: white; }
+
+    /* ── REVEAL ANIMATION ── */
+    .reveal { opacity: 0; transform: translateY(28px); transition: opacity .65s ease, transform .65s ease; }
+    .reveal.visible { opacity: 1; transform: translateY(0); }
+    .reveal-delay-1 { transition-delay: .1s; }
+    .reveal-delay-2 { transition-delay: .2s; }
+    .reveal-delay-3 { transition-delay: .3s; }
+    .reveal-delay-4 { transition-delay: .4s; }
+
+    /* ── RESPONSIVE ── */
+    @media (max-width: 1080px) {
+      .two-col, .donate-grid { grid-template-columns: 1fr; }
+      .feature-grid { grid-template-columns: repeat(2, 1fr); }
+      .feature-card:nth-child(2) { grid-column: span 1; }
+      .timeline { grid-template-columns: repeat(2, 1fr); }
+      .timeline::before { display: none; }
+      .timeline-step + .timeline-step { border-left: 3px solid var(--ink); border-top: none; }
+      .timeline-step:nth-child(2) { border-left: none; }
+      .timeline-step:nth-child(3) { border-top: none; }
+      .ipa-phoneme-grid { grid-template-columns: repeat(4, 1fr); }
+      .site-footer { grid-template-columns: 1fr; }
+      .hero-app { grid-template-columns: 1fr; }
+      .hero-sidebar { display: none; }
+    }
+    @media (max-width: 760px) {
+      body { font-size: 16px; }
+      .nav-links { display: none; }
+      .brand span { font-size: .9rem; }
+      .hero-actions { flex-direction: column; align-items: stretch; }
+      .hero-actions .btn { text-align: center; justify-content: center; }
+      h1 { font-size: clamp(52px, 15vw, 76px); }
+      h2 { font-size: clamp(36px, 10vw, 60px); }
+      .pain-grid, .drill-grid { grid-template-columns: 1fr; }
+      .feature-grid { grid-template-columns: 1fr; }
+      .stats-strip { grid-template-columns: 1fr; }
+      .trust { grid-template-columns: repeat(3, 1fr); }
+      .ipa-phoneme-grid { grid-template-columns: repeat(2, 1fr); }
+      .ipa-compare { grid-template-columns: 1fr; }
+      .ipa-mini-cards { grid-template-columns: 1fr; }
+      .float-label { display: none; }
+      table { min-width: 600px; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- NAV -->
+  <nav class="nav">
+    <a class="brand" href="/">
+      <img src="/hin-logo.png" alt="HIN" class="nav-logo">
+      <span>HIN Luyện Nói</span>
+    </a>
+    <div class="nav-links">
+      <a href="#pain">Nỗi đau</a>
+      <a href="#exam">Thi thử</a>
+      <a href="#ipa">IPA</a>
+      <a href="#drills">Drills</a>
+      <a href="#features">Tính năng</a>
+      <a href="#donate">Ủng hộ</a>
+    </div>
+    <button class="btn btn-dark" data-auth-btn onclick="loginWithGoogle()" style="padding:.75rem 1.15rem;font-size:.85rem;">Bắt đầu miễn phí →</button>
+  </nav>
+
+  <!-- MARQUEE -->
+  <div class="marquee-wrap">
+    <div class="marquee-track" aria-hidden="true">
+      <span>477 câu Forecast</span><span>AI chấm real-time</span><span>Miễn phí 100%</span>
+      <span>Chống gian lận</span><span>Smart IPA</span><span>46 âm phát âm</span>
+      <span>Part 1 · 2 · 3</span><span>Gemini AI</span><span>Không thu phí theo tháng</span>
+      <!-- duplicate for seamless loop -->
+      <span>477 câu Forecast</span><span>AI chấm real-time</span><span>Miễn phí 100%</span>
+      <span>Chống gian lận</span><span>Smart IPA</span><span>46 âm phát âm</span>
+      <span>Part 1 · 2 · 3</span><span>Gemini AI</span><span>Không thu phí theo tháng</span>
+    </div>
+  </div>
+
+  <main>
+
+    <!-- ══ 1. HERO ══ -->
+    <section class="section section-paper">
+      <div class="container two-col" style="min-height:calc(100vh - 120px); padding-top:2rem; padding-bottom:2rem;">
+        <!-- Left: Copy -->
+        <div>
+          <span class="stamp stamp-yellow">HIN — Harry IELTS Navigator</span>
+          <h1>Luyện nói<br><em>IELTS Speaking</em></h1>
+          <p class="lead">Thi thử chống gian lận. 477 câu Forecast mới nhất. AI chấm phát âm chi tiết từng âm. Hoàn toàn miễn phí — mãi mãi.</p>
+          <div class="hero-actions">
+            <div>
+              <button class="btn btn-red btn-lg" data-auth-btn onclick="loginWithGoogle()">▶ Bắt đầu luyện miễn phí</button>
+              <small class="btn-hint" data-auth-hint>Đăng nhập Google, vào học ngay — không cần cài app</small>
+            </div>
+            <a class="btn btn-lg" href="#features">Xem tính năng ↓</a>
+          </div>
+          <div class="trust">
+            <div class="trust-item"><b>477</b>câu Forecast</div>
+            <div class="trust-item"><b>20K+</b>từ IPA</div>
+            <div class="trust-item"><b>AI</b>chấm real-time</div>
+          </div>
+        </div>
+        <!-- Right: App preview -->
+        <div class="hero-visual">
+          <div class="hero-screen">
+            <div class="hero-screen-bar">
+              <span class="hero-dot"></span><span class="hero-dot"></span><span class="hero-dot"></span>
+              <span class="hero-screen-url">luyennoi.com / luyện theo câu</span>
+            </div>
+            <div class="hero-app">
+              <div class="hero-sidebar">
+                <div class="hero-nav-item active"><span class="hero-nav-dot" style="background:var(--red)"></span>Luyện theo câu</div>
+                <div class="hero-nav-item"><span class="hero-nav-dot"></span>Thi thử</div>
+                <div class="hero-nav-item"><span class="hero-nav-dot"></span>Luyện đọc</div>
+                <div class="hero-nav-item"><span class="hero-nav-dot"></span>Khoá phát âm</div>
+                <div class="hero-nav-item"><span class="hero-nav-dot"></span>Micro drills</div>
+              </div>
+              <div class="hero-main">
+                <div class="hero-question-box">
+                  <div class="hero-question-label" id="hero-part">Part 1 — Câu 3/9</div>
+                  <div class="hero-question-text" id="hero-q">Do you enjoy reading books?</div>
+                </div>
+                <div class="hero-score-row">
+                  <div class="hero-score-circle" id="hero-score">6.5</div>
+                  <div class="hero-feedback">
+                    <div class="hero-bar"></div>
+                    <div class="hero-bar"></div>
+                    <div class="hero-bar"></div>
+                  </div>
+                </div>
+                <div class="hero-fb-text" id="hero-fb">Fluency tốt, cần cải thiện /θ/ trong "three".</div>
+                <button class="hero-rec-btn" type="button" id="hero-rec">⏺ Đang ghi âm...</button>
+              </div>
+            </div>
+          </div>
+          <!-- floating labels -->
+          <div class="float-label fl-1">Band 7.0 🎯</div>
+          <div class="float-label fl-2">Miễn phí 💯</div>
+          <div class="float-label fl-3">477 Forecast 📋</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ══ 2. PAIN POINT ══ -->
+    <section class="section section-white" id="pain">
+      <div class="container">
+        <div class="section-head center reveal">
+          <span class="stamp stamp-yellow">Nỗi đau</span>
+          <h2>Bạn luyện nói nhiều<br>nhưng điểm không tăng?</h2>
+          <p class="muted" style="max-width:640px; margin-top:.75rem;">Không phải do bạn lười. Mà do bạn chưa có đúng vòng luyện — không ai sửa lỗi chi tiết, không có đề chuẩn, không thi thử được nghiêm túc.</p>
+        </div>
+        <div class="pain-grid">
+          <article class="pain-card reveal reveal-delay-1">
+            <div class="pain-num">1</div>
+            <div class="pain-icon">😵</div>
+            <h3>Nói nhiều, điểm vẫn thế</h3>
+            <p>Luyện hàng trăm câu nhưng không biết lỗi ở đâu. Không ai chấm chi tiết — Fluency? Pronunciation? Lỗi nào đang kéo band xuống?</p>
+          </article>
+          <article class="pain-card reveal reveal-delay-2">
+            <div class="pain-num">2</div>
+            <div class="pain-icon">🎭</div>
+            <h3>Thi thử online = gian lận</h3>
+            <p>Thi xong Alt+Tab tra Google, copy paste câu mẫu. Điểm cao nhưng là điểm ảo — không phản ánh năng lực thật khi vào phòng thi thật.</p>
+          </article>
+          <article class="pain-card reveal reveal-delay-3">
+            <div class="pain-num">3</div>
+            <div class="pain-icon">📅</div>
+            <h3>Đề cũ, không cập nhật</h3>
+            <p>Đề Forecast trên mạng lẫn lộn, thiếu Part 3, không biết đề nào mới nhất. Ôn trật đề = lãng phí thời gian cả tuần trước khi thi.</p>
+          </article>
+          <article class="pain-card reveal reveal-delay-4">
+            <div class="pain-num">4</div>
+            <div class="pain-icon">💸</div>
+            <h3>Thu phí theo tháng</h3>
+            <p>Web chấm AI: 200K–500K/tháng. Cộng 12 tháng = 2.4M–6M/năm chỉ để chấm bài. Học sinh, sinh viên không có ngân sách đó.</p>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <!-- ══ 3. THI THỬ CHỐNG GIAN LẬN ══ -->
+    <section class="section section-paper" id="exam">
+      <div class="container two-col">
+        <div>
+          <span class="stamp stamp-red">Thi thử</span>
+          <h2>Thi như phòng thi thật.<br><em>Không gian lận được.</em></h2>
+          <p class="lead">Fullscreen bắt buộc. Rời trang = bị ghi nhận. Copy/paste = bị chặn. Dữ liệu hành vi gửi lên server real-time. Điểm giả = không tồn tại.</p>
+          <div class="check-list">
+            <div class="check-item"><div class="check-item-icon">🔒</div><p><b>Fullscreen bắt buộc</b>Phải vào chế độ toàn màn hình mới bắt đầu thi. Thoát = cảnh báo ngay.</p></div>
+            <div class="check-item"><div class="check-item-icon">👁️</div><p><b>Theo dõi rời trang</b>Alt+Tab, đổi tab, mở window khác = bị ghi nhận vi phạm tức thì.</p></div>
+            <div class="check-item"><div class="check-item-icon">🚫</div><p><b>Chặn copy/paste</b>Không thể copy câu hỏi ra ngoài để tra Google hay hỏi AI.</p></div>
+            <div class="check-item"><div class="check-item-icon">📡</div><p><b>Ghi nhận real-time</b>Mọi sự kiện vi phạm gửi lên Supabase ngay lập tức — lưu lại lâu dài.</p></div>
+            <div class="check-item"><div class="check-item-icon">❌</div><p><b>Tự động huỷ bài</b>Vi phạm quá nhiều = bài thi bị invalidate, điểm không được tính.</p></div>
+          </div>
+        </div>
+        <div>
+          <div class="exam-demo">
+            <div class="exam-header">
+              <div>
+                <div style="font:.7rem/1 JetBrains Mono, monospace; text-transform:uppercase; letter-spacing:.08em; color:var(--muted); margin-bottom:.3rem;">Thi thử IELTS Speaking</div>
+                Tùy chọn đề — Chống gian lận
+              </div>
+              <span class="timer" id="exam-timer">2:00</span>
+            </div>
+            <div class="exam-body">
+              <div class="exam-part-badge">Part 1</div>
+              <div class="exam-question" id="exam-q">Do you enjoy reading books?</div>
+              <div class="exam-status" id="exam-status">🔒 Fullscreen · <span id="violation-count">0</span> vi phạm · Đang ghi âm...</div>
+              <div class="exam-actions">
+                <button class="btn btn-red" id="record-demo" type="button" style="flex:1;">⏺ Ghi âm</button>
+                <button class="btn" type="button" style="font-size:.8rem; padding:.75rem;" onclick="simulateViolation()">⚠ Thử rời trang</button>
+              </div>
+            </div>
+          </div>
+          <div class="stats-strip">
+            <div class="mini-stat"><b>477</b>câu Forecast</div>
+            <div class="mini-stat"><b>1+2+3</b>đủ Part</div>
+            <div class="mini-stat"><b>Live</b>cập nhật</div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ══ 4. HỆ IPA RIÊNG BIỆT ══ -->
+    <section class="section section-white" id="ipa">
+      <div class="container two-col">
+        <div>
+          <span class="stamp stamp-yellow">Hệ IPA riêng biệt</span>
+          <h2>Không phiên âm bừa.<br><em>Chỉ phiên âm chỗ cần sửa.</em></h2>
+          <p class="lead">Smart Transcriber của HIN chỉ hiển thị IPA cho những grapheme không theo trực giác. Âm quen thuộc được ẩn đi — bạn tập trung vào đúng chỗ cần sửa, không bị ngợp.</p>
+          <div class="hero-actions" style="margin-top:1.4rem;">
+            <a class="btn btn-red" href="/luyendoc/transcriber">Thử Smart Transcriber →</a>
+            <a class="btn" href="/luyendoc">Xem LuyenDoc</a>
+          </div>
+        </div>
+        <div class="ipa-visual reveal">
+          <div class="ipa-visual-header">Smart IPA Annotation — Before vs After</div>
+          <div class="ipa-visual-body">
+            <div class="ipa-compare">
+              <div class="ipa-col">
+                <div class="ipa-col-label old">❌ IPA truyền thống</div>
+                <div class="ipa-row-tokens">
+                  <span class="tok"><small>tʊ</small><b>To</b></span>
+                  <span class="tok"><small>rɪˈdjuːs</small><b>reduce</b></span>
+                  <span class="tok"><small>ˈkɒɡnɪtɪv</small><b>cognitive</b></span>
+                  <span class="tok"><small>ləʊd</small><b>load,</b></span>
+                  <span class="tok"><small>wiː</small><b>we</b></span>
+                  <span class="tok"><small>ɔːtəˈmætɪkli</small><b>automatically</b></span>
+                </div>
+                <p style="font:.7rem/1.4 Inter,sans-serif; color:var(--red); margin-top:.75rem; margin-bottom:0;">😵 Quá nhiều ký hiệu — không biết tập trung vào đâu</p>
+              </div>
+              <div class="ipa-col">
+                <div class="ipa-col-label new">✓ Smart IPA</div>
+                <div class="ipa-row-tokens">
+                  <span class="tok dimmed"><small></small><b>To</b></span>
+                  <span class="tok highlight"><small>ʊ</small><b>reduce</b></span>
+                  <span class="tok highlight"><small>ɪ</small><b>cognitive</b></span>
+                  <span class="tok dimmed"><small></small><b>load,</b></span>
+                  <span class="tok dimmed"><small></small><b>we</b></span>
+                  <span class="tok highlight"><small>ɔː</small><b>auto–</b></span>
+                </div>
+                <p style="font:.7rem/1.4 Inter,sans-serif; color:var(--green); margin-top:.75rem; margin-bottom:0;">✅ Chỉ hiện âm cần sửa — tập trung ngay vào điểm khó</p>
+              </div>
+            </div>
+            <div class="ipa-mini-cards">
+              <div class="ipa-mini">
+                <div class="ipa-mini-icon">🎯</div>
+                <h4>Chọn lọc thông minh</h4>
+                <p>Chỉ phiên âm grapheme không theo trực giác.</p>
+              </div>
+              <div class="ipa-mini">
+                <div class="ipa-mini-icon">🧠</div>
+                <h4>Giảm tải nhận thức</h4>
+                <p>Không phải quét qua hàng loạt ký hiệu không cần thiết.</p>
+              </div>
+              <div class="ipa-mini">
+                <div class="ipa-mini-icon">📸</div>
+                <h4>Xuất ảnh annotation</h4>
+                <p>Tạo PNG để giáo viên dùng trình chiếu trên bảng.</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ══ 5. AI CHẤM CHI TIẾT ══ -->
+    <section class="section section-paper">
+      <div class="container">
+        <div class="section-head reveal">
+          <span class="stamp stamp-red">AI chấm</span>
+          <h2>Không chỉ cho điểm.<br><em>Chỉ ra lỗi từng âm.</em></h2>
+          <p class="lead">Gemini AI nghe audio bạn ghi âm, phân tích 4 tiêu chí IELTS và trả feedback bằng tiếng Việt, có IPA cho từng lỗi phát âm.</p>
+        </div>
+        <div class="timeline reveal">
+          <div class="timeline-step"><b>01</b><h4>Ghi âm</h4><p>Nói trong browser, MediaRecorder tự động ghi.</p></div>
+          <div class="timeline-step"><b>02</b><h4>AI phân tích</h4><p>Gemini nhận audio base64, xử lý &lt; 5 giây.</p></div>
+          <div class="timeline-step"><b>03</b><h4>Feedback chi tiết</h4><p>Fluency, Vocab, Grammar, Pronunciation — có IPA.</p></div>
+          <div class="timeline-step"><b>04</b><h4>Band dự đoán</h4><p>Band ± 0.5 và hướng sửa cụ thể cho lần sau.</p></div>
+        </div>
+        <div class="feedback-card reveal" style="max-width:780px; margin-top:1.5rem;">
+          <div class="feedback-header">
+            <span>📊 Kết quả chấm — Gemini AI</span>
+            <span class="feedback-band">Band 6.0–6.5</span>
+          </div>
+          <div class="feedback-body">
+            <div class="feedback-sentence">"I usually go to the gym three times a week."</div>
+            <div class="score-bar">
+              <div class="score-bar-label">Fluency</div>
+              <div class="score-bar-track"><div class="score-bar-fill great" style="width:78%"></div></div>
+              <div class="score-bar-val">7.0</div>
+            </div>
+            <div class="score-bar">
+              <div class="score-bar-label">Vocabulary</div>
+              <div class="score-bar-track"><div class="score-bar-fill good" style="width:72%"></div></div>
+              <div class="score-bar-val">6.5</div>
+            </div>
+            <div class="score-bar">
+              <div class="score-bar-label">Grammar</div>
+              <div class="score-bar-track"><div class="score-bar-fill warn" style="width:67%"></div></div>
+              <div class="score-bar-val">6.0</div>
+            </div>
+            <div class="score-bar">
+              <div class="score-bar-label">Pronunciation</div>
+              <div class="score-bar-track"><div class="score-bar-fill bad" style="width:61%"></div></div>
+              <div class="score-bar-val">5.5</div>
+            </div>
+            <div class="feedback-errors">
+              <div class="feedback-errors-label">⚠ Lỗi phát âm cần sửa</div>
+              <div class="error-item">"usually" → thiếu schwa: /ˈjuːʒuəli/ — bạn nói /juːʒəli/, bỏ âm thứ ba</div>
+              <div class="error-item">"three" → sai âm đầu: /θriː/ — bạn nói /triː/, thiếu âm /θ/</div>
+              <div class="error-item" style="color:var(--green); margin-bottom:0;">💡 Gợi ý: Luyện âm /θ/ ngay tại <a href="/alphafeature/pronun" style="color:var(--blue); text-decoration:underline;">Khoá Phát Âm →</a></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ══ 6. MICRO DRILLS ══ -->
+    <section class="section section-white" id="drills">
+      <div class="container">
+        <div class="section-head center reveal">
+          <span class="stamp stamp-yellow">Micro drills</span>
+          <h2>Sửa từng lỗi nhỏ.<br><em>Nhưng dai.</em></h2>
+          <p class="muted" style="margin-top:.75rem;">Không luyện nói chung chung. Debug từng lỗi cụ thể của người Việt — từng cái một, cho đến khi thành phản xạ.</p>
+        </div>
+        <div class="drill-grid">
+          <article class="drill-card reveal reveal-delay-1">
+            <div class="drill-card-body">
+              <div class="drill-icon">🥊</div>
+              <div class="drill-stat">20 câu · AI chấm</div>
+              <h3>Luyện S/es</h3>
+              <p>Phân biệt play/plays, watch/watches, study/studies. Chọn đúng dạng động từ → nói câu → AI chấm ngay.</p>
+              <div class="drill-example">She <em>(study / studies)</em> English every evening.</div>
+            </div>
+            <a class="drill-cta" href="/alphafeature/boxing">Thử ngay →</a>
+          </article>
+          <article class="drill-card reveal reveal-delay-2">
+            <div class="drill-card-body">
+              <div class="drill-icon">⏱</div>
+              <div class="drill-stat">25 câu · 4 thì quá khứ</div>
+              <h3>Luyện Past Tense</h3>
+              <p>Chia đúng thì: simple past, past continuous, past perfect, past perfect continuous. Nói câu hoàn chỉnh.</p>
+              <div class="drill-example">Yesterday I <em>(go)</em> to the cinema with friends.</div>
+            </div>
+            <a class="drill-cta" href="/alphafeature/past-tense">Thử ngay →</a>
+          </article>
+          <article class="drill-card reveal reveal-delay-3">
+            <div class="drill-card-body">
+              <div class="drill-icon">🎵</div>
+              <div class="drill-stat">20 câu · stress pattern</div>
+              <h3>Luyện Rhythm</h3>
+              <p>Nhấn đúng trọng âm câu. Từ được nhấn hiển thị IN HOA — đọc đúng pattern trước khi nói.</p>
+              <div class="drill-example">I <em>LOVE</em> to <em>READ</em> books in the <em>MORNING</em>.</div>
+            </div>
+            <a class="drill-cta" href="/alphafeature/rhythm">Thử ngay →</a>
+          </article>
+          <article class="drill-card reveal reveal-delay-4">
+            <div class="drill-card-body">
+              <div class="drill-icon">🎶</div>
+              <div class="drill-stat">20 câu · 4 patterns</div>
+              <h3>Luyện Intonation</h3>
+              <p>Lên giọng ↗ xuống giọng ↘ đúng lúc. 4 patterns: falling, rising, list, fall-rise. Hiển thị mũi tên màu.</p>
+              <div class="drill-example">Do you like coffee? <em>↗</em> — Yes, I do. <em>↘</em></div>
+            </div>
+            <a class="drill-cta" href="/alphafeature/intonation">Thử ngay →</a>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <!-- ══ 7. KHOÁ PHÁT ÂM ══ -->
+    <section class="section section-paper">
+      <div class="container">
+        <div class="section-head reveal">
+          <span class="stamp stamp-red">Khoá phát âm</span>
+          <h2>46 âm.<br><em>Từ grapheme đến minimal pairs.</em></h2>
+          <p class="lead">Học từng âm IPA, mapping grapheme → sound, minimal pairs để phân biệt, shadowing để luyện, mini test để đánh giá. Không cài app, không thu phí.</p>
+        </div>
+        <div class="ipa-phoneme-grid reveal">
+          <a class="ipa-phoneme-box" href="/alphafeature/pronun">/θ/<small>thin, three</small></a>
+          <a class="ipa-phoneme-box" href="/alphafeature/pronun">/ð/<small>this, them</small></a>
+          <a class="ipa-phoneme-box" href="/alphafeature/pronun">/ʃ/<small>she, wash</small></a>
+          <a class="ipa-phoneme-box" href="/alphafeature/pronun">/ʒ/<small>vision, genre</small></a>
+          <a class="ipa-phoneme-box" href="/alphafeature/pronun">/æ/<small>cat, black</small></a>
+          <a class="ipa-phoneme-box" href="/alphafeature/pronun">/ɪ/<small>bit, ship</small></a>
+          <a class="ipa-phoneme-box" href="/alphafeature/pronun">/ʊ/<small>book, put</small></a>
+          <a class="ipa-phoneme-box" href="/alphafeature/pronun">/ə/<small>about, comma</small></a>
+        </div>
+        <div style="text-align:center; margin-top:.5rem;">
+          <a class="btn btn-red" href="/alphafeature/pronun" style="display:inline-flex;">Xem toàn bộ 46 âm →</a>
+        </div>
+        <div class="timeline reveal" style="margin-top:2rem;">
+          <div class="timeline-step"><b>01</b><h4>Học âm IPA</h4><p>Nghe chuẩn, lặp lại, làm quen vị trí miệng.</p></div>
+          <div class="timeline-step"><b>02</b><h4>Grapheme mapping</h4><p>"th" → /θ/ hay /ð/?<br>"ough" → /ʌf/ hay /oʊ/?</p></div>
+          <div class="timeline-step"><b>03</b><h4>Minimal pairs</h4><p>thin vs tin, three vs tree, sheep vs ship.</p></div>
+          <div class="timeline-step"><b>04</b><h4>Mini test</h4><p>AI đánh giá từng âm, chỉ lỗi cụ thể.</p></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ══ 8. TÍNH NĂNG ĐẦY ĐỦ ══ -->
+    <section class="section section-white" id="features">
+      <div class="container">
+        <div class="section-head center reveal">
+          <span class="stamp stamp-yellow">Tính năng</span>
+          <h2>Mọi thứ bạn cần<br>để <em>band 7+</em></h2>
+        </div>
+        <div class="feature-grid">
+          <article class="feature-card reveal">
+            <div class="feature-icon">💬</div>
+            <h3>Luyện theo câu</h3>
+            <p>Part 1, 2, 3 với 477 câu Forecast. Thêm câu riêng. Ghi âm + AI chấm ngay sau mỗi câu.</p>
+          </article>
+          <article class="feature-card reveal reveal-delay-1" style="border: 4px solid var(--ink); box-shadow: var(--shadow-lg);">
+            <div class="feature-icon">🛡️</div>
+            <h3>Thi chống gian lận ⭐</h3>
+            <p>Fullscreen bắt buộc, theo dõi hành vi rời trang, chặn copy/paste. Dữ liệu lưu Supabase real-time. Điểm giả không tồn tại.</p>
+            <a class="btn btn-red" href="/take-test/custom-strict" style="display:inline-flex; margin-top:.5rem; font-size:.85rem; padding:.75rem 1.2rem;">Vào thi thử →</a>
+          </article>
+          <article class="feature-card reveal reveal-delay-2">
+            <div class="feature-icon">🎤</div>
+            <h3>Chấm phát âm AI</h3>
+            <p>Gemini chấm audio, chỉ lỗi IPA từng âm, grammar, vocab, fluency. Feedback tiếng Việt.</p>
+          </article>
+          <article class="feature-card reveal reveal-delay-3">
+            <div class="feature-icon">📚</div>
+            <h3>Khoá phát âm 46 âm</h3>
+            <p>Grapheme mapping, minimal pairs, shadowing, mini test — lộ trình có cấu trúc.</p>
+          </article>
+          <article class="feature-card reveal reveal-delay-4">
+            <div class="feature-icon">📖</div>
+            <h3>Luyện đọc + Smart IPA</h3>
+            <p>18 bài đọc chuẩn IELTS, Smart Transcriber phiên âm thông minh, từ vựng theo ngữ cảnh.</p>
+          </article>
+          <article class="feature-card reveal" style="--delay:.5s;">
+            <div class="feature-icon">🔧</div>
+            <h3>4 Micro drills</h3>
+            <p>S/es, past tense, rhythm, intonation — debug từng lỗi nhỏ nhưng dai của người Việt.</p>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <!-- ══ 9. SO SÁNH MIỄN PHÍ ══ -->
+    <section class="section section-paper">
+      <div class="container">
+        <div class="section-head reveal">
+          <span class="stamp stamp-red">Miễn phí 100%</span>
+          <h2>Không phải free trial.<br><em>Miễn phí thật sự.</em></h2>
+          <p class="lead">Không giới hạn lượt dùng, không cắt tính năng, không hỏi thẻ ngân hàng. Dùng mãi mãi, hoàn toàn miễn phí.</p>
+        </div>
+        <div class="compare-wrap reveal">
+          <table>
+            <thead>
+              <tr>
+                <th>Tính năng</th>
+                <th>Web thu phí khác</th>
+                <th>HIN Luyện Nói ★</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr><td><b>AI chấm Speaking</b></td><td>200–500K/tháng</td><td><span class="yes">✓</span> Miễn phí</td></tr>
+              <tr><td><b>Đề Forecast cập nhật</b></td><td>Một số có, lẫn lộn</td><td><span class="yes">✓</span> 477 câu, Live update</td></tr>
+              <tr><td><b>Thi chống gian lận</b></td><td><span class="no">✕</span> Không có</td><td><span class="yes">✓</span> Fullscreen + tracking hành vi</td></tr>
+              <tr><td><b>Khoá phát âm IPA</b></td><td><span class="no">✕</span> Thường không có</td><td><span class="yes">✓</span> 46 âm + grapheme mapping</td></tr>
+              <tr><td><b>Smart Transcriber</b></td><td><span class="no">✕</span> Không có</td><td><span class="yes">✓</span> Hệ IPA riêng từ LuyenDoc</td></tr>
+              <tr><td><b>Micro drills</b></td><td><span class="no">✕</span> Không có</td><td><span class="yes">✓</span> 4 drills chuyên sâu</td></tr>
+              <tr><td><b>Luyện đọc + IPA</b></td><td>Tách app khác, tính phí</td><td><span class="yes">✓</span> Tích hợp trong 1 hệ sinh thái</td></tr>
+              <tr><td><b>Giới hạn lượt dùng</b></td><td>Free tier: 5–10 bài/ngày</td><td><span class="yes">✓</span> Không giới hạn</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- ══ 10. CTA + DONATE ══ -->
+    <section class="section section-dark" id="donate">
+      <div class="container donate-grid">
+        <div>
+          <span class="stamp stamp-red" style="border-color:rgba(255,255,255,.3);">Bắt đầu ngay</span>
+          <h2 style="color:white;">Bắt đầu luyện nói<br>ngay hôm nay</h2>
+          <p class="lead" style="color:rgba(255,255,255,.75); margin:1rem 0 1.75rem;">Đăng nhập Google, chọn câu, ghi âm, nhận điểm và lỗi chi tiết. Miễn phí hoàn toàn, không thu phí.</p>
+          <button class="btn btn-red btn-lg" data-auth-btn onclick="loginWithGoogle()">▶ Đăng nhập miễn phí</button>
+          <small class="btn-hint" data-auth-hint style="color:rgba(255,255,255,.5);">Đăng nhập Google, vào học ngay trong 5 giây</small>
+        </div>
+        <div class="donate-card">
+          <div class="donate-label">Scan để ủng hộ</div>
+          <img src="/QRCode.png" alt="QR donate HIN">
+          <h3>Ủng hộ dự án</h3>
+          <p>QR bên trên là mã donate — không phải mã đăng nhập. Không bắt buộc. Học vẫn miễn phí mãi mãi. Donate chỉ để giúp dự án sống lâu hơn.</p>
+        </div>
+      </div>
+      <footer class="container site-footer">
+        <div class="footer-brand">
+          <img src="/hin-logo.png" alt="HIN">
+          <div>
+            <strong>HIN Luyện Nói</strong>
+            <div>Một sản phẩm thuộc hệ sinh thái Harry IELTS Navigator.</div>
+          </div>
+        </div>
+        <div class="footer-links">
+          <a href="#features">Tính năng</a>
+          <a href="#exam">Thi thử</a>
+          <a href="#donate">Ủng hộ</a>
+          <a href="https://www.facebook.com/harry.workk/" target="_blank" rel="noopener">Facebook</a>
+          <a href="mailto:summeriah98@gmail.com">Email</a>
+        </div>
+        <div>© 2026 HIN</div>
+      </footer>
+    </section>
+  </main>
+
+  <script>
+    /* ── Hero mockup rotation ── */
+    const DEMO = [
+      { part:"Part 1 — Câu 3/9", q:"Do you enjoy reading books?", score:"6.5", fb:'Fluency tốt, cần cải thiện /θ/ trong "three".' },
+      { part:"Part 2 — Cue Card", q:"Describe a place you visited recently.", score:"7.0", fb:"Rõ ý, vocabulary phong phú, linking words tốt." },
+      { part:"Part 3 — Follow-up", q:"Why do some people prefer living in cities?", score:"6.0", fb:"Cần thêm linking words, intonation đơn điệu." },
+    ];
+    let demoIdx = 0;
+    const heroQ = document.getElementById("hero-q");
+    const heroScore = document.getElementById("hero-score");
+    const heroFb = document.getElementById("hero-fb");
+    const heroPart = document.getElementById("hero-part");
+    setInterval(() => {
+      demoIdx = (demoIdx + 1) % DEMO.length;
+      const d = DEMO[demoIdx];
+      heroQ.style.opacity = "0";
+      heroScore.style.opacity = "0";
+      heroFb.style.opacity = "0";
+      setTimeout(() => {
+        heroPart.textContent = d.part;
+        heroQ.textContent = d.q;
+        heroScore.textContent = d.score;
+        heroFb.textContent = d.fb;
+        heroQ.style.opacity = "1";
+        heroScore.style.opacity = "1";
+        heroFb.style.opacity = "1";
+      }, 300);
+    }, 4500);
+    [heroQ, heroScore, heroFb].forEach(el => el && (el.style.transition = "opacity .3s ease"));
+
+    /* ── Exam timer ── */
+    let secs = 120;
+    const timerEl = document.getElementById("exam-timer");
+    const examStatus = document.getElementById("exam-status");
+    const violationCountEl = document.getElementById("violation-count");
+    let violations = 0;
+    setInterval(() => {
+      if (!timerEl || secs <= 0) return;
+      secs--;
+      timerEl.textContent = `${Math.floor(secs/60)}:${String(secs%60).padStart(2,"0")}`;
+      if (secs === 0) { timerEl.style.background = "var(--red)"; timerEl.style.color = "white"; }
+    }, 1000);
+
+    /* ── Record demo button ── */
+    const recBtn = document.getElementById("record-demo");
+    let recording = false;
+    recBtn?.addEventListener("click", () => {
+      recording = !recording;
+      recBtn.textContent = recording ? "⏹ Dừng ghi" : "⏺ Ghi âm";
+      recBtn.style.background = recording ? "#171717" : "var(--red)";
+      examStatus.textContent = recording
+        ? `🔒 Fullscreen · ${violations} vi phạm · Đang kiểm tra audio...`
+        : `🔒 Fullscreen · ${violations} vi phạm · Đang ghi âm...`;
+    });
+
+    /* ── Simulate violation (demo button) ── */
+    function simulateViolation() {
+      violations++;
+      violationCountEl.textContent = violations;
+      examStatus.textContent = `⚠️ ${violations} vi phạm — rời trang detected!`;
+      examStatus.classList.add("violation");
+      setTimeout(() => {
+        examStatus.textContent = `🔒 Fullscreen · ${violations} vi phạm · Đang ghi âm...`;
+        examStatus.classList.remove("violation");
+      }, 2500);
+    }
+
+    /* ── Scroll animations (IntersectionObserver) ── */
+    const observer = new IntersectionObserver((entries) => {
+      entries.forEach(e => {
+        if (e.isIntersecting) {
+          e.target.classList.add("visible");
+          observer.unobserve(e.target);
+        }
+      });
+    }, { threshold: 0.12 });
+    document.querySelectorAll(".reveal").forEach(el => observer.observe(el));
+
+    /* ── Check-list stagger animation ── */
+    const checkObserver = new IntersectionObserver((entries) => {
+      entries.forEach(e => {
+        if (e.isIntersecting) {
+          const items = e.target.querySelectorAll(".check-item");
+          items.forEach((item, i) => {
+            setTimeout(() => item.classList.add("visible"), i * 140);
+          });
+          checkObserver.unobserve(e.target);
+        }
+      });
+    }, { threshold: 0.15 });
+    const checkList = document.querySelector(".check-list");
+    if (checkList) checkObserver.observe(checkList.parentElement);
+
+    /* ── Score bar animation on scroll ── */
+    const barObserver = new IntersectionObserver((entries) => {
+      entries.forEach(e => {
+        if (e.isIntersecting) {
+          e.target.querySelectorAll(".score-bar-fill").forEach(bar => {
+            const w = bar.style.width;
+            bar.style.width = "0%";
+            requestAnimationFrame(() => { setTimeout(() => { bar.style.width = w; }, 100); });
+          });
+          barObserver.unobserve(e.target);
+        }
+      });
+    }, { threshold: 0.3 });
+    document.querySelectorAll(".feedback-card").forEach(el => barObserver.observe(el));
+
+    /* ── Auth-aware button swap ── */
+    function isLoggedIn() {
+      return document.cookie.includes("ln_auth=1") || localStorage.getItem("ln.authenticated");
+    }
+    function getUserName() {
+      try {
+        const u = JSON.parse(localStorage.getItem("ln.user") || "null");
+        return u?.name || u?.display_name || u?.email || "U";
+      } catch { return "U"; }
+    }
+    function swapToEnter() {
+      document.querySelectorAll("[data-auth-btn]").forEach(btn => {
+        btn.textContent = "▶ Vào luyện ngay";
+        btn.removeAttribute("onclick");
+        btn.addEventListener("click", () => { window.location.href = "/home"; });
+      });
+      document.querySelectorAll("[data-auth-hint]").forEach(h => {
+        h.textContent = "Đã đăng nhập — bấm để vào trang luyện tập";
+      });
+      // Show fixed user badge at bottom-left
+      if (!document.getElementById("lnLandingUserBadge")) {
+        const name = getUserName();
+        const badge = document.createElement("div");
+        badge.id = "lnLandingUserBadge";
+        badge.innerHTML = `<span style="width:36px;height:36px;display:grid;place-items:center;background:#d9381e;color:#fff;border:2px solid #171717;font-weight:900;font-size:15px;">${name.slice(0,1).toUpperCase()}</span><div><b>${name}</b><small>Xem dữ liệu học tập</small></div>`;
+        Object.assign(badge.style, {
+          position:"fixed",bottom:"16px",left:"16px",zIndex:"9999",
+          display:"flex",alignItems:"center",gap:"10px",
+          padding:"8px 14px 8px 8px",
+          background:"#FFD700",border:"3px solid #171717",
+          boxShadow:"4px 4px 0 #171717",cursor:"pointer",
+          fontFamily:"Inter,sans-serif",fontSize:"13px",maxWidth:"220px"
+        });
+        badge.querySelector("b").style.cssText = "display:block;font-weight:800;font-size:13px;";
+        badge.querySelector("small").style.cssText = "display:block;font-size:10px;color:#555;";
+        badge.onclick = () => {
+          if (typeof window.renderUserDetailsModal === "function") window.renderUserDetailsModal();
+          else window.location.href = "/home";
+        };
+        document.body.appendChild(badge);
+      }
+    }
+    if (isLoggedIn()) swapToEnter();
+    window.addEventListener("ln-auth-change", (e) => {
+      if (e.detail?.session) swapToEnter();
+    });
+  </script>
+</body>
+</html>
+
+

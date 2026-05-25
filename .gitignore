@@ -1,0 +1,40 @@
+.env
+.env.local
+.local-data/
+node_modules/
+
+# Dev / scraped data (not needed for deploy)
+scraped/
+LuyenNoi/
+.claude/
+
+# Plan files
+PLAN-*.md
+INTEGRATION-PLAN.md
+plan.md
+
+# Logs
+*.log
+*.txt
+!package.json
+
+# Images not needed in deploy
+QRCode.png
+hin-logo.png
+
+# Netlify (using Render instead)
+netlify/
+netlify.toml
+
+# Dev scripts (not needed at runtime)
+scripts/
+
+# Supabase SQL (not needed at runtime)
+supabase/
+
+# Package lock not needed (no deps)
+package-lock.json
+
+# Backup files
+*.before-*
+public/real/home-netlify.html

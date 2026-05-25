@@ -1,0 +1,1 @@
+import{f as r,A as p}from"./utils-f18e705e.js";async function c(a,t){const e=new FormData;e.append("transcript",a),e.append("phonemes",t);const n=await r(`${p}/api/be/pronunFeedback`,{method:"POST",body:e},3),o=await n.json();return n.ok||console.error("Failed to get pronun feedback:",o),o}export{c as p};
