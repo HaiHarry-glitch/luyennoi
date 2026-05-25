@@ -35,6 +35,60 @@
     return window.__lnSupabase;
   }
 
+  async function syncPracticeAttemptsFromSupabase(client, userId) {
+    if (!client || !userId) return 0;
+    try {
+      const { data, error } = await client
+        .from("practice_attempts")
+        .select("prompt_text,part,transcript,score_overall,score_fluency,score_vocab,score_grammar,score_pronunciation,raw_score_json,created_at,audio_path")
+        .eq("user_id", userId)
+        .order("created_at", { ascending: false })
+        .limit(500);
+      if (error) { console.warn("[sync attempts]", error.message); return 0; }
+      if (!Array.isArray(data) || !data.length) return 0;
+      // Group by question (prompt_text)
+      const byQuestion = {};
+      for (const row of data) {
+        const q = (row.prompt_text || "").trim();
+        if (!q) continue;
+        const item = {
+          ts: new Date(row.created_at).getTime(),
+          overall: row.score_overall,
+          transcript: row.transcript || "",
+          audioPath: row.audio_path || "",
+          criteria: {
+            fluency: row.score_fluency,
+            vocabulary: row.score_vocab,
+            grammar: row.score_grammar,
+            pronunciation: row.score_pronunciation,
+          },
+          part: row.part || "",
+          __fromSupabase: true,
+          ...(row.raw_score_json || {}),
+        };
+        (byQuestion[q] = byQuestion[q] || []).push(item);
+      }
+      let count = 0;
+      for (const [q, arr] of Object.entries(byQuestion)) {
+        const key = "ln.scoreHistory:" + encodeURIComponent(q);
+        // Merge with existing local entries (keep both, dedupe by ts)
+        let existing = [];
+        try { existing = JSON.parse(localStorage.getItem(key) || "[]"); } catch {}
+        const seen = new Set(arr.map(x => x.ts));
+        const merged = [...arr, ...existing.filter(x => !seen.has(x.ts))]
+          .sort((a, b) => (b.ts || 0) - (a.ts || 0));
+        localStorage.setItem(key, JSON.stringify(merged));
+        count += arr.length;
+      }
+      console.log(`[ln-sync] Restored ${count} practice attempts from Supabase`);
+      window.dispatchEvent(new CustomEvent("ln-data-synced", { detail: { count } }));
+      return count;
+    } catch (e) {
+      console.warn("[ln-sync] failed:", e);
+      return 0;
+    }
+  }
+
   async function syncSession(session) {
     if (session?.access_token) {
       setCookie("ln_auth", "1");
@@ -50,6 +104,10 @@
           authenticated: true,
         }));
         localStorage.setItem("ln.authenticated", "1");
+        // Background fetch user history from Supabase (don't block UI)
+        if (window.__lnSupabase && user.id) {
+          syncPracticeAttemptsFromSupabase(window.__lnSupabase, user.id);
+        }
       } catch {}
     } else {
       clearCookie(ACCESS_COOKIE);

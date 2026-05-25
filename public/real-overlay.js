@@ -3972,6 +3972,17 @@
     startRehydration();
   }
 
+  // When Supabase data sync finishes, re-render home analytics + question score badges
+  window.addEventListener("ln-data-synced", () => {
+    try {
+      // Force re-render of home analytics by removing the existing section first
+      const existing = document.getElementById("lnHomeAnalytics");
+      if (existing) existing.remove();
+      patchHomeAnalytics();
+      patchQuestionScoreBadges();
+    } catch (e) { console.warn("[re-render]", e); }
+  });
+
   // Auto-mở modal user khi redirect từ /settings (?openUserModal=1)
   try {
     if (new URLSearchParams(location.search).get("openUserModal") === "1") {
