@@ -2068,7 +2068,7 @@
   }
 
   function patchHomeAnalytics() {
-    if (location.pathname !== "/") return;
+    if (location.pathname !== "/" && location.pathname !== "/home" && location.pathname !== "/home/") return;
     if (document.getElementById("lnHomeAnalytics")) return;
     const host = findMainScrollContainer();
     if (!host) return;
