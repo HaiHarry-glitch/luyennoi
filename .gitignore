@@ -22,12 +22,11 @@ plan.md
 QRCode.png
 hin-logo.png
 
-# Netlify (using Render instead)
-netlify/
-netlify.toml
+# (netlify/ and netlify.toml included for auto-deploy)
 
-# Dev scripts (not needed at runtime)
-scripts/
+# Dev scripts (only keep export script for Netlify build)
+scripts/*
+!scripts/export-netlify-static.js
 
 # Supabase SQL (not needed at runtime)
 supabase/
