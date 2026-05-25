@@ -131,6 +131,44 @@ async function main() {
     await writeRoute(route, html, { skipOverlay: NO_OVERLAY.has(file) });
   }
 
+  // Question detail catch-all page: served for /question-answer/PART... URLs
+  // Inject a client-side substitution script that parses the URL and replaces the template text
+  const detailHtml = await readReal("detail-sample.html");
+  const substScript = `<script>(function(){
+    try {
+      var raw = decodeURIComponent(location.pathname.replace(/^\\/question-answer\\//i, ""));
+      var t = raw.indexOf("~");
+      var part = t > -1 ? raw.slice(0, t).trim() : "PART 1";
+      var question = t > -1 ? raw.slice(t + 1).trim() : "";
+      if (!question) return;
+      var safeQ = question.replace(/[<>"]/g, "");
+      document.title = safeQ + " | Luyện Nói";
+      function replaceTextNodes(root) {
+        var walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT, null);
+        var nodes = [];
+        var n;
+        while ((n = walker.nextNode())) nodes.push(n);
+        nodes.forEach(function(node){
+          if (node.nodeValue && node.nodeValue.indexOf("Do you wear a watch?") > -1) {
+            node.nodeValue = node.nodeValue.replace(/Do you wear a watch\\?/g, safeQ);
+          }
+        });
+        document.querySelectorAll('[data-tip*="Bạn có đeo đồng hồ"]').forEach(function(el){ el.removeAttribute("data-tip"); });
+      }
+      function run() { replaceTextNodes(document.body); }
+      if (document.body) run(); else document.addEventListener("DOMContentLoaded", run);
+      // Re-run after Svelte hydration / overlay patches
+      setTimeout(run, 500);
+      setTimeout(run, 1500);
+    } catch(e) { console.error("[detail-subst]", e); }
+  })();</script>`;
+  const detailOut = join(publicDir, "question-answer", "detail.html");
+  await mkdir(dirname(detailOut), { recursive: true });
+  let detailFinal = injectOverlay(fixMojibake(detailHtml));
+  detailFinal = detailFinal.replace("</head>", substScript + "</head>");
+  await writeFile(detailOut, detailFinal, "utf8");
+  console.log(`[export] /question-answer/detail.html -> ${detailOut}`);
+
   const home = await readReal("home.html");
   for (const feature of shellFeatures) {
     const mount = `<div id="${feature.mountId}" class="ln-feature-mount" style="padding:1.2rem 1.4rem;min-height:calc(100vh - 64px);"></div>`;
