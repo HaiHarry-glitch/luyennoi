@@ -170,6 +170,29 @@
           const slim = trimmed.slice(0, 3).map((item, idx) => idx === 0 ? item : ({ ...item, audioDataUrl: "" }));
           try { localStorage.setItem(key, JSON.stringify(slim)); } catch {}
         }
+        // Push to Supabase so data persists across devices/browsers
+        try {
+          if (localStorage.getItem("ln.authenticated") === "1") {
+            const crit = d.criteria || {};
+            fetch("/api/practice-attempts", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ attempts: [{
+                prompt_text: q,
+                part: d.part || "",
+                transcript: d.transcript || "",
+                score_overall: d.overall ?? computeOverallFloor(crit),
+                score_fluency: crit.fluency?.score ?? null,
+                score_vocab: crit.vocabulary?.score ?? null,
+                score_grammar: crit.grammar?.score ?? null,
+                score_pronunciation: crit.pronunciation?.score ?? null,
+                raw_score_json: persistable,
+                mode: "practice",
+                created_at: new Date().toISOString()
+              }]})
+            }).catch(function(){});
+          }
+        } catch(pushErr){}
       }
     } catch {}
 
