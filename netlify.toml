@@ -9,6 +9,11 @@
   status = 200
 
 [[redirects]]
+  from = "/question-answer/PART*"
+  to = "/question-answer/detail.html"
+  status = 200
+
+[[redirects]]
   from = "/*"
   to = "/index.html"
   status = 200

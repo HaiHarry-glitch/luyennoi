@@ -256,6 +256,72 @@ async function handleEvents(event) {
   return json(200, { ok: true, source: "supabase", count: rows?.length || payload.length });
 }
 
+async function handleGetAttempts(event) {
+  const qs = event.queryStringParameters || {};
+  const question = (qs.question || "").trim();
+  if (!question) return json(200, { ok: true, attempts: [] });
+  const limit = Math.min(parseInt(qs.limit || "10", 10), 20);
+  const token = getToken(event);
+  const userId = getUserId(event);
+  try {
+    const filter = `prompt_text=eq.${encodeURIComponent(question)}&order=created_at.desc&limit=${limit}`;
+    const userFilter = userId !== "local-student" ? `&user_id=eq.${userId}` : "";
+    const rows = await supabaseRest(
+      `practice_attempts?select=id,created_at,prompt_text,transcript,audio_path,score_overall,score_fluency,score_vocab,score_grammar,score_pronunciation,raw_score_json,part&${filter}${userFilter}`,
+      { method: "GET", token }
+    );
+    const attempts = (rows || []).map(r => ({
+      id: r.id, created_at: r.created_at, transcript: r.transcript, audioUrl: null,
+      overall: r.score_overall, fluency: r.score_fluency, vocabulary: r.score_vocab,
+      grammar: r.score_grammar, pronunciation: r.score_pronunciation,
+      raw: r.raw_score_json || null, part: r.part
+    }));
+    return json(200, { ok: true, attempts });
+  } catch (e) {
+    return json(200, { ok: true, attempts: [], warning: e.message });
+  }
+}
+
+async function handleSyncAttempts(event) {
+  const body = parseBody(event);
+  const attempts = Array.isArray(body.attempts) ? body.attempts : [];
+  if (!attempts.length) return json(400, { ok: false, error: "No attempts" });
+  const now = new Date().toISOString();
+  const info = getAuthInfo(event);
+  const token = getToken(event);
+  const sessionId = body.session_id || null;
+  const payload = attempts.map(a => ({
+    user_id: info.isAuthenticated ? info.userId : null,
+    client_user_id: info.userId,
+    session_id: sessionId,
+    question_id: a.question_id || null,
+    mode: a.mode || "custom_strict",
+    part: a.part || null,
+    topic: a.topic || null,
+    prompt_text: a.prompt_text || "",
+    transcript: a.transcript || null,
+    audio_path: null,
+    audio_duration_ms: a.audio_duration_ms || null,
+    recording_started_at: a.recording_started_at || null,
+    recording_ended_at: a.recording_ended_at || null,
+    score_overall: a.score_overall ?? null,
+    score_fluency: a.score_fluency ?? null,
+    score_vocab: a.score_vocab ?? null,
+    score_grammar: a.score_grammar ?? null,
+    score_pronunciation: a.score_pronunciation ?? null,
+    raw_score_json: a.raw_score_json || {},
+    gemini_model: a.gemini_model || null,
+    client_attempt_id: a.client_attempt_id || crypto.randomUUID(),
+    created_at: a.created_at || now
+  }));
+  try {
+    const rows = await supabaseRest("practice_attempts", { method: "POST", body: payload, token });
+    return json(200, { ok: true, source: "supabase", count: rows?.length || payload.length });
+  } catch (e) {
+    return json(500, { ok: false, error: e.message });
+  }
+}
+
 // trackLogin removed — profiles is populated by Supabase Auth trigger.
 
 export async function handler(event) {
@@ -277,6 +343,8 @@ export async function handler(event) {
     const sessionAction = path.match(/^\/test-sessions\/([^/]+)\/(cancel|complete|invalidate)$/);
     if (method === "POST" && sessionAction) return handleSession(event, sessionAction[2], sessionAction[1]);
     if (method === "POST" && (path === "/events" || path === "/events/batch")) return handleEvents(event);
+    if (method === "GET" && path === "/practice-attempts") return handleGetAttempts(event);
+    if (method === "POST" && path === "/practice-attempts") return handleSyncAttempts(event);
     return json(404, { ok: false, error: `Unknown API path: ${path}` });
   } catch (error) {
     return json(500, { ok: false, error: error.message });
