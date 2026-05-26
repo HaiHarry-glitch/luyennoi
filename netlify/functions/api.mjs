@@ -264,18 +264,25 @@ RULES:
 Return ONLY JSON: {"directAnswer": string, "explanation": string, "example": string}`;
 }
 
-function smartModelForKind(kind) {
-  const ROUTING = {
-    sample:    "gemini-2.5-flash",
-    note:      "gemini-2.5-flash",
-    expand:    "gemini-2.5-flash",
-    cuecards:  "gemini-2.5-flash",
-    vocab:     "gemini-2.5-flash-lite",
-    extract:   "gemini-2.5-flash-lite",
-    translate: "gemini-2.5-flash-lite",
-    pronun:    "gemini-2.5-flash-lite",
-  };
-  return ROUTING[kind] || "gemini-2.5-flash";
+// Purpose-based model routing — assigns first-try model by task type.
+// callGemini still falls back to the full GEMINI_MODELS list on errors.
+const MODELS_BY_PURPOSE = {
+  // 🎤 Chấm phát âm (audio scoring) — Part 1/2/3 + Full Test
+  pronunciation: ["gemini-3.5-flash", "gemini-3-flash-preview", "gemini-3.1-pro-preview"],
+  // 💡 Sinh ý / câu mẫu (sample, note, expand, cuecards)
+  ideas:         ["gemini-3.1-flash-lite-preview", "gemini-2.5-pro"],
+  // 📖 Tra từ điển (vocab, translate, pronun explanation, score-word)
+  dictionary:    ["gemini-2.5-flash-lite", "gemini-2.5-flash"],
+};
+function purposeForKind(kind) {
+  if (kind === "score" || kind === "pronunciation") return "pronunciation";
+  if (kind === "score-word" || kind === "word") return "dictionary";
+  if (kind === "vocab" || kind === "extract" || kind === "translate" || kind === "pronun") return "dictionary";
+  return "ideas"; // sample, note, expand, cuecards, ...
+}
+function pickModelForKind(kind) {
+  const group = MODELS_BY_PURPOSE[purposeForKind(kind)] || GEMINI_MODELS;
+  return group[0];
 }
 
 async function handleAssist(event) {
@@ -284,8 +291,7 @@ async function handleAssist(event) {
   const topic = body.topic || body.question || "";
   const note = body.note || "";
   const part = body.part || "";
-  const idealModel = smartModelForKind(kind);
-  const modelToUse = idealModel;
+  const modelToUse = pickModelForKind(kind);
   try {
     const prompt = buildAssistPrompt(kind, topic, note, part);
     const { text, model } = await callGemini({ apiKey: body.apiKey, model: modelToUse, prompt, responseJson: true });
@@ -305,7 +311,7 @@ Transcript hint: ${body.transcript || ""}
 Score conservatively.`;
     const { text, model } = await callGemini({
       apiKey: body.apiKey,
-      model: "gemini-3.5-flash",
+      model: pickModelForKind("score"),
       prompt,
       responseJson: true,
       audioBase64: body.audioBase64 || "",
