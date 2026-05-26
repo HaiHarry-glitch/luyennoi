@@ -3677,65 +3677,60 @@
   }
 
   function wireDetailQuestionNav(detail) {
-    let fixedNav = document.getElementById("lnDetailFixedNav");
-    if (!fixedNav) {
-      fixedNav = document.createElement("div");
-      fixedNav.id = "lnDetailFixedNav";
-      fixedNav.className = "ln-detail-fixed-nav";
-      fixedNav.innerHTML = `
-        <button type="button" data-ln-detail-dir="-1" aria-label="Cau truoc">← Câu trước</button>
-        <button type="button" data-ln-detail-dir="1" aria-label="Cau tiep">Câu tiếp →</button>`;
-      document.body.appendChild(fixedNav);
-    }
-    // Wire click handlers first (so they survive after buttons are moved into the topic row)
-    document.querySelectorAll("button[data-ln-detail-dir]").forEach((btn) => {
-      btn.onclick = async (event) => {
-        event.preventDefault();
-        event.stopPropagation();
-        const direction = Number(btn.getAttribute("data-ln-detail-dir") || "1");
-        const questions = await getDetailQuestionList(detail.part);
-        if (!questions.length) return;
-        const current = questions.findIndex((q) => q.trim().toLowerCase() === detail.question.trim().toLowerCase());
-        const base = current >= 0 ? current : 0;
-        const next = (base + direction + questions.length) % questions.length;
-        location.href = detailQuestionHref(detail.part, questions[next]);
-      };
-    });
-    // Try to move buttons next to the Topic footer (now, then retry after page renders)
-    const tryRelocate = () => {
-      const stillFloating = document.getElementById("lnDetailFixedNav");
-      if (!stillFloating || stillFloating.style.display === "none") return;
-      const topicEl = ensureTopicFooter(detail);
-      if (topicEl) relocateNavToTopic(stillFloating, topicEl);
-    };
-    tryRelocate();
-    setTimeout(tryRelocate, 400);
-    setTimeout(tryRelocate, 1200);
-    // Keep the original wiring loop (idempotent) — preserves existing structure
-    fixedNav.querySelectorAll("button[data-ln-detail-dir]").forEach((btn) => {
-      btn.onclick = async (event) => {
-        event.preventDefault();
-        event.stopPropagation();
-        const direction = Number(btn.getAttribute("data-ln-detail-dir") || "1");
-        const questions = await getDetailQuestionList(detail.part);
-        if (!questions.length) return;
-        const current = questions.findIndex((q) => q.trim().toLowerCase() === detail.question.trim().toLowerCase());
-        const base = current >= 0 ? current : 0;
-        const next = (base + direction + questions.length) % questions.length;
-        location.href = detailQuestionHref(detail.part, questions[next]);
-      };
-    });
+    // Remove any old injected nav
+    document.getElementById("lnDetailFixedNav")?.remove();
+    document.getElementById("lnDetailFooterNav")?.remove();
 
+    // Hide native Svelte nav buttons (they lack correct click handlers)
     const navButtons = [...document.querySelectorAll("button")].filter((btn) => {
-      if (btn.closest("#lnDetailFixedNav")) return false;
+      if (btn.dataset.lnDetailDir) return false;
       if (!btn.querySelector("svg")) return false;
       const box = btn.getBoundingClientRect();
-      return box.width >= 20 && box.height >= 20 && box.top > window.innerHeight * 0.45;
+      return box.width >= 20 && box.height >= 20 && box.top > window.innerHeight * 0.4;
     });
     navButtons.forEach((btn) => {
       btn.classList.add("ln-old-detail-nav");
       btn.setAttribute("aria-hidden", "true");
       btn.tabIndex = -1;
+    });
+
+    // Build inline footer: ← Câu trước | Topic question | Câu tiếp →
+    const footer = document.createElement("div");
+    footer.id = "lnDetailFooterNav";
+    footer.className = "ln-topic-nav-row";
+    footer.style.cssText = "margin-top:.6rem;padding:.4rem .6rem;";
+    footer.innerHTML = `
+      <button type="button" data-ln-detail-dir="-1" aria-label="Câu trước">← Câu trước</button>
+      <span style="flex:1;text-align:center;font-size:13px;color:#6b7280;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">
+        <span style="display:inline-block;border:1px solid #d1d5db;border-radius:9999px;padding:1px 8px;font-size:11px;margin-right:4px;">Topic</span>
+        ${(detail.question || "").replace(/</g,"&lt;")}
+      </span>
+      <button type="button" data-ln-detail-dir="1" aria-label="Câu tiếp">Câu tiếp →</button>`;
+
+    // Find the left column to append footer
+    const leftCol = document.querySelector(".md\\:w-3\\/5") || document.querySelector('[class*="w-3/5"]');
+    if (leftCol) {
+      leftCol.appendChild(footer);
+    } else {
+      // Fallback: insert before the right panel or at end of main content
+      const rightPanel = document.querySelector(".md\\:w-2\\/5") || document.querySelector('[class*="w-2/5"]');
+      if (rightPanel) rightPanel.parentElement.insertBefore(footer, rightPanel);
+      else document.body.appendChild(footer);
+    }
+
+    // Wire click handlers
+    footer.querySelectorAll("button[data-ln-detail-dir]").forEach((btn) => {
+      btn.onclick = async (event) => {
+        event.preventDefault();
+        event.stopPropagation();
+        const direction = Number(btn.getAttribute("data-ln-detail-dir") || "1");
+        const questions = await getDetailQuestionList(detail.part);
+        if (!questions.length) return;
+        const current = questions.findIndex((q) => q.trim().toLowerCase() === detail.question.trim().toLowerCase());
+        const base = current >= 0 ? current : 0;
+        const next = (base + direction + questions.length) % questions.length;
+        location.href = detailQuestionHref(detail.part, questions[next]);
+      };
     });
   }
 
