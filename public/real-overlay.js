@@ -151,6 +151,8 @@
 
   function renderScoreResult(d) {
     const c = d.criteria || {};
+    const attemptKey = d.__attemptKey || "";
+    if (attemptKey && document.querySelector(`[data-ln-attempt-key="${CSS.escape(attemptKey)}"]`)) return;
     // Force integer-floor bands per spec
     const flu = floorBand(c.fluency?.score);
     const voc = floorBand(c.vocabulary?.score);
@@ -290,6 +292,7 @@
       host = div.firstElementChild;
       host.removeAttribute("id");
       host.classList.add("ln-score-panel");
+      if (attemptKey) host.dataset.lnAttemptKey = attemptKey;
       leftContent.prepend(host);
       wireInlineTts(leftContent);
     } else {
@@ -298,6 +301,7 @@
       panel.style.cssText = "position:fixed;right:1rem;top:5rem;width:380px;background:white;border:1.5px solid #e5e7eb;border-radius:1rem;box-shadow:0 8px 32px rgba(0,0,0,.15);z-index:9999;max-height:80vh;overflow-y:auto;font-family:Lexend,sans-serif;";
       panel.innerHTML = html;
       host = panel;
+      if (attemptKey) host.dataset.lnAttemptKey = attemptKey;
       wireInlineTts(panel);
     }
 
@@ -3810,7 +3814,9 @@
       // Check which attempts are already displayed (from current session localStorage)
       const existingPanels = document.querySelectorAll(".ln-score-panel, #ln-score-panel");
       const existingTranscripts = new Set();
+      const seenKeys = new Set();
       existingPanels.forEach(p => {
+        if (p.dataset.lnAttemptKey) seenKeys.add(p.dataset.lnAttemptKey);
         const t = p.querySelector(".ln-user-transcript");
         if (t) existingTranscripts.add(t.textContent.trim().slice(0, 80));
       });
@@ -3818,7 +3824,11 @@
       for (const attempt of j.attempts) {
         // Skip if already rendered
         const shortTranscript = (attempt.transcript || "").trim().slice(0, 80);
+        const attemptKey = String(attempt.id || `${attempt.created_at || ""}:${shortTranscript}`);
+        if (attemptKey && seenKeys.has(attemptKey)) continue;
         if (shortTranscript && existingTranscripts.has(shortTranscript)) continue;
+        if (attemptKey) seenKeys.add(attemptKey);
+        if (shortTranscript) existingTranscripts.add(shortTranscript);
 
         // Reconstruct the data shape that renderScoreResult expects
         const raw = attempt.raw || {};
@@ -3835,6 +3845,7 @@
             pronunciation: { score: attempt.pronunciation }
           },
           question,
+          __attemptKey: attemptKey,
           __fromCache: true,
           __restoredFromCloud: true
         };
