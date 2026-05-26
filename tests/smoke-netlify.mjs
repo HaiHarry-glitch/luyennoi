@@ -2,18 +2,33 @@ import { chromium } from "playwright";
 
 const BASE = process.argv[2] || process.env.LN_BASE || "https://luyennoi.netlify.app";
 const ROUTES = [
-  "/",
-  "/home",
-  "/question-answer",
-  "/question-answer/part1",
-  "/question-answer/part2",
-  "/question-answer/part3",
-  "/question-answer/PART%202~Describe%20a%20person%20who%20is%20good%20at%20learning%20and%20speaking%20new%20languages",
-  "/take-test/home",
-  "/take-test/full-test",
-  "/alphafeature/pronun",
-  "/reading/short-stories",
-  "/settings"
+  { path: "/" },
+  { path: "/home" },
+  { path: "/question-answer" },
+  { path: "/question-answer/part1" },
+  { path: "/question-answer/part2" },
+  { path: "/question-answer/part3" },
+  { path: "/question-answer/PART%202~Describe%20a%20person%20who%20is%20good%20at%20learning%20and%20speaking%20new%20languages" },
+  { path: "/take-test/home" },
+  { path: "/take-test/full-test" },
+  { path: "/alphafeature/pronun" },
+  { path: "/reading/short-stories" },
+  { path: "/settings", final: ["/home", "/home/"] },
+  { path: "/settings/", final: ["/home", "/home/"] }
+];
+
+const API_PROBES = [
+  "/api/models",
+  "/api/auth/user",
+  "/api/practice-attempts",
+  "/api/supabase/config"
+];
+
+const ASSET_PROBES = [
+  "/real/manifest.webmanifest",
+  "/real/icons/icon-192.png",
+  "/neo-brutalism.css",
+  "/real-overlay.js"
 ];
 
 const ALLOWED_404 = [
@@ -32,6 +47,13 @@ function record(route, kind, msg) {
   findings.push({ route, kind, msg });
 }
 
+function normalizePath(path) {
+  let out = path || "/";
+  try { out = decodeURIComponent(out); } catch {}
+  out = out.replace(/\/+$/, "");
+  return out || "/";
+}
+
 (async () => {
   const browser = await chromium.launch({ headless: true });
   const context = await browser.newContext({
@@ -40,11 +62,12 @@ function record(route, kind, msg) {
   });
 
   for (const route of ROUTES) {
-    const url = BASE + route;
+    const url = BASE + route.path;
     const page = await context.newPage();
     const consoleErrors = [];
     const pageErrors = [];
     const failedRequests = [];
+    let navOk = false;
 
     page.on("console", (msg) => {
       if (msg.type() === "error") {
@@ -69,30 +92,79 @@ function record(route, kind, msg) {
     });
 
     try {
-      await page.goto(url, { waitUntil: "networkidle", timeout: 30000 });
+      await page.goto(url, { waitUntil: "domcontentloaded", timeout: 30000 });
       await page.waitForTimeout(2500);
+      navOk = true;
+      const finalPath = normalizePath(new URL(page.url()).pathname);
+      const expectedPaths = (route.final || [route.path]).map(normalizePath);
+      if (!expectedPaths.includes(finalPath)) {
+        record(route.path, "route", `expected ${expectedPaths.join(" or ")}, got ${finalPath}`);
+      }
     } catch (e) {
-      record(route, "nav", e.message);
+      record(route.path, "nav", e.message);
     }
 
-    consoleErrors.forEach((e) => record(route, "console", e));
-    pageErrors.forEach((e) => record(route, "page-error", e));
-    failedRequests.forEach((e) => record(route, "request", e));
+    consoleErrors.forEach((e) => record(route.path, "console", e));
+    pageErrors.forEach((e) => record(route.path, "page-error", e));
+    failedRequests.forEach((e) => record(route.path, "request", e));
 
-    if (/^\/question-answer\/part[123]$/i.test(route)) {
-      const toggleCount = await page.locator(":text-matches(\"^\\\\s*(Ẩn|Hiện) câu đã (trả lời|làm rồi)\")").count();
-      if (toggleCount > 1) record(route, "ui", `multiple answered toggles: ${toggleCount}`);
-      const stickyScore = await page.locator("#ln-score-panel").count();
-      if (stickyScore > 0) record(route, "ui", "score panel showing on library page");
+    if (navOk && !page.isClosed()) {
+      try {
+        if (/^\/question-answer\/part[123]$/i.test(route.path)) {
+          const toggleCount = await page.locator(":text-matches(\"^\\\\s*(Ẩn|Hiện) câu đã (trả lời|làm rồi)\")").count();
+          if (toggleCount !== 1) record(route.path, "ui", `answered toggle count: ${toggleCount}`);
+          const stickyScore = await page.locator("#ln-score-panel").count();
+          if (stickyScore > 0) record(route.path, "ui", "score panel showing on library page");
+          const cardCount = await page.locator('a[href*="/question-answer/PART"], .question-card, .qa-question-card, [class*="QuestionCard"], [data-question]').count();
+          if (cardCount < 1) record(route.path, "ui", "no question cards found");
+        }
+
+        if (route.path.includes("~")) {
+          const body = await page.locator("body").innerText().catch(() => "");
+          if (!/Describe a person who is good at learning and speaking new languages/i.test(body)) {
+            record(route.path, "ui", "detail question text not rendered");
+          }
+        }
+      } catch (e) {
+        record(route.path, "ui", e.message);
+      }
     }
 
-    await page.close();
+    if (!page.isClosed()) await page.close();
+  }
+
+  for (const path of API_PROBES) {
+    let res;
+    try {
+      res = await context.request.get(BASE + path, { timeout: 15000 });
+    } catch (e) {
+      record(path, "api", e.message);
+      continue;
+    }
+    if (res.status() >= 400) {
+      record(path, "api", `HTTP ${res.status()}`);
+      continue;
+    }
+    const data = await res.json().catch(() => null);
+    if (!data || data.ok === false) record(path, "api", "invalid JSON response");
+    if (path === "/api/models" && !Array.isArray(data?.models)) record(path, "api", "missing models array");
+  }
+
+  for (const path of ASSET_PROBES) {
+    let res;
+    try {
+      res = await context.request.get(BASE + path, { timeout: 15000 });
+    } catch (e) {
+      record(path, "asset", e.message);
+      continue;
+    }
+    if (res.status() >= 400) record(path, "asset", `HTTP ${res.status()}`);
   }
 
   await browser.close();
 
   if (!findings.length) {
-    console.log(`OK: 0 findings on ${ROUTES.length} routes (${BASE})`);
+    console.log(`OK: 0 findings on ${ROUTES.length} routes, ${API_PROBES.length} APIs, ${ASSET_PROBES.length} assets (${BASE})`);
     process.exit(0);
   }
 

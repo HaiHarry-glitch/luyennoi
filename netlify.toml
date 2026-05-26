@@ -32,6 +32,13 @@
   from = "/settings"
   to = "/home/?openUserModal=1"
   status = 302
+  force = true
+
+[[redirects]]
+  from = "/settings/"
+  to = "/home/?openUserModal=1"
+  status = 302
+  force = true
 
 [[redirects]]
   from = "/*"

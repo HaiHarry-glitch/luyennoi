@@ -12,6 +12,7 @@ const port = Number(process.env.PORT || 3000);
 const SUPABASE_URL = (process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.SUPABASE_URL || "https://gxjgkwebrxzcawqkxmbt.supabase.co").replace(/\/+$/, "");
 const SUPABASE_PUBLISHABLE_KEY = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY || process.env.SUPABASE_PUBLISHABLE_KEY || "sb_publishable_ktG6l3TaDDppl9n6flBuZg_3THO38Dp";
 const SUPABASE_ENABLED = Boolean(SUPABASE_URL && SUPABASE_PUBLISHABLE_KEY);
+const LOCAL_AUTH_GATE = process.env.LN_LOCAL_AUTH_GATE === "1";
 
 // Load per-question Vietnamese translations (pre-scraped)
 let QUESTION_VI = {};
@@ -1477,7 +1478,7 @@ const server = createServer(async (req, res) => {
   // /settings đã gộp vào modal user — redirect về trang chủ kèm flag mở modal
   if (req.method === "GET" && (pathname === "/settings" || pathname === "/settings/")) {
     const next = url.searchParams.get("next") || "";
-    const redir = next ? `/?openUserModal=1&next=${encodeURIComponent(next)}` : "/?openUserModal=1";
+    const redir = next ? `/home/?openUserModal=1&next=${encodeURIComponent(next)}` : "/home/?openUserModal=1";
     res.writeHead(302, { "Location": redir });
     return res.end();
   }
@@ -1593,7 +1594,7 @@ const server = createServer(async (req, res) => {
   const PROTECTED = /^\/(?:question-answer|take-test|alphafeature|profile|settings|luyendoc|reading)/;
   // Allow static assets through (JS/CSS/fonts) even without auth — dynamic imports need these
   const isStaticAsset = /\.(js|css|json|woff2?|png|jpg|svg|ico|webp|webmanifest)(\?|$)/i.test(pathname) || pathname.startsWith("/luyendoc/_app/");
-  if (!isAuthed && !isStaticAsset && pathname !== "/login" && pathname !== "/landing" && (pathname === "/" || PROTECTED.test(pathname))) {
+  if (LOCAL_AUTH_GATE && !isAuthed && !isStaticAsset && pathname !== "/login" && pathname !== "/landing" && (pathname === "/" || PROTECTED.test(pathname))) {
     res.writeHead(302, { "Location": "/login" });
     res.end();
     return;
