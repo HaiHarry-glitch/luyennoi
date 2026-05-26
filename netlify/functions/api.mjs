@@ -616,10 +616,24 @@ async function handleGetAttempts(event) {
       grammar: r.score_grammar, pronunciation: r.score_pronunciation,
       raw: r.raw_score_json || null, part: r.part
     }));
-    return json(200, { ok: true, attempts });
+    return json(200, { ok: true, attempts: dedupeAttempts(attempts, limit) });
   } catch (e) {
     return json(200, { ok: true, attempts: [], warning: e.message });
   }
+}
+
+function dedupeAttempts(attempts, limit = 10) {
+  const seen = new Map();
+  return (attempts || []).filter(a => {
+    const transcript = String(a?.transcript || "").trim().toLowerCase().replace(/\s+/g, " ");
+    if (!transcript) return true;
+    const key = [transcript.slice(0, 500), a?.overall ?? a?.raw?.overall ?? "", a?.part || ""].join("||");
+    const ts = Date.parse(a?.created_at || "") || 0;
+    const prev = seen.get(key);
+    if (prev !== undefined && (!ts || !prev || Math.abs(prev - ts) < 180000)) return false;
+    seen.set(key, ts);
+    return true;
+  }).slice(0, limit);
 }
 
 async function handleSyncAttempts(event) {

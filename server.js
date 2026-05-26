@@ -581,10 +581,24 @@ async function handleGetAttempts(req, res) {
       } catch {}
     }
 
-    return sendJson(res, 200, { ok: true, attempts });
+    return sendJson(res, 200, { ok: true, attempts: dedupeAttempts(attempts, limit) });
   } catch (error) {
     return sendJson(res, 500, { ok: false, error: error.message });
   }
+}
+
+function dedupeAttempts(attempts, limit = 10) {
+  const seen = new Map();
+  return (attempts || []).filter(a => {
+    const transcript = String(a?.transcript || "").trim().toLowerCase().replace(/\s+/g, " ");
+    if (!transcript) return true;
+    const key = [transcript.slice(0, 500), a?.overall ?? a?.raw?.overall ?? "", a?.part || ""].join("||");
+    const ts = Date.parse(a?.created_at || "") || 0;
+    const prev = seen.get(key);
+    if (prev !== undefined && (!ts || !prev || Math.abs(prev - ts) < 180000)) return false;
+    seen.set(key, ts);
+    return true;
+  }).slice(0, limit);
 }
 
 // ── Gemini model + key fallback config ──────────────────────────────────────
@@ -888,7 +902,7 @@ Return ONLY this JSON (criterion scores integer 1-9 or "?" if not assessable; ov
       // 1. Upload audio to Supabase Storage (7-day retention)
       const audioPath = await uploadAudioToStorage(audioBase64, mimeType, clientUserId, attemptId, userAccessToken);
       // 2. Save attempt summary to Supabase DB
-      if (SUPABASE_ENABLED) {
+      if (SUPABASE_ENABLED && req.headers["x-ln-client-sync"] !== "1") {
         try {
           await supabaseRest("practice_attempts", {
             method: "POST",

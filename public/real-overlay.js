@@ -148,11 +148,23 @@
     if (!vals.length) return "?";
     return Math.floor(vals.reduce((a,b)=>a+b,0) / vals.length);
   }
+  function normScoreText(v) { return String(v || "").trim().toLowerCase().replace(/\s+/g, " "); }
+  function scoreResultFingerprint(d) {
+    const transcript = normScoreText(d?.transcript);
+    if (!transcript) return "";
+    const question = normScoreText(d?.question || getQuestionFromPage());
+    const overall = d?.overall ?? computeOverallFloor(d?.criteria || {});
+    return [question.slice(0, 220), transcript.slice(0, 420), overall].join("||");
+  }
 
   function renderScoreResult(d) {
     const c = d.criteria || {};
     const attemptKey = d.__attemptKey || "";
-    if (attemptKey && document.querySelector(`[data-ln-attempt-key="${CSS.escape(attemptKey)}"]`)) return;
+    const scoreFingerprint = scoreResultFingerprint(d);
+    if ((attemptKey || scoreFingerprint) && Array.from(document.querySelectorAll(".ln-score-panel, #ln-score-panel")).some(p =>
+      (attemptKey && p.dataset.lnAttemptKey === attemptKey) ||
+      (scoreFingerprint && p.dataset.lnScoreFingerprint === scoreFingerprint)
+    )) return;
     // Force integer-floor bands per spec
     const flu = floorBand(c.fluency?.score);
     const voc = floorBand(c.vocabulary?.score);
@@ -293,6 +305,7 @@
       host.removeAttribute("id");
       host.classList.add("ln-score-panel");
       if (attemptKey) host.dataset.lnAttemptKey = attemptKey;
+      if (scoreFingerprint) host.dataset.lnScoreFingerprint = scoreFingerprint;
       leftContent.prepend(host);
       wireInlineTts(leftContent);
     } else {
@@ -302,6 +315,7 @@
       panel.innerHTML = html;
       host = panel;
       if (attemptKey) host.dataset.lnAttemptKey = attemptKey;
+      if (scoreFingerprint) host.dataset.lnScoreFingerprint = scoreFingerprint;
       wireInlineTts(panel);
     }
 
@@ -2315,7 +2329,7 @@
     try {
       const r = await fetch("/api/gemini/score-speaking", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", "X-LN-Client-Sync": "1" },
         body: JSON.stringify({
           apiKey: getKey(),
           question, part: partLabel,
