@@ -88,10 +88,11 @@ async function supabaseRest(path, { method = "GET", body, token = "" } = {}) {
   return data;
 }
 
-async function callGemini({ apiKey, model, prompt, responseJson = false, audioBase64 = "", mimeType = "audio/webm" }) {
+async function callGemini({ apiKey, model, prompt, responseJson = false, audioBase64 = "", mimeType = "audio/webm", fallbackModels }) {
   const keyPool = [...new Set([apiKey, ...(process.env.GEMINI_API_KEYS || "").split(",")].map((k) => k.trim()).filter(Boolean))];
   if (!keyPool.length) throw new Error("Missing Gemini API key");
-  const modelList = model ? [model, ...GEMINI_MODELS.filter((m) => m !== model)] : GEMINI_MODELS;
+  const base = fallbackModels || GEMINI_MODELS;
+  const modelList = model ? [model, ...base.filter((m) => m !== model)] : base;
   let lastError = "";
   for (const m of modelList) {
     for (const key of keyPool) {
@@ -291,10 +292,12 @@ async function handleAssist(event) {
   const topic = body.topic || body.question || "";
   const note = body.note || "";
   const part = body.part || "";
+  const purpose = purposeForKind(kind);
   const modelToUse = pickModelForKind(kind);
+  const fallbackModels = MODELS_BY_PURPOSE[purpose] || GEMINI_MODELS;
   try {
     const prompt = buildAssistPrompt(kind, topic, note, part);
-    const { text, model } = await callGemini({ apiKey: body.apiKey, model: modelToUse, prompt, responseJson: true });
+    const { text, model } = await callGemini({ apiKey: body.apiKey, model: modelToUse, prompt, responseJson: true, fallbackModels });
     return json(200, { provider: "gemini", model, kind, ...JSON.parse(text) });
   } catch (error) {
     return json(200, { ...fallbackAssist(kind, topic), warning: error.message });
@@ -315,7 +318,8 @@ Score conservatively.`;
       prompt,
       responseJson: true,
       audioBase64: body.audioBase64 || "",
-      mimeType: body.mimeType || "audio/webm"
+      mimeType: body.mimeType || "audio/webm",
+      fallbackModels: MODELS_BY_PURPOSE.pronunciation
     });
     return json(200, { provider: "gemini", model, ...JSON.parse(text) });
   } catch (error) {

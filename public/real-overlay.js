@@ -2637,14 +2637,30 @@
     if (!/\/question-answer\/PART%202~/i.test(location.pathname)) return;
     const contentArea = getRightPanelContent();
     if (!contentArea) return;
-    // Don't overwrite if there's already AI result
     if (contentArea.querySelector("#ln-assist-panel, #ln-cuecards")) return;
 
     const question = getQuestionFromPage();
-    // Show placeholder while loading
+    const cacheK = "ln.cuecards:" + encodeURIComponent(question);
+
+    // Check localStorage cache first — use cached data without calling AI
+    let cues = null;
+    try { cues = JSON.parse(localStorage.getItem(cacheK) || "null"); } catch {}
+
     const ph = document.createElement("div");
     ph.id = "ln-cuecards";
     ph.style.cssText = "padding:.8rem;font-family:Lexend,sans-serif;";
+
+    if (cues && cues.length) {
+      // Render from cache — no AI call needed
+      ph.innerHTML = `
+        <div style="font-size:.9rem;color:#171717;font-weight:600;margin-bottom:.6rem;">You should say:</div>
+        ${cues.map(c => `<div style="display:flex;align-items:flex-start;gap:.4rem;font-size:.82rem;color:#374151;line-height:1.6;margin-bottom:.35rem;"><span style="color:#d9381e;">↳</span><span>${c}</span></div>`).join("")}
+        <div style="border-bottom:1px solid #e5e7eb;margin:.8rem 0 .4rem;"></div>`;
+      contentArea.prepend(ph);
+      return;
+    }
+
+    // No cache — call AI and save result
     ph.innerHTML = `<div style="font-size:.85rem;color:#d9381e;font-weight:600;margin-bottom:.5rem;">You should say:</div><div style="color:#9ca3af;font-size:.8rem;">⏳ Đang tải gợi ý...</div>`;
     contentArea.prepend(ph);
 
@@ -2654,8 +2670,10 @@
         body: JSON.stringify({ apiKey: getKey(), model: getModel(), kind: "cuecards", topic: question })
       });
       const data = await r.json();
-      const cues = data.cues || [];
+      cues = data.cues || [];
       if (!cues.length) { ph.remove(); return; }
+      // Cache for future loads
+      try { localStorage.setItem(cacheK, JSON.stringify(cues)); } catch {}
       ph.innerHTML = `
         <div style="font-size:.9rem;color:#171717;font-weight:600;margin-bottom:.6rem;">You should say:</div>
         ${cues.map(c => `<div style="display:flex;align-items:flex-start;gap:.4rem;font-size:.82rem;color:#374151;line-height:1.6;margin-bottom:.35rem;"><span style="color:#d9381e;">↳</span><span>${c}</span></div>`).join("")}
