@@ -221,7 +221,9 @@ Topic/question: ${topic}
 Learner's note: ${note || "No note provided"}
 
 Based on the learner's note, write a short, personalised IELTS Speaking answer template (35-55 words) that directly addresses their focus area. Include their specific concern naturally.
-Return ONLY JSON: {"directAnswer": string, "explanation": string, "example": string}`;
+Reply in Vietnamese labels. Return ONLY JSON:
+{"title": string, "html": string}
+html may use <p>, <ul>, <li>, <b> only. Vietnamese labels, English answer.`;
   }
   if (kind === "pronun") {
     return `You are an IELTS Speaking pronunciation coach.

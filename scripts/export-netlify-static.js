@@ -120,7 +120,8 @@ const routeMap = {
   "/alphafeature/payment": "payment.html",
   "/alphafeature/set-voice": "set-voice.html",
   "/alphafeature/setup-mic": "setup-mic.html",
-  "/alphafeature/join-us": "join-us.html"
+  "/alphafeature/join-us": "join-us.html",
+  "/profile/teaching/landing-page": "teaching-landing.html"
 };
 
 const shellFeatures = [
@@ -184,7 +185,7 @@ async function main() {
   const home = await readReal("home.html");
   for (const feature of shellFeatures) {
     const mount = `<div id="${feature.mountId}" class="ln-feature-mount" style="padding:1.2rem 1.4rem;min-height:calc(100vh - 64px);"></div>`;
-    const scripts = [`<script type="module" src="${feature.script}"></script>`];
+    const scripts = [`<script src="${feature.script}" defer></script>`];
     if (feature.extraScripts) feature.extraScripts.forEach(s => scripts.push(`<script src="${s}" defer></script>`));
     const html = withTitle(wrapInLuyennoiShell(home, mount, scripts), feature.title);
     await writeRoute(feature.route, html);
