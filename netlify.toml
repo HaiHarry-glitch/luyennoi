@@ -24,6 +24,18 @@
   status = 200
 
 [[redirects]]
+  from = "/reading"
+  to = "/reading/index.html"
+  status = 200
+  force = true
+
+[[redirects]]
+  from = "/reading/"
+  to = "/reading/index.html"
+  status = 200
+  force = true
+
+[[redirects]]
   from = "/reading/*"
   to = "/reading/index.html"
   status = 200
