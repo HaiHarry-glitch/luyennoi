@@ -2640,39 +2640,59 @@
     if (contentArea.querySelector("#ln-assist-panel, #ln-cuecards")) return;
 
     const question = getQuestionFromPage();
-    const cacheK = "ln.cuecards:" + encodeURIComponent(question);
+    if (!question) return;
 
-    // Check localStorage cache first — use cached data without calling AI
-    let cues = null;
-    try { cues = JSON.parse(localStorage.getItem(cacheK) || "null"); } catch {}
-
-    const ph = document.createElement("div");
-    ph.id = "ln-cuecards";
-    ph.style.cssText = "padding:.8rem;font-family:Lexend,sans-serif;";
-
-    if (cues && cues.length) {
-      // Render from cache — no AI call needed
+    function renderCues(cues) {
+      const ph = document.createElement("div");
+      ph.id = "ln-cuecards";
+      ph.style.cssText = "padding:.8rem;font-family:Lexend,sans-serif;";
       ph.innerHTML = `
         <div style="font-size:.9rem;color:#171717;font-weight:600;margin-bottom:.6rem;">You should say:</div>
         ${cues.map(c => `<div style="display:flex;align-items:flex-start;gap:.4rem;font-size:.82rem;color:#374151;line-height:1.6;margin-bottom:.35rem;"><span style="color:#d9381e;">↳</span><span>${c}</span></div>`).join("")}
         <div style="border-bottom:1px solid #e5e7eb;margin:.8rem 0 .4rem;"></div>`;
       contentArea.prepend(ph);
-      return;
     }
 
-    // No cache — call AI and save result
+    // 1) Try static cuecards.json (pre-scraped, 88 sets)
+    try {
+      if (!window.__lnCueCardsData) {
+        const r = await realFetch("/data/cuecards.json");
+        if (r.ok) window.__lnCueCardsData = await r.json();
+      }
+      if (window.__lnCueCardsData) {
+        // Find by exact title match or partial match
+        const qLower = question.toLowerCase().trim();
+        let cues = null;
+        for (const [title, cards] of Object.entries(window.__lnCueCardsData)) {
+          if (title.toLowerCase().trim() === qLower || qLower.includes(title.toLowerCase().trim()) || title.toLowerCase().trim().includes(qLower)) {
+            cues = cards; break;
+          }
+        }
+        if (cues && cues.length) { renderCues(cues); return; }
+      }
+    } catch {}
+
+    // 2) Try localStorage cache
+    const cacheK = "ln.cuecards:" + encodeURIComponent(question);
+    try {
+      const cached = JSON.parse(localStorage.getItem(cacheK) || "null");
+      if (cached && cached.length) { renderCues(cached); return; }
+    } catch {}
+
+    // 3) Last resort — call AI and cache result
+    const ph = document.createElement("div");
+    ph.id = "ln-cuecards";
+    ph.style.cssText = "padding:.8rem;font-family:Lexend,sans-serif;";
     ph.innerHTML = `<div style="font-size:.85rem;color:#d9381e;font-weight:600;margin-bottom:.5rem;">You should say:</div><div style="color:#9ca3af;font-size:.8rem;">⏳ Đang tải gợi ý...</div>`;
     contentArea.prepend(ph);
-
     try {
       const r = await realFetch("/api/gemini/assist", {
         method: "POST", headers: {"Content-Type":"application/json"},
         body: JSON.stringify({ apiKey: getKey(), model: getModel(), kind: "cuecards", topic: question })
       });
       const data = await r.json();
-      cues = data.cues || [];
+      const cues = data.cues || [];
       if (!cues.length) { ph.remove(); return; }
-      // Cache for future loads
       try { localStorage.setItem(cacheK, JSON.stringify(cues)); } catch {}
       ph.innerHTML = `
         <div style="font-size:.9rem;color:#171717;font-weight:600;margin-bottom:.6rem;">You should say:</div>

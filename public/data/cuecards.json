@@ -1,0 +1,537 @@
+{
+  "Describe a person who is good at learning and speaking new languages": [
+    "How you got to know him/her",
+    "How he/she learns a new language",
+    "What languages he/she can speak",
+    "And explain how you feel about him/her"
+  ],
+  "Describe a person who works in a successful company": [
+    "Who he/she is",
+    "What he/she does in the company",
+    "What business the company does",
+    "And explain why you think it is a successful company"
+  ],
+  "Describe a person you know who would like to choose a career in the medical field (e.g. a doctor, a nurse)": [
+    "When you knew him/her",
+    "When he/she started to think about that",
+    "What he/she would like to do",
+    "And explain why he/she would like to choose this career"
+  ],
+  "Describe a person you know who has a successful business": [
+    "Who this person is",
+    "How you got to know him/her",
+    "Why and how he/she started the business",
+    "What business he/she does",
+    "And explain why you think the business is successful"
+  ],
+  "Describe a person who loves to grow plants (e.g. vegetables, flowers) at home or in the garden": [
+    "Who this person is",
+    "What plants he/she grows",
+    "How he/she grows the plants",
+    "And explain why he/she loves growing plants"
+  ],
+  "Describe a person who likes to look after the natural world": [
+    "Who this person is",
+    "What he or she does",
+    "How he or she does it",
+    "How often he or she does it",
+    "And explain how you feel about this person"
+  ],
+  "Describe a person who often helps others": [
+    "Who this person is",
+    "How often he/she helps others",
+    "How/why he/she helps others",
+    "And how you feel about this person"
+  ],
+  "Describe a child who loves drawing/painting": [
+    "Who he/she is",
+    "How/when you knew him/her",
+    "How often he/she draws/paints",
+    "And explain why you think he/she loves drawing/painting"
+  ],
+  "Describe a person who makes plans a lot and is good at planning": [
+    "Who he/she is",
+    "How you knew him/her",
+    "What plans he/she makes",
+    "And explain how you feel about this person"
+  ],
+  "Describe a person who solved a problem in a smart way": [
+    "Who this person is",
+    "What the problem was",
+    "How he/she solved it",
+    "And explain why you think he/she did it in a smart way"
+  ],
+  "Describe a creative person (e.g. an artist, a musician, an architect, etc.) you admire": [
+    "Who he/she is",
+    "How you knew him/her",
+    "What his/her greatest achievement is",
+    "And explain why you think he/she is creative"
+  ],
+  "Describe a person you know who enjoys working for a family business (e.g. a shop, etc.)": [
+    "Who he/she is",
+    "What the business is",
+    "What his/her job is",
+    "And explain why he/she enjoys working there"
+  ],
+  "Describe a good friend who is important to you": [
+    "Who he/she is",
+    "How/where you got to know him/her",
+    "How long you have known each other",
+    "And explain why he/she is important to you"
+  ],
+  "Describe a friend of yours who is good at music/singing": [
+    "Who he/she is",
+    "When/where you listen to his/her music/singing",
+    "What kind of music/songs he/she is good at",
+    "And explain how you feel when listening to his music/singing"
+  ],
+  "Describe a successful sportsperson you admire": [
+    "Who he/she is",
+    "What you know about him/her",
+    "What he/she is like in real life",
+    "What achievement he/she has made",
+    "And explain why you admire him/her"
+  ],
+  "Describe a friend from your childhood": [
+    "Who he/she is",
+    "Where and how you met each other",
+    "What you often did together",
+    "And explain what made you like him/her"
+  ],
+  "Describe a famous person you would like to meet": [
+    "Who he/she is",
+    "How you knew him/her",
+    "How/where you would like to meet him/her",
+    "And explain why you would like to meet him/ her"
+  ],
+  "Describe a story/book with animals in it": [
+    "What animals are in it",
+    "What the story/book is about",
+    "Why you read the story/book",
+    "And explain what you think of this story/book"
+  ],
+  "Describe a long-term goal/ambition you would like to achieve": [
+    "How long you have had this goal/ambition",
+    "What it is",
+    "How you will achieve it",
+    "And explain why you set it"
+  ],
+  "Describe a time when you had a problem using an electronic device": [
+    "When it happened",
+    "Where it happened",
+    "What the problem was",
+    "And explain how you solved the problem at last"
+  ],
+  "Describe a TV show/online program you have watched recently": [
+    "What it is",
+    "What it is about",
+    "How often you watch it",
+    "And explain how you feel about it"
+  ],
+  "Describe an advertisement with a famous person in it": [
+    "Who the person is",
+    "Where you can see it",
+    "What the advertisement is about",
+    "And explain how you feel about the advertisement"
+  ],
+  "Describe a food that people eat on special occasions/events": [
+    "What it is",
+    "What the special event/occasion is",
+    "How it is cooked/made",
+    "And explain why people eat it on that special occasion/event"
+  ],
+  "Describe an interesting video": [
+    "When and where you watched it",
+    "What it is about",
+    "Why you watched it",
+    "And explain how you feel about it"
+  ],
+  "Describe a tall building you like or dislike": [
+    "What it is used for",
+    "Where it is",
+    "What it looks like",
+    "And explain why you like/dislike it"
+  ],
+  "Describe a short-term job you want to have in a foreign country": [
+    "Where it is",
+    "How you know of it",
+    "What the job is",
+    "And explain why you want to do it"
+  ],
+  "Describe an event you attended in which you didn’t enjoy the music played": [
+    "What it was",
+    "Who you went with",
+    "Why you decided to go there",
+    "And explain why you didn’t enjoy it"
+  ],
+  "Describe one of your friends who learned something without a teacher": [
+    "Who he/she is",
+    "What he/she learned",
+    "Why he/she learned this",
+    "And explain whether it would be easier to learn from a teacher"
+  ],
+  "Describe a piece of technology (not a phone) that you would like to own": [
+    "What it is",
+    "How much it costs",
+    "How you knew it",
+    "And explain why you would like to own it"
+  ],
+  "Describe a perfect job you would like to have in the future": [
+    "What it is",
+    "How you knew it",
+    "What you need to learn to get this job",
+    "And explain why you think it is a perfect job for you"
+  ],
+  "Describe a program or app on your computer or phone": [
+    "What it is",
+    "How often you use it",
+    "When/how you use it",
+    "When/how you found it",
+    "And explain how you feel about it"
+  ],
+  "Describe a TV or online program you like to watch": [
+    "What it is",
+    "What it is about",
+    "Who you watch it with",
+    "And explain why you like to watch it"
+  ],
+  "Describe an item on which you spent more than expected": [
+    "What it is",
+    "How much you spent on it",
+    "Why you bought it",
+    "And explain why you think you spent more than expected"
+  ],
+  "Describe something important that has been kept in your family for a long time": [
+    "What it is",
+    "When your family had it",
+    "How your family got it",
+    "And explain why it is important to your family"
+  ],
+  "Describe a wild animal that you want to learn more about": [
+    "What it is",
+    "When/where you saw it",
+    "Why you want to learn more about it",
+    "And explain what you want to learn more about it"
+  ],
+  "Describe an important old thing that your family has kept for a long time": [
+    "What it is",
+    "How/when your family first got this thing",
+    "How long your family has kept it",
+    "And explain why this thing is important to your family"
+  ],
+  "Describe a great dinner you and your friends or family members enjoyed": [
+    "What you had",
+    "Who you had the dinner with",
+    "What you talked about during the dinner",
+    "And explain why you enjoyed it"
+  ],
+  "Describe a book you read that you found useful": [
+    "What it is",
+    "When you read it",
+    "Why you think it is useful",
+    "And explain how you felt about it"
+  ],
+  "Describe an interesting traditional story": [
+    "What the story is about",
+    "When/how you knew it",
+    "Who told you the story",
+    "And explain how you felt when you first heard it"
+  ],
+  "Describe a good habit your friend has and you want to develop": [
+    "Who your friend is",
+    "What habit he/she has",
+    "When you noticed this habit",
+    "And explain why you want to develop this habit"
+  ],
+  "Describe a natural talent (sports, music, etc.) you want to improve": [
+    "What it is",
+    "When you discovered it",
+    "How you want to improve it",
+    "And how you feel about it"
+  ],
+  "Describe a plan that you had to change recently": [
+    "When this happened",
+    "What made you change the plan",
+    "What the new plan was",
+    "And how you felt about the change"
+  ],
+  "Describe an important decision that you made": [
+    "What the decision was",
+    "How you made your decision",
+    "What the results of the decision were",
+    "And explain why it was important"
+  ],
+  "Describe an interesting building": [
+    "Where it is",
+    "What it looks like",
+    "What function it has",
+    "And explain why you think it is interesting"
+  ],
+  "Describe an area/subject of science (biology, robotics, etc.) that you are interested in and would like to learn more about": [
+    "Which area/subject it is",
+    "When and where you came to know this area/subject",
+    "How you get information about this area/subject",
+    "And explain why you are interested in this area/subject"
+  ],
+  "Describe a special cake you received from others": [
+    "When it happened",
+    "Where it happened",
+    "Who you got the cake from",
+    "And explain why it’s a special cake"
+  ],
+  "Describe a new law you would like to introduce in your country": [
+    "What law it is",
+    "What changes this law brings",
+    "Whether this new law will be popular",
+    "How you came up with the new law",
+    "And explain how you feel about this new law"
+  ],
+  "Describe something that you can’t live without (not a computer/phone)": [
+    "What it is",
+    "What you do with it",
+    "How it helps you in your life",
+    "And explain why you can’t live without it"
+  ],
+  "Describe a toy you liked in your childhood": [
+    "What kind of toy it is",
+    "When you received it",
+    "How you played it",
+    "And how you felt about it"
+  ],
+  "Describe a challenging technological problem you faced": [
+    "What the problem was",
+    "When and where you faced it",
+    "How challenging it was",
+    "And explain how you solved it"
+  ],
+  "Describe a live sports event you watched and liked": [
+    "What it was",
+    "When and where you watched it",
+    "Who you watched it with",
+    "And explain why you liked it"
+  ],
+  "Describe a time when you worked in a group": [
+    "What you did",
+    "Who you worked with",
+    "What problems you faced",
+    "And explain why you worked in the group"
+  ],
+  "Describe a time when you got up early": [
+    "When it was",
+    "What you did",
+    "Why you got up early",
+    "And how you felt about it"
+  ],
+  "Describe a time when you gave advice to others": [
+    "When it was",
+    "To whom you gave the advice",
+    "What the advice was",
+    "And explain why you gave the advice"
+  ],
+  "Describe a time when you encouraged someone to do something that he/she didn't want to do": [
+    "Who he or she is",
+    "What you encouraged him/her to do",
+    "How he/she reacted",
+    "And explain why you encouraged him/her to do it"
+  ],
+  "Describe a time you needed to use your imagination": [
+    "When it was",
+    "Why you needed to use imagination",
+    "How difficult or easy it was",
+    "And explain how you felt about it"
+  ],
+  "Describe a time when you felt proud of a family member": [
+    "When it happened",
+    "Who the person is",
+    "What the person did",
+    "And explain why you felt proud of him/her"
+  ],
+  "Describe a bicycle/motorcycle/car trip you would like to go": [
+    "Who you would like to go with",
+    "Where you would like to go",
+    "When you would like to go",
+    "And explain why you would like to go by bicycle/motorcycle/car"
+  ],
+  "Describe an occasion when many people were smiling": [
+    "When it happened",
+    "Who you were with",
+    "What happened",
+    "And explain why most people were smiling"
+  ],
+  "Describe an occasion when you were not allowed to use your mobile phone": [
+    "When it was",
+    "Where it was",
+    "Why you were not allowed to use your mobile phone",
+    "And how you felt about it"
+  ],
+  "Describe a long journey you had and would like to take again": [
+    "When/where you went",
+    "Who you had the journey with",
+    "Why you had the journey",
+    "And explain why you would like to have it again"
+  ],
+  "Describe a time when you broke something": [
+    "What it was",
+    "When/where that happened",
+    "How you broke it",
+    "And explain what you did after that"
+  ],
+  "Describe an important decision made with the help of other people": [
+    "What the decision was",
+    "Why you made the decision",
+    "Who helped you make the decision",
+    "And how you felt about it"
+  ],
+  "Describe a time when the electricity suddenly went off": [
+    "When/where it happened",
+    "How long it lasted",
+    "What you did during that time",
+    "And explain how you felt about it"
+  ],
+  "Describe an exciting activity you have tried for the first time": [
+    "What it is",
+    "When/where you did it",
+    "Why you thought it was exciting",
+    "And explain how you felt about it"
+  ],
+  "Describe a time when you waited for something special that would happen": [
+    "What you waited for",
+    "Where you waited",
+    "Why it was special",
+    "And explain how you felt while you were waiting"
+  ],
+  "Describe a time you saw something interesting on social media": [
+    "When it was",
+    "Where you saw it",
+    "What you saw",
+    "And explain why you think it was interesting"
+  ],
+  "Describe the time when you first talked in a foreign language": [
+    "Where you were",
+    "Who you were with",
+    "What you talked about",
+    "And explain how you felt about it"
+  ],
+  "Describe an occasion when you lost your way": [
+    "Where you were",
+    "What happened",
+    "How you felt",
+    "And explain how you found your way"
+  ],
+  "Describe a time when someone apologized to you": [
+    "When it was",
+    "Who this person is",
+    "Why he or she apologized to you",
+    "And how you felt about it"
+  ],
+  "Describe a time when you were stuck in a traffic jam for a very long time": [
+    "When it happened",
+    "Where you were stuck",
+    "What you did while waiting",
+    "And explain how you felt in the traffic jam"
+  ],
+  "Describe a special day out that cost you little money/didn’t cost you much": [
+    "When the day was",
+    "Where you went",
+    "How much you spent",
+    "And explain how you feel about the day"
+  ],
+  "Describe a time when you organized a happy event successfully": [
+    "What the event was",
+    "How you prepared for it",
+    "Who helped you to organize it",
+    "And explain why you think it was a successful event"
+  ],
+  "Describe a thing you did to learn another language": [
+    "What language you learned",
+    "What you did",
+    "How it helped you learn the language",
+    "And how you felt about it"
+  ],
+  "Describe a time when you received good service in a shop/store": [
+    "Where the shop is",
+    "When you went to the shop",
+    "What service you received from the staff",
+    "And explain how you felt about the service"
+  ],
+  "Describe a movie you watched and enjoyed recently": [
+    "When and where you watched it",
+    "Who you watched it with",
+    "What it was about",
+    "And explain why you watched this movie"
+  ],
+  "Describe a place you have travelled to that you would like to recommend to others": [
+    "What it is",
+    "Where it is",
+    "What you saw and did there",
+    "And explain why you would like to recommend it to others"
+  ],
+  "Describe a place you would like to visit in your free time": [
+    "Where it is",
+    "What you will do there",
+    "How long you will stay there",
+    "And explain why you would like to visit it"
+  ],
+  "Describe your favorite city that you have visited": [
+    "Where it is",
+    "How you knew it",
+    "When you visited it",
+    "And explain why it is your favourite city"
+  ],
+  "Describe a boring place": [
+    "Where it is",
+    "Who you went there with",
+    "What you did there",
+    "And explain why you think it is a boring place"
+  ],
+  "Describe a home that you like to visit but do not want to live in": [
+    "Where it is",
+    "What it is like",
+    "Why you like to visit it",
+    "And explain why you would not like to live there"
+  ],
+  "Describe a city you enjoyed visiting": [
+    "Where it is",
+    "When you visited it",
+    "How long you stayed there",
+    "What you did there",
+    "And explain why you enjoyed visiting it"
+  ],
+  "Describe a natural place (e.g. parks, mountains, etc.)": [
+    "Where this place is",
+    "How you knew this place",
+    "What it is like",
+    "And explain why you like to visit it"
+  ],
+  "Describe a city that you have been to and would like to visit again": [
+    "When you visited it",
+    "What you did there",
+    "What it was like",
+    "And explain why you would like to visit it again"
+  ],
+  "Describe a shop/store you enjoy visiting": [
+    "What the shop’s name is",
+    "Where it is",
+    "How often you visit it",
+    "And explain why you like to visit it"
+  ],
+  "Describe a city that you think is very interesting/famous": [
+    "Where it is",
+    "What it is famous for",
+    "How you knew this city",
+    "And explain why you think it is very interesting/famous"
+  ],
+  "Describe an important river/lake in your country": [
+    "Where it is located",
+    "How big/long it is",
+    "What it looks like",
+    "And explain why it is important"
+  ],
+  "Describe a quiet place you like to go": [
+    "Where it is",
+    "How you knew it",
+    "How often you go there",
+    "What you do there",
+    "And explain how you feel about the place"
+  ]
+}
