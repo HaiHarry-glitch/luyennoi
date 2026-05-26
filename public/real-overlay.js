@@ -38,7 +38,13 @@
   const US_KEY = "ln.userState";
   function getUS() { try { return JSON.parse(localStorage.getItem(US_KEY)) || {}; } catch { return {}; } }
   function saveUS(s) { try { localStorage.setItem(US_KEY, JSON.stringify(s)); } catch {} }
-  function getKey() { return localStorage.getItem("luyennoi.geminiKey") || ""; }
+  function getKey() {
+    try {
+      const keys = JSON.parse(localStorage.getItem("luyennoi.geminiKeys") || "[]");
+      if (Array.isArray(keys) && keys[0]) return keys[0];
+    } catch {}
+    return localStorage.getItem("luyennoi.geminiKey") || "";
+  }
   function getModel() { return localStorage.getItem("luyennoi.geminiModel") || ""; }
 
   const realFetch = window.fetch.bind(window);
@@ -1947,14 +1953,19 @@
       t.className = "ln-toast " + (type || "");
       setTimeout(() => { t.className = "ln-toast"; }, 3000);
     }
-    modal.querySelector("#lnSaveKeys").addEventListener("click", () => {
+    modal.querySelector("#lnSaveKeys").addEventListener("click", async () => {
       const inputs = [...keyList.querySelectorAll("input")];
       const keys = inputs.map(i => i.value.trim()).filter(Boolean);
       if (!keys.length) { showKeyToast("Chưa nhập key nào!", "error"); return; }
       try {
         localStorage.setItem("luyennoi.geminiKeys", JSON.stringify(keys));
         localStorage.setItem("luyennoi.geminiKey", keys[0]); // primary key for overlay
-        showKeyToast("✓ Đã lưu " + keys.length + " key", "success");
+        if (window.LNAuth?.saveProfileSettings) {
+          await window.LNAuth.saveProfileSettings({ geminiKeys: keys });
+          showKeyToast("✓ Đã lưu " + keys.length + " key vào profile", "success");
+        } else {
+          showKeyToast("✓ Đã lưu " + keys.length + " key trên trình duyệt", "success");
+        }
       } catch (e) { showKeyToast("✗ Lỗi lưu: " + e.message, "error"); }
     });
     modal.querySelector("#lnTestKey").addEventListener("click", async () => {
@@ -1985,13 +1996,14 @@
       t.className = "ln-toast " + (type || "");
       setTimeout(() => { t.className = "ln-toast"; }, 2500);
     }
-    modal.querySelector("#lnSaveModel").addEventListener("click", () => {
+    modal.querySelector("#lnSaveModel").addEventListener("click", async () => {
       const custom = modal.querySelector("#lnCustomModel")?.value?.trim();
       const selected = modal.querySelector("#lnModelSelect")?.value?.trim();
       const value = custom || selected || "";
       // Lưu vào CẢ 2 key để tương thích cả overlay mới & code gốc
       try { localStorage.setItem("luyennoi.geminiModel", value); } catch {}
       try { localStorage.setItem("ln.preferredModel", value); } catch {}
+      try { if (window.LNAuth?.saveProfileSettings) await window.LNAuth.saveProfileSettings({ geminiModel: value }); } catch {}
       const cur = modal.querySelector("#lnCurrentModel");
       if (cur) cur.textContent = value || "🎯 Smart routing (Tự động theo tác vụ)";
       showModelToast(value ? ("✓ Đã chọn model: " + value) : "✓ Đã bật chế độ tự động luân phiên", "success");

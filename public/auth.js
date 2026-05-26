@@ -89,6 +89,44 @@
     }
   }
 
+  async function syncProfileSettingsFromSupabase(client, userId) {
+    if (!client || !userId) return null;
+    try {
+      const { data, error } = await client
+        .from("profiles")
+        .select("gemini_api_keys,gemini_model")
+        .eq("id", userId)
+        .maybeSingle();
+      if (error) { console.warn("[profile settings]", error.message); return null; }
+      const keys = Array.isArray(data?.gemini_api_keys) ? data.gemini_api_keys.filter(Boolean) : [];
+      if (keys.length) {
+        localStorage.setItem("luyennoi.geminiKeys", JSON.stringify(keys));
+        localStorage.setItem("luyennoi.geminiKey", keys[0]);
+      }
+      if (data?.gemini_model) localStorage.setItem("luyennoi.geminiModel", data.gemini_model);
+      window.dispatchEvent(new CustomEvent("ln-profile-settings-synced", { detail: { keys: keys.length, model: data?.gemini_model || "" } }));
+      return data;
+    } catch (e) {
+      console.warn("[profile settings] failed:", e);
+      return null;
+    }
+  }
+
+  async function saveProfileSettings(settings = {}) {
+    const client = await getClient();
+    if (!client) throw new Error("Supabase client chưa sẵn sàng");
+    const { data: sessionData } = await client.auth.getSession();
+    const user = sessionData?.session?.user;
+    if (!user?.id) throw new Error("Bạn cần đăng nhập để lưu profile");
+    const patch = { updated_at: new Date().toISOString() };
+    if (Array.isArray(settings.geminiKeys)) patch.gemini_api_keys = settings.geminiKeys.filter(Boolean);
+    if (typeof settings.geminiModel === "string") patch.gemini_model = settings.geminiModel;
+    const { error } = await client.from("profiles").update(patch).eq("id", user.id);
+    if (error) throw error;
+    await syncProfileSettingsFromSupabase(client, user.id);
+    return true;
+  }
+
   async function syncSession(session) {
     if (session?.access_token) {
       setCookie("ln_auth", "1");
@@ -107,6 +145,7 @@
         // Background fetch user history from Supabase (don't block UI)
         if (window.__lnSupabase && user.id) {
           syncPracticeAttemptsFromSupabase(window.__lnSupabase, user.id);
+          syncProfileSettingsFromSupabase(window.__lnSupabase, user.id);
         }
       } catch {}
     } else {
@@ -157,7 +196,7 @@
     window.location.href = "/logout";
   }
 
-  window.LNAuth = { getClient, initAuth, loginWithGoogle, logout };
+  window.LNAuth = { getClient, initAuth, loginWithGoogle, logout, syncProfileSettingsFromSupabase, saveProfileSettings };
   window.loginWithGoogle = loginWithGoogle;
   window.logout = logout;
 
