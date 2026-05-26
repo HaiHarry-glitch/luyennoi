@@ -758,6 +758,25 @@ input[type="radio"] {
   border-color: var(--red) !important;
 }
 
+.ln-answer-toggle .switch {
+  background: white !important;
+  border: 2px solid var(--ink) !important;
+  box-shadow: 2px 2px 0 var(--ink) !important;
+}
+
+.ln-answer-toggle .switch::before {
+  background: var(--ink) !important;
+}
+
+.ln-answer-toggle .switch.ln-switch-on {
+  background: var(--yellow) !important;
+}
+
+.ln-answer-toggle .switch.ln-switch-on::before {
+  margin-left: 13px !important;
+  background: var(--red) !important;
+}
+
 .ln-pronun-page,
 .ln-pronun-page *,
 .pronun-tabs,

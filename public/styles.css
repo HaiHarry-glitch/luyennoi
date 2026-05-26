@@ -1047,9 +1047,7 @@ body.qa-page .route-view {
 }
 
 .filtered-out,
-body.hide-answered .qa-question-card:nth-of-type(1),
-body.hide-answered .large-prompt-card:nth-of-type(2),
-body.hide-answered .user-question-card:nth-of-type(1) {
+body.hide-answered .ln-answered-question {
   display: none !important;
 }
 
@@ -1726,9 +1724,19 @@ body.record-page .ai-output {
   background: #e8ddff;
 }
 
+.switch.ln-switch-on {
+  border-color: var(--red);
+  background: #fff0c2;
+}
+
 .switch.on::before {
   margin-left: 13px;
   background: var(--purple);
+}
+
+.switch.ln-switch-on::before {
+  margin-left: 13px;
+  background: var(--red);
 }
 
 .setup-controls select {

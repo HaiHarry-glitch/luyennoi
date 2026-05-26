@@ -3428,10 +3428,14 @@
         el.remove();
       }
     });
-    [...document.querySelectorAll("label, span, div")].forEach((el) => {
-      const txt = (el.textContent || "").trim();
-      if (/^Ẩn câu đã trả lời/.test(txt)) el.classList.add("ln-answer-toggle");
+    document.querySelectorAll(".ln-answer-toggle").forEach(el => {
+      if (!el.matches('label, button, [data-action="toggle-answered"]')) el.classList.remove("ln-answer-toggle");
     });
+    [...document.querySelectorAll('label, button, [data-action="toggle-answered"]')].forEach((el) => {
+      const txt = (el.textContent || "").trim();
+      if (/^(Ẩn|Hiện) câu đã (trả lời|làm rồi)/.test(txt)) el.classList.add("ln-answer-toggle");
+    });
+    wireAnsweredQuestionToggle();
     document.querySelectorAll('input[placeholder*="Tìm câu" i], input[placeholder*="Tim cau" i]').forEach((input) => {
       input.classList.add("ln-search-input");
       input.closest("div")?.classList.add("ln-search-box");
@@ -3536,26 +3540,118 @@
   function wireQuestionSearchFilter() {
     if (!/^\/question-answer(\/|$)/.test(location.pathname)) return;
     const inputs = [...document.querySelectorAll('input')].filter(input => /tim cau|tìm câu|cau hoi|câu hỏi/i.test(input.placeholder || ""));
-    const cards = () => [...document.querySelectorAll('a[href*="/question-answer/PART"], a[href*="/question-answer/part"], .question-card, .qa-question-card, [class*="QuestionCard"], [data-question], [role="button"]')]
-      .filter(el => (el.textContent || "").trim().length > 8 && !el.closest(".ln-side-nav"));
-    const apply = (input) => {
-      const q = (input.value || "").trim().toLowerCase();
-      cards().forEach(card => {
-        const hit = !q || (card.textContent || "").toLowerCase().includes(q);
-        card.style.display = hit ? "" : "none";
-      });
-      document.querySelectorAll('[id$="Section"], section').forEach(section => {
-        if (!section.querySelector('.question-card, .qa-question-card, [class*="QuestionCard"], a[href*="/question-answer/"]')) return;
-        const visible = [...section.children].some(child => getComputedStyle(child).display !== "none");
-        section.style.display = visible || !q ? "" : "none";
-      });
-    };
     inputs.forEach(input => {
       if (input.__lnSearchWired) return;
       input.__lnSearchWired = true;
-      input.addEventListener("input", () => apply(input));
-      apply(input);
+      input.addEventListener("input", applyQuestionLibraryFilters);
+      applyQuestionLibraryFilters();
     });
+  }
+
+  function questionLibraryCards() {
+    return [...document.querySelectorAll('a[href*="/question-answer/PART"], a[href*="/question-answer/part"], .question-card, .qa-question-card, [class*="QuestionCard"], [data-question]')]
+      .filter(el => (el.textContent || "").trim().length > 8 && !el.closest(".ln-side-nav"));
+  }
+
+  function questionKeyText(text) {
+    return normScoreText(text).replace(/^part\s*\d+\s*[:~-]?\s*/i, "").replace(/[?!.\s]+$/g, "").trim();
+  }
+
+  function questionTextFromCard(card) {
+    const href = card.getAttribute("href") || card.querySelector?.('a[href*="/question-answer/"]')?.getAttribute("href") || "";
+    try {
+      const raw = decodeURIComponent(href.split("/question-answer/")[1] || "");
+      const tilde = raw.indexOf("~");
+      if (tilde > -1) return raw.slice(tilde + 1).replace(/#.*$/, "").trim();
+    } catch {}
+    const clone = card.cloneNode(true);
+    clone.querySelectorAll?.(".ln-score-badge").forEach(el => el.remove());
+    return (clone.textContent || "").trim();
+  }
+
+  function answeredQuestionKeys() {
+    const keys = new Set();
+    const add = (q) => { const key = questionKeyText(q); if (key) keys.add(key); };
+    try {
+      for (let i = 0; i < localStorage.length; i++) {
+        const k = localStorage.key(i);
+        if (!k || !k.startsWith("ln.scoreHistory:")) continue;
+        let arr = [];
+        try { arr = JSON.parse(localStorage.getItem(k) || "[]"); } catch { arr = []; }
+        if (!arr.length) continue;
+        add(decodeURIComponent(k.slice("ln.scoreHistory:".length)));
+      }
+    } catch {}
+    try { (LN.state.history || []).forEach(item => add(item?.question)); } catch {}
+    return keys;
+  }
+
+  function markAnsweredQuestionCards() {
+    const answered = answeredQuestionKeys();
+    let count = 0;
+    questionLibraryCards().forEach(card => {
+      const done = answered.has(questionKeyText(questionTextFromCard(card)));
+      card.classList.toggle("ln-answered-question", done);
+      if (done) count++;
+    });
+    return count;
+  }
+
+  function syncAnsweredToggleLabel(doneCount) {
+    const hiding = document.body.classList.contains("hide-answered");
+    document.querySelectorAll('[data-action="toggle-answered"], label.ln-answer-toggle, button.ln-answer-toggle').forEach(el => {
+      el.classList.add("ln-answer-toggle");
+      el.setAttribute("role", "button");
+      el.setAttribute("title", hiding ? "Hiện lại các câu đã làm rồi" : "Ẩn các câu đã làm rồi");
+      const label = `${hiding ? "Hiện" : "Ẩn"} câu đã làm rồi${doneCount ? ` (${doneCount})` : ""}`;
+      const textNode = [...el.childNodes].find(n => n.nodeType === Node.TEXT_NODE && n.textContent.trim());
+      if (textNode) textNode.textContent = label + " ";
+      else el.prepend(document.createTextNode(label + " "));
+      const input = el.querySelector?.('input[type="checkbox"]');
+      if (input) input.checked = hiding;
+      el.querySelectorAll?.(".switch, [class*='switch'], [class*='toggle']").forEach(sw => sw.classList.toggle("ln-switch-on", hiding));
+    });
+  }
+
+  function applyQuestionLibraryFilters() {
+    if (!/^\/question-answer\/(part1|part2|part3)/i.test(location.pathname)) return;
+    const doneCount = markAnsweredQuestionCards();
+    const input = [...document.querySelectorAll('input')].find(el => /tim cau|tìm câu|cau hoi|câu hỏi/i.test(el.placeholder || ""));
+    const q = (input?.value || "").trim().toLowerCase();
+    const hiding = document.body.classList.contains("hide-answered");
+    questionLibraryCards().forEach(card => {
+      const text = questionTextFromCard(card).toLowerCase();
+      const hit = !q || text.includes(q);
+      const hiddenDone = hiding && card.classList.contains("ln-answered-question");
+      card.style.display = hit && !hiddenDone ? "" : "none";
+    });
+    document.querySelectorAll('[id$="Section"], section').forEach(section => {
+      if (!section.querySelector('.question-card, .qa-question-card, [class*="QuestionCard"], a[href*="/question-answer/"]')) return;
+      const visible = [...section.querySelectorAll('.question-card, .qa-question-card, [class*="QuestionCard"], a[href*="/question-answer/"]')]
+        .some(child => getComputedStyle(child).display !== "none");
+      section.style.display = visible || (!q && !hiding) ? "" : "none";
+    });
+    syncAnsweredToggleLabel(doneCount);
+  }
+
+  function wireAnsweredQuestionToggle() {
+    if (!/^\/question-answer\/(part1|part2|part3)/i.test(location.pathname)) return;
+    try {
+      if (localStorage.getItem("ln.hideAnsweredQuestions") === "1") document.body.classList.add("hide-answered");
+    } catch {}
+    document.querySelectorAll('[data-action="toggle-answered"], label.ln-answer-toggle, button.ln-answer-toggle').forEach(el => {
+      if (el.__lnAnsweredToggleWired) return;
+      el.__lnAnsweredToggleWired = true;
+      el.addEventListener("click", (e) => {
+        e.preventDefault();
+        e.stopImmediatePropagation();
+        const hiding = !document.body.classList.contains("hide-answered");
+        document.body.classList.toggle("hide-answered", hiding);
+        try { localStorage.setItem("ln.hideAnsweredQuestions", hiding ? "1" : "0"); } catch {}
+        applyQuestionLibraryFilters();
+      }, true);
+    });
+    applyQuestionLibraryFilters();
   }
 
   // ── Show practice score badges on question cards in list page ──
