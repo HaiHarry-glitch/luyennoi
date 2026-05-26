@@ -30,6 +30,8 @@ const MOJIBAKE = [
   ["Luyá»‡n S/es","Luyện S/es"],["Luyá»‡n thÃ¬ quÃ¡ khá»©","Luyện thì quá khứ"],
   ["Luyá»‡n intonation","Luyện intonation"],["Luyá»‡n rhythm","Luyện rhythm"],
   ["Tá»± thÃªm cÃ¢u","Tự thêm câu"],
+  ["Tá»± luyá»‡n IELTS Speaking hiá»‡u quáº£ vá»›i forecast má»›i nháº¥t, thi thá»­ vÃ\u00a0 cáº£i thiá»‡n táº¡i Luyennoi.","Tự luyện IELTS Speaking hiệu quả với forecast mới nhất, thi thử và cải thiện tại Luyennoi."],
+  ["Tá»± luyá»‡n IELTS Speaking hiá»‡u quáº£ hiá»‡u quáº£ vá»›i forecast má»›i nháº¥t, thi thá»­ vÃ\u00a0 cáº£i thiá»‡n táº¡i Luyennoi.","Tự luyện IELTS Speaking hiệu quả với forecast mới nhất, thi thử và cải thiện tại Luyennoi."],
   ["font-medium","font-medium"],
 ];
 
