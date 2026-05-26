@@ -68,7 +68,10 @@ function getUserId(event) {
 
 function getToken(event) {
   const auth = event.headers.authorization || event.headers.Authorization || "";
-  return auth.match(/^Bearer\s+(.+)$/i)?.[1] || "";
+  const bearer = auth.match(/^Bearer\s+(.+)$/i)?.[1];
+  const cookie = event.headers.cookie || event.headers.Cookie || "";
+  const cookieToken = cookie.match(/(?:^|;\s*)ln_sb_access=([^;]+)/)?.[1];
+  return bearer || (cookieToken ? decodeURIComponent(cookieToken) : "");
 }
 
 async function supabaseRest(path, { method = "GET", body, token = "" } = {}) {

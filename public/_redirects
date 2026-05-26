@@ -1,4 +1,8 @@
 /api/* /.netlify/functions/api/:splat 200
 /question-answer/PART* /question-answer/detail.html 200
+/question-answer/part* /question-answer/detail.html 200
 /question-answer/part%* /question-answer/detail.html 200
+/alphafeature/pronun/lesson* /alphafeature/pronun/index.html 200
+/reading/* /reading/index.html 200
+/settings /home/?openUserModal=1 302
 /* /index.html 200
