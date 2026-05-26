@@ -1,4 +1,4 @@
-﻿import { mkdir, readFile, writeFile } from "node:fs/promises";
+﻿import { copyFile, mkdir, readFile, writeFile } from "node:fs/promises";
 import { dirname, join } from "node:path";
 
 const root = process.cwd();
@@ -189,6 +189,17 @@ async function main() {
     if (feature.extraScripts) feature.extraScripts.forEach(s => scripts.push(`<script src="${s}" defer></script>`));
     const html = withTitle(wrapInLuyennoiShell(home, mount, scripts), feature.title);
     await writeRoute(feature.route, html);
+  }
+
+  // Copy LuyenDoc IPA dictionary chunk so overlay can load it on Netlify
+  const dictSrc = join(root, "LuyenNoi", "public", "_app", "immutable", "chunks", "BhbigMMl.js");
+  const dictDst = join(publicDir, "luyendoc", "_app", "immutable", "chunks", "BhbigMMl.js");
+  try {
+    await mkdir(dirname(dictDst), { recursive: true });
+    await copyFile(dictSrc, dictDst);
+    console.log(`[export] LuyenDoc IPA dict -> ${dictDst}`);
+  } catch (e) {
+    console.warn(`[export] LuyenDoc IPA dict not found — IPA will fall back to Gemini API: ${e.message}`);
   }
 }
 

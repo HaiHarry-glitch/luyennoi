@@ -29,6 +29,11 @@
   status = 200
 
 [[redirects]]
+  from = "/settings"
+  to = "/home/?openUserModal=1"
+  status = 302
+
+[[redirects]]
   from = "/*"
   to = "/index.html"
   status = 200
