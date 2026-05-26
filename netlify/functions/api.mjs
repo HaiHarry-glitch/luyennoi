@@ -251,23 +251,31 @@ Return ONLY JSON: {"sections": [{"label": string, "text": string}]} with 4 secti
 Question: ${topic}
 Return ONLY JSON: {"directAnswer": string, "explanation": string, "example": string}.`;
   }
-  return `You are an IELTS Speaking coach. Provide a Part 1 answer (30-45 words).
+  return `You are an IELTS Speaking coach. Provide a SHORT Part 1 answer.
 Question: ${topic}
-Return ONLY JSON: {"directAnswer": string, "explanation": string, "example": string}.`;
+
+RULES:
+- directAnswer: 1-2 sentences, MAX 20 words. Answer the question directly.
+- explanation: 1 sentence, MAX 15 words. Give ONE reason.
+- example: 1 sentence, MAX 15 words. Give ONE short personal example.
+- TOTAL across all 3 fields MUST be 30-45 words. DO NOT exceed 45 words total.
+- Sound natural and conversational, not academic.
+
+Return ONLY JSON: {"directAnswer": string, "explanation": string, "example": string}`;
 }
 
 function smartModelForKind(kind) {
   const ROUTING = {
-    sample:    "gemini-3.1-flash-lite-preview",
-    note:      "gemini-3.1-flash-lite-preview",
-    expand:    "gemini-3.1-flash-lite-preview",
-    cuecards:  "gemini-3.1-flash-lite-preview",
+    sample:    "gemini-2.5-flash",
+    note:      "gemini-2.5-flash",
+    expand:    "gemini-2.5-flash",
+    cuecards:  "gemini-2.5-flash",
     vocab:     "gemini-2.5-flash-lite",
     extract:   "gemini-2.5-flash-lite",
     translate: "gemini-2.5-flash-lite",
     pronun:    "gemini-2.5-flash-lite",
   };
-  return ROUTING[kind] || "gemini-3-flash-preview";
+  return ROUTING[kind] || "gemini-2.5-flash";
 }
 
 async function handleAssist(event) {
