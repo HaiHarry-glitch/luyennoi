@@ -436,6 +436,39 @@ export async function handler(event) {
     if (method === "POST" && (path === "/events" || path === "/events/batch")) return handleEvents(event);
     if (method === "GET" && path === "/practice-attempts") return handleGetAttempts(event);
     if (method === "POST" && path === "/practice-attempts") return handleSyncAttempts(event);
+    if (method === "GET" && path === "/models") {
+      const GEMINI_MODELS = [
+        "gemini-3.5-flash",
+        "gemini-3-flash-preview",
+        "gemini-3.1-flash-lite-preview",
+        "gemini-3.1-pro-preview",
+        "gemini-2.5-pro",
+        "gemini-2.5-flash",
+        "gemini-2.5-flash-lite",
+      ];
+      const MODEL_LABELS = {
+        "gemini-3.5-flash":              { label: "Gemini 3.5 Flash",                 usage: "🎤 Chấm phát âm (CHÍNH)" },
+        "gemini-3-flash-preview":        { label: "Gemini 3 Flash (Preview)",         usage: "🎤 Chấm phát âm (dự phòng)" },
+        "gemini-3.1-flash-lite-preview": { label: "Gemini 3.1 Flash Lite (Preview)",  usage: "💡 Sinh ý / câu mẫu / cue cards (CHÍNH)" },
+        "gemini-3.1-pro-preview":        { label: "Gemini 3.1 Pro (Preview)",         usage: "🎤 Chấm phát âm (dự phòng cao cấp)" },
+        "gemini-2.5-pro":                { label: "Gemini 2.5 Pro",                   usage: "💡 Sinh ý chất lượng cao (dự phòng)" },
+        "gemini-2.5-flash":              { label: "Gemini 2.5 Flash",                 usage: "📖 Tra từ điển (dự phòng) / đa dụng" },
+        "gemini-2.5-flash-lite":         { label: "Gemini 2.5 Flash Lite",            usage: "📖 Từ vựng / dịch / chấm từng từ (CHÍNH)" },
+      };
+      const TASK_MAP = [
+        { group: "🎤 Chấm phát âm (audio scoring)", task: "Chấm câu Part 1 / 2 / 3 + Full Test",     model: "gemini-3.5-flash",              fallback: ["gemini-3-flash-preview", "gemini-3.1-pro-preview"] },
+        { group: "🎤 Chấm phát âm (audio scoring)", task: "Chấm từng từ (score-word)",               model: "gemini-2.5-flash-lite",         fallback: ["gemini-2.5-flash"] },
+        { group: "💡 Sinh ý / câu mẫu",             task: "Cho mình câu mẫu (sample)",               model: "gemini-3.1-flash-lite-preview", fallback: ["gemini-2.5-pro"] },
+        { group: "💡 Sinh ý / câu mẫu",             task: "Ghi chú → tạo câu mẫu (note)",            model: "gemini-3.1-flash-lite-preview", fallback: ["gemini-2.5-pro"] },
+        { group: "💡 Sinh ý / câu mẫu",             task: "Mở rộng ý (expand) — Part 2/3",           model: "gemini-3.1-flash-lite-preview", fallback: ["gemini-2.5-pro"] },
+        { group: "💡 Sinh ý / câu mẫu",             task: "Cue cards Part 2",                        model: "gemini-3.1-flash-lite-preview", fallback: ["gemini-2.5-pro"] },
+        { group: "📖 Tra từ điển",                  task: "Từ vựng chủ đề (vocab)",                  model: "gemini-2.5-flash-lite",         fallback: ["gemini-2.5-flash"] },
+        { group: "📖 Tra từ điển",                  task: "Dịch sang tiếng Việt (translate)",        model: "gemini-2.5-flash-lite",         fallback: ["gemini-2.5-flash"] },
+        { group: "📖 Tra từ điển",                  task: "Luyện phát âm — giải thích IPA",          model: "gemini-2.5-flash-lite",         fallback: ["gemini-2.5-flash"] },
+      ];
+      const models = GEMINI_MODELS.map(id => ({ id, label: MODEL_LABELS[id]?.label || id, usage: MODEL_LABELS[id]?.usage || "" }));
+      return json(200, { ok: true, models, taskMap: TASK_MAP });
+    }
     return json(404, { ok: false, error: `Unknown API path: ${path}` });
   } catch (error) {
     return json(500, { ok: false, error: error.message });
