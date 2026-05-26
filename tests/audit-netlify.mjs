@@ -22,7 +22,12 @@ const ROUTES = [
   { path: "/take-test/part3",                         expect: { brand: true } },
   { path: "/take-test/custom-strict",                 expect: { brand: true } },
   { path: "/reading",                                 expect: { brand: true, mount: "#readingRoot", readingHero: true, readingModal: true } },
+  { path: "/reading/postcards-from-paradise-my-trip-to-the-coast",
+                                                      expect: { brand: true, mount: "#readingRoot", readingDetail: true } },
   { path: "/alphafeature/pronun",                     expect: { brand: true, mount: "#pronunRoot" } },
+  { path: "/alphafeature/pronun/lesson1/section1",    expect: { brand: true, pronunLesson: { section: 1 } } },
+  { path: "/alphafeature/pronun/lesson1/section2",    expect: { brand: true, pronunLesson: { section: 2 } } },
+  { path: "/alphafeature/pronun/lesson1/section3",    expect: { brand: true, pronunLesson: { section: 3 } } },
   { path: "/alphafeature/vocab",                      expect: { brand: true, mount: "#vocabRoot" } },
   { path: "/alphafeature/boxing",                     expect: { brand: true, mount: "#boxingRoot" } },
   { path: "/alphafeature/past-tense",                 expect: { brand: true, mount: "#pastTenseRoot" } },
@@ -33,7 +38,7 @@ const ROUTES = [
   { path: "/alphafeature/setup-mic",                  expect: { brand: true } },
   { path: "/alphafeature/join-us",                    expect: { brand: true } },
   { path: "/profile/teaching/landing-page",           expect: { brand: true } },
-  { path: "/settings",                                final: ["/home", "/home/"] }
+  { path: "/settings",                                final: ["/home", "/home/"], expect: { settingsRedirect: true } }
 ];
 
 const API_PROBES = [
@@ -126,6 +131,13 @@ const MOJIBAKE_RE = /[\u0081\u008d\u008f\u0090\u009d]|Ã[\u00A1-\u00FF]|Ä[ƒ\u0
 
     if (navOk && !page.isClosed()) {
       try {
+        const finalUrl = page.url();
+        const exp0 = route.expect || {};
+        if (exp0.settingsRedirect) {
+          await page.waitForTimeout(800);
+          const modalCount = await page.locator("#lnUserDataModal").count();
+          if (modalCount < 1) record(route.path, "interaction", "settings redirect did not open #lnUserDataModal");
+        }
         const bodyText = await page.locator("body").innerText().catch(() => "");
         if (MOJIBAKE_RE.test(bodyText)) {
           const m = bodyText.match(/[^\s]{0,30}(Ã[¡-ÿ]|Ä[ƒ¡-ÿ]|Æ°|á»[^\s]{1,5}|[\u0081\u008d\u008f\u0090\u009d])[^\s]{0,15}/);
@@ -174,6 +186,8 @@ const MOJIBAKE_RE = /[\u0081\u008d\u008f\u0090\u009d]|Ã[\u00A1-\u00FF]|Ä[ƒ\u0
           if (!exp.detailText.test(bodyText)) record(route.path, "ui", "detail question text not rendered");
           const recordBtn = await page.locator("button:has-text('Ghi âm'), button:has-text('Bắt đầu'), button:has-text('Bat dau'), [data-record]").count();
           if (recordBtn < 1) record(route.path, "ui", "detail page missing record button");
+          const sampleAns = await page.locator(":text-matches('Sample|Đ.p m.u|G.i .|Sample answer', 'i')").count();
+          if (sampleAns < 1) record(route.path, "ui", "detail page missing sample answer section");
         }
 
         if (exp.readingHero) {
@@ -197,6 +211,57 @@ const MOJIBAKE_RE = /[\u0081\u008d\u008f\u0090\u009d]|Ã[\u00A1-\u00FF]|Ä[ƒ\u0
               await page.locator("#cancelAdd").click({ delay: 30 }).catch(() => {});
               await page.waitForTimeout(150);
             }
+          }
+        }
+
+        if (exp.readingDetail) {
+          const back = await page.locator("#readingRoot a.back-link").count();
+          if (back < 1) record(route.path, "ui", "reading detail missing back link");
+          const speak = await page.locator("#readingRoot #speakStory").count();
+          if (speak < 1) record(route.path, "ui", "reading detail missing speak button");
+          const ipa = await page.locator("#readingRoot #toggleIpa").count();
+          if (ipa < 1) record(route.path, "ui", "reading detail missing IPA toggle");
+          if (ipa === 1) {
+            const before = await page.evaluate(() => ({ ruby: document.querySelectorAll("ruby.g-tricky").length, withIpa: document.querySelectorAll("p.with-ipa").length }));
+            await page.locator("#readingRoot #toggleIpa").click({ delay: 30 }).catch(() => {});
+            await page.waitForTimeout(400);
+            const after = await page.evaluate(() => ({ ruby: document.querySelectorAll("ruby.g-tricky").length, withIpa: document.querySelectorAll("p.with-ipa").length }));
+            if (before.ruby === after.ruby && before.withIpa === after.withIpa) {
+              record(route.path, "interaction", `IPA toggle did not change rendering (ruby ${before.ruby}->${after.ruby}, withIpa ${before.withIpa}->${after.withIpa})`);
+            }
+          }
+          const para = await page.locator("#readingRoot [data-paragraph]").count();
+          if (para < 1) record(route.path, "ui", "reading detail has 0 paragraphs");
+
+          for (const cfg of [{ id: "#toggleIntonation", token: "intonationOn", label: "intonation" }, { id: "#toggleChunking", token: "chunkingOn", label: "chunking" }]) {
+            const has = await page.locator(`#readingRoot ${cfg.id}`).count();
+            if (has !== 1) record(route.path, "ui", `${cfg.label} toggle missing`);
+            else {
+              const beforeText = await page.locator(`#readingRoot ${cfg.id}`).innerText().catch(() => "");
+              await page.locator(`#readingRoot ${cfg.id}`).click({ delay: 30 }).catch(() => {});
+              await page.waitForTimeout(400);
+              const afterText = await page.locator(`#readingRoot ${cfg.id}`).innerText().catch(() => "");
+              if (beforeText && beforeText === afterText) record(route.path, "interaction", `${cfg.label} toggle did not change button label`);
+            }
+          }
+        }
+
+        if (exp.pronunLesson) {
+          const card = await page.locator(".pc-card").count();
+          if (card < 1) record(route.path, "ui", "pronun lesson missing .pc-card root");
+          const nav = await page.locator(".pc-nav, .pc-lessonnav").count();
+          if (nav < 1) record(route.path, "ui", "pronun lesson missing nav buttons");
+          if (exp.pronunLesson.section === 1) {
+            const iframe = await page.locator(".pc-card iframe[src*='youtube']").count();
+            if (iframe < 1) record(route.path, "ui", "section1 missing youtube iframe");
+          }
+          if (exp.pronunLesson.section === 2) {
+            const wordBtn = await page.locator(".pc-card button:has-text('Ghi âm')").count();
+            if (wordBtn < 1) record(route.path, "ui", "section2 missing record button");
+          }
+          if (exp.pronunLesson.section === 3) {
+            const recBtn = await page.locator("#pc-rec").count();
+            if (recBtn < 1) record(route.path, "ui", "section3 missing #pc-rec record button");
           }
         }
       } catch (e) {
