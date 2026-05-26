@@ -804,7 +804,7 @@
           ${targetIpa ? `<div style="font-family:'Segoe UI Symbol','Segoe UI',sans-serif;color:#d9381e;font-size:1.05rem;font-weight:600;margin-top:.3rem;letter-spacing:.02em;">${escHtml(targetIpa)}</div>` : ""}
         </div>
         <div id="ln-word-status" style="text-align:center;color:#6b7280;font-size:.85rem;padding:.6rem .5rem;">
-          Nhấn nút <b style="color:#d9381e;">Ghi âm</b> rồi đọc đúng 1 lần từ này.
+          Nhấn nút <b style="color:#d9381e;">Ghi âm</b> rồi đọc đúng 1 lần từ/cụm này.
         </div>
         <div id="ln-word-result" style="display:none;background:#ffffff;border-radius:.6rem;padding:.7rem .8rem;margin-bottom:.6rem;"></div>
         <div style="display:flex;justify-content:center;gap:.5rem;">
@@ -1266,7 +1266,7 @@
   function renderVocabHtml(d) {
     const words = d.words || [];
     const cards = words.map(w => `
-      <div style="display:flex;align-items:center;justify-content:space-between;background:white;border:1px solid #e5e7eb;border-radius:.5rem;padding:.5rem .6rem;gap:.4rem;">
+      <div class="ln-vocab-card" data-practice-phrase="${(w.phrase||"").replace(/"/g,'&quot;')}" style="display:flex;align-items:center;justify-content:space-between;background:white;border:1px solid #e5e7eb;border-radius:.5rem;padding:.5rem .6rem;gap:.4rem;cursor:pointer;transition:box-shadow .15s;" onmouseenter="this.style.boxShadow='0 2px 8px rgba(217,56,30,.15)'" onmouseleave="this.style.boxShadow=''">
         <div style="flex:1;min-width:0;">
           <div style="font-weight:700;font-size:.82rem;color:#171717;display:flex;align-items:center;gap:.3rem;flex-wrap:wrap;">
             <span>${w.phrase}</span>
@@ -1333,6 +1333,7 @@
       wireInlineTts(contentArea);
       wireExpandBtn(block, d);
       wireExtractBtn(block);
+      wireVocabPractice(block);
       makeCollapsible(block, kind);
       return;
     }
@@ -1352,6 +1353,7 @@
     wireInlineTts(p);
     wireExpandBtn(p, d);
     wireExtractBtn(p);
+    wireVocabPractice(p);
   }
 
   // ── Tách cụm từ: extract phrases FROM the sample answer ────────────
@@ -1381,6 +1383,18 @@
           btn.innerHTML = orig;
           btn.disabled = false;
         }
+      });
+    });
+  }
+
+  function wireVocabPractice(container) {
+    container.querySelectorAll(".ln-vocab-card[data-practice-phrase]").forEach(card => {
+      if (card.__vocabWired) return;
+      card.__vocabWired = true;
+      card.addEventListener("click", (e) => {
+        if (e.target.closest(".ln-tts-btn")) return;
+        const phrase = card.dataset.practicePhrase;
+        if (phrase) openWordPracticeModal(phrase, "");
       });
     });
   }

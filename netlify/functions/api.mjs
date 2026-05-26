@@ -668,11 +668,11 @@ async function handleScoreWord(event) {
   const body = parseBody(event);
   const { apiKey, word = "", targetPhonetic = "", audioBase64 = "", mimeType = "audio/webm" } = body;
   if (!audioBase64) return json(200, { score: "?", verdict: "Chưa có audio.", phoneticHeard: "", tips: "" });
-  const prompt = `You are a STRICT IELTS pronunciation coach scoring ONE single word.
-Target word: "${word}"
+  const prompt = `You are a STRICT IELTS pronunciation coach scoring ONE word or short phrase.
+Target word/phrase: "${word}"
 Target IPA: ${targetPhonetic || "(unknown — infer standard pronunciation)"}
 
-Listen to the audio (1 word). Score how accurately the speaker pronounced the target word on a 0-100 scale where:
+Listen to the audio. Score how accurately the speaker pronounced the target word/phrase on a 0-100 scale where:
 - 90-100 = native-like, perfect IPA match
 - 75-89  = clear and accurate, minor accent
 - 60-74  = understandable but noticeable errors on key phonemes
