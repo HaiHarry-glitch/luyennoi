@@ -1,8 +1,10 @@
 const SUPABASE_URL = (process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.SUPABASE_URL || "https://gxjgkwebrxzcawqkxmbt.supabase.co").replace(/\/+$/, "");
 const SUPABASE_PUBLISHABLE_KEY = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY || process.env.SUPABASE_PUBLISHABLE_KEY || "sb_publishable_ktG6l3TaDDppl9n6flBuZg_3THO38Dp";
 const GEMINI_MODELS = [
+  "gemini-3.5-flash",
   "gemini-3-flash-preview",
   "gemini-3.1-flash-lite-preview",
+  "gemini-3.1-pro-preview",
   "gemini-2.5-pro",
   "gemini-2.5-flash",
   "gemini-2.5-flash-lite"
@@ -254,15 +256,31 @@ Question: ${topic}
 Return ONLY JSON: {"directAnswer": string, "explanation": string, "example": string}.`;
 }
 
+function smartModelForKind(kind) {
+  const ROUTING = {
+    sample:    "gemini-3.1-flash-lite-preview",
+    note:      "gemini-3.1-flash-lite-preview",
+    expand:    "gemini-3.1-flash-lite-preview",
+    cuecards:  "gemini-3.1-flash-lite-preview",
+    vocab:     "gemini-2.5-flash-lite",
+    extract:   "gemini-2.5-flash-lite",
+    translate: "gemini-2.5-flash-lite",
+    pronun:    "gemini-2.5-flash-lite",
+  };
+  return ROUTING[kind] || "gemini-3-flash-preview";
+}
+
 async function handleAssist(event) {
   const body = parseBody(event);
   const kind = body.kind || "sample";
   const topic = body.topic || body.question || "";
   const note = body.note || "";
   const part = body.part || "";
+  const idealModel = smartModelForKind(kind);
+  const modelToUse = idealModel;
   try {
     const prompt = buildAssistPrompt(kind, topic, note, part);
-    const { text, model } = await callGemini({ apiKey: body.apiKey, model: body.model, prompt, responseJson: true });
+    const { text, model } = await callGemini({ apiKey: body.apiKey, model: modelToUse, prompt, responseJson: true });
     return json(200, { provider: "gemini", model, kind, ...JSON.parse(text) });
   } catch (error) {
     return json(200, { ...fallbackAssist(kind, topic), warning: error.message });
@@ -279,7 +297,7 @@ Transcript hint: ${body.transcript || ""}
 Score conservatively.`;
     const { text, model } = await callGemini({
       apiKey: body.apiKey,
-      model: body.model || "gemini-3-flash-preview",
+      model: "gemini-3.5-flash",
       prompt,
       responseJson: true,
       audioBase64: body.audioBase64 || "",
