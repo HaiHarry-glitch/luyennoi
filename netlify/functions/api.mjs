@@ -163,18 +163,109 @@ function fallbackScore(question, transcript) {
   };
 }
 
+function buildAssistPrompt(kind, topic, note, part) {
+  const isPart2 = /^PART\s*2/i.test(topic) || /^2$/.test(String(part).trim()) || /part.?2/i.test(part) || /^\s*describe\b/i.test(topic);
+  const isPart3 = !isPart2 && (/^PART\s*3/i.test(topic) || /^3$/.test(String(part).trim()) || /part.?3/i.test(part));
+  if (kind === "vocab") {
+    return `You are an IELTS Speaking vocabulary coach.
+Question/topic: ${topic}
+
+Provide exactly 6 high-value topic words/phrases for IELTS Speaking band 6.5+.
+Each item must be directly usable to answer this specific question.
+Return ONLY JSON:
+{"title": string, "words": [{"phrase": string, "pos": string, "vi": string, "example": string}]}
+- phrase: English phrase/collocation (2-5 words)
+- pos: word type — one of "n.", "v.", "adj.", "adv.", "phrase", "idiom", "collocation"
+- vi: Vietnamese translation (short, 2-5 words)
+- example: one short English sentence using the phrase`;
+  }
+  if (kind === "extract") {
+    const srcWordCount = (topic || "").split(/\s+/).length;
+    const phraseRange = srcWordCount > 80 ? "8–14" : "4–8";
+    return `You are an IELTS Speaking coach. From the English text below, extract the ${phraseRange} MOST USEFUL phrases that an intermediate learner should drill — focus on:
+- Natural collocations (verb + noun, adj + noun)
+- Multi-word phrases / idiomatic expressions
+- Topic-specific lexis or less common content words
+- Anything longer than a single common word that's worth memorising
+
+DO NOT include trivial single common words ("the", "is", "have", "go"). Each phrase must appear VERBATIM in the source text (preserve original word forms).
+
+Source text:
+${topic}
+
+Return ONLY JSON (same shape as vocab so the UI can reuse it):
+{"title": "Cụm từ trong câu mẫu", "words": [{"phrase": string, "pos": string, "vi": string, "example": string}]}
+- phrase: the EXACT phrase as it appears in the text (2–5 words preferred)
+- pos: one of "collocation", "phrase", "idiom", "n.", "v.", "adj.", "adv."
+- vi: short Vietnamese translation (2–5 words)
+- example: ONE short natural English sentence reusing the phrase in a different context`;
+  }
+  if (kind === "translate") {
+    return `You are an English-Vietnamese dictionary for IELTS learners.
+For the given English phrase/word, provide:
+- phrase: the original phrase (cleaned up if needed)
+- pos: part of speech — one of "n.", "v.", "adj.", "adv.", "collocation", "phrase", "idiom"
+- vi: short Vietnamese translation (2-6 words)
+- example: ONE short natural English sentence using this phrase in context (8-15 words)
+
+Phrase: ${topic}
+Return ONLY JSON: {"phrase": string, "pos": string, "vi": string, "example": string, "translation": string}
+The "translation" field should equal the "vi" field.`;
+  }
+  if (kind === "note") {
+    return `You are an IELTS Speaking coach. The learner wrote a personal note about what they want to improve or remember.
+Topic/question: ${topic}
+Learner's note: ${note || "No note provided"}
+
+Based on the learner's note, write a short, personalised IELTS Speaking answer template (35-55 words) that directly addresses their focus area. Include their specific concern naturally.
+Return ONLY JSON: {"directAnswer": string, "explanation": string, "example": string}`;
+  }
+  if (kind === "pronun") {
+    return `You are an IELTS Speaking pronunciation coach.
+Topic/question: ${topic}
+Learner note: ${note || "General pronunciation help"}
+
+Provide targeted phoneme/pronunciation guidance for key words in this topic.
+Return ONLY JSON: {"title": string, "html": string}
+html: use <p>, <ul>, <li>, <b>. Vietnamese labels, English phonemes.`;
+  }
+  if (kind === "expand") {
+    const isP2 = /PART\s*2/i.test(topic) || /"sections"/.test(topic);
+    return `You are an IELTS Speaking coach. Adjust this answer to a specific target band level.
+Original answer: ${topic}
+Adjustment instruction: ${note || "Keep at band 6.5"}
+
+Return ONLY JSON with the SAME shape as original:
+${isP2 ? '{"sections": [{"label": "<keep original label>", "text": "<rewritten text>"}, ...]}' : '{"directAnswer": string, "explanation": string, "example": string}'}`;
+  }
+  // Default: sample answer
+  if (isPart2) {
+    return `You are an IELTS Speaking coach. Provide a Part 2 cue-card style answer (long-turn, 4 sections totalling ~180-220 words).
+Question/topic: ${topic}
+Return ONLY JSON: {"sections": [{"label": string, "text": string}]} with 4 sections covering Introduction, What/Who, When/Where/Why, How I feel.`;
+  }
+  if (isPart3) {
+    return `You are an IELTS Speaking coach. Provide a Part 3 discussion answer (analytical, ~60-80 words).
+Question: ${topic}
+Return ONLY JSON: {"directAnswer": string, "explanation": string, "example": string}.`;
+  }
+  return `You are an IELTS Speaking coach. Provide a Part 1 answer (30-45 words).
+Question: ${topic}
+Return ONLY JSON: {"directAnswer": string, "explanation": string, "example": string}.`;
+}
+
 async function handleAssist(event) {
   const body = parseBody(event);
+  const kind = body.kind || "sample";
+  const topic = body.topic || body.question || "";
+  const note = body.note || "";
+  const part = body.part || "";
   try {
-    const prompt = `Return ONLY valid JSON for IELTS Speaking helper.
-Kind: ${body.kind || "sample"}
-Topic/question: ${body.topic || body.question || ""}
-Learner note: ${body.note || ""}
-For Part 1 keep total answer 30-45 words. Use directAnswer, explanation, example.`;
+    const prompt = buildAssistPrompt(kind, topic, note, part);
     const { text, model } = await callGemini({ apiKey: body.apiKey, model: body.model, prompt, responseJson: true });
-    return json(200, { provider: "gemini", model, kind: body.kind || "sample", ...JSON.parse(text) });
+    return json(200, { provider: "gemini", model, kind, ...JSON.parse(text) });
   } catch (error) {
-    return json(200, { ...fallbackAssist(body.kind || "sample", body.topic || body.question || ""), warning: error.message });
+    return json(200, { ...fallbackAssist(kind, topic), warning: error.message });
   }
 }
 
