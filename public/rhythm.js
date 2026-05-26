@@ -1,5 +1,5 @@
 ﻿// =====================================================================
-//  Luyá»‡n rhythm â€” /alphafeature/rhythm
+//  Luyện rhythm — /alphafeature/rhythm
 //  Sentences have STRESSED syllables marked in CAPS (content words).
 //  Function words (articles, prepositions, auxiliaries) are reduced/weak.
 //  Student records and Gemini scores rhythm / stress accuracy.
@@ -8,149 +8,149 @@
   const mount = document.getElementById("rhythmRoot");
   if (!mount) return;
 
-  // â”€â”€ Library: stressed syllables in CAPS, weak syllables lowercase â”€â”€
+  // ── Library: stressed syllables in CAPS, weak syllables lowercase ──
   // plain: clean text for TTS; marked: display version with CAPS stress
   // focus: the main rhythm concept being drilled
   const SENTENCES = [
     {
       plain:  "I want to go to the store.",
       marked: "i WANT to GO to the STORE.",
-      focus:  "Giáº£m Ã¢m: 'to', 'the' Ä‘á»c yáº¿u/nhanh, WANT GO STORE nháº¥n máº¡nh",
+      focus:  "Giảm âm: 'to', 'the' đọc yếu/nhanh, WANT GO STORE nhấn mạnh",
       rule:   "content-words",
-      note:   "Danh tá»«, Ä‘á»™ng tá»« chÃ­nh, tÃ­nh tá»«, tráº¡ng tá»« â†’ nháº¥n máº¡nh. Giá»›i tá»«, máº¡o tá»« â†’ yáº¿u & nhanh."
+      note:   "Danh từ, động từ chính, tính từ, trạng từ → nhấn mạnh. Giới từ, mạo từ → yếu & nhanh."
     },
     {
       plain:  "She's been working really hard.",
       marked: "she's been WORK-ing REAL-ly HARD.",
-      focus:  "WORK-ing, REAL-ly, HARD nháº¥n máº¡nh â€” 'she's been' lÆ°á»›t nhanh",
+      focus:  "WORK-ing, REAL-ly, HARD nhấn mạnh — 'she's been' lướt nhanh",
       rule:   "content-words",
-      note:   "Auxiliary 'been' yáº¿u, pronoun 'she's' yáº¿u â€” Ä‘á»™ng tá»« chÃ­nh & tráº¡ng tá»« máº¡nh."
+      note:   "Auxiliary 'been' yếu, pronoun 'she's' yếu — động từ chính & trạng từ mạnh."
     },
     {
       plain:  "Can you give me a hand?",
       marked: "can you GIVE me a HAND?",
-      focus:  "'can', 'you', 'me', 'a' Ä‘á»c yáº¿u â€” GIVE HAND lÃ  tá»« mang nghÄ©a",
+      focus:  "'can', 'you', 'me', 'a' đọc yếu — GIVE HAND là từ mang nghĩa",
       rule:   "reduced-function",
-      note:   "Trong cÃ¢u há»i yÃªu cáº§u: modal 'can' vÃ  Ä‘áº¡i tá»« thÆ°á»ng bá»‹ giáº£m Ã¢m, Ä‘á»™ng tá»« + danh tá»« chÃ­nh nháº¥n."
+      note:   "Trong câu hỏi yêu cầu: modal 'can' và đại từ thường bị giảm âm, động từ + danh từ chính nhấn."
     },
     {
       plain:  "I'd like a cup of coffee, please.",
       marked: "i'd like a CUP of COF-fee, PLEASE.",
-      focus:  "CUP, COF-fee, PLEASE lÃ  cÃ¡c beat chÃ­nh â€” 'a', 'of' lÆ°á»›t qua",
+      focus:  "CUP, COF-fee, PLEASE là các beat chính — 'a', 'of' lướt qua",
       rule:   "content-words",
-      note:   "'a cup of' = 3 Ã¢m tiáº¿t nhÆ°ng chá»‰ CUP mang nhá»‹p. 'of' giáº£m thÃ nh /É™v/ hoáº·c /É™/."
+      note:   "'a cup of' = 3 âm tiết nhưng chỉ CUP mang nhịp. 'of' giảm thành /əv/ hoặc /ə/."
     },
     {
       plain:  "The book is on the table.",
       marked: "the BOOK is on the TA-ble.",
-      focus:  "BOOK vÃ  TA-ble lÃ  content words â€” 'the', 'is', 'on' giáº£m",
+      focus:  "BOOK và TA-ble là content words — 'the', 'is', 'on' giảm",
       rule:   "content-words",
-      note:   "'The' Ä‘á»c /Ã°É™/ (yáº¿u) trÆ°á»›c phá»¥ Ã¢m. 'is' giáº£m thÃ nh /Éªz/ hoáº·c /z/."
+      note:   "'The' đọc /ðə/ (yếu) trước phụ âm. 'is' giảm thành /ɪz/ hoặc /z/."
     },
     {
       plain:  "I've already told you three times.",
       marked: "i've al-REA-dy TOLD you THREE TIMES.",
-      focus:  "al-REA-dy cÃ³ trá»ng Ã¢m thá»© 2, TOLD THREE TIMES lÃ  beat chÃ­nh",
+      focus:  "al-REA-dy có trọng âm thứ 2, TOLD THREE TIMES là beat chính",
       rule:   "sentence-stress",
-      note:   "Tráº¡ng tá»« 'already' cÃ³ trá»ng Ã¢m ná»™i táº¡i á»Ÿ Ã¢m tiáº¿t 2. 'told', 'three', 'times' lÃ  content words."
+      note:   "Trạng từ 'already' có trọng âm nội tại ở âm tiết 2. 'told', 'three', 'times' là content words."
     },
     {
       plain:  "What are you going to do about it?",
       marked: "what are you GOing to DO a-BOUT it?",
-      focus:  "GO-ing, DO, a-BOUT nháº¥n â€” 'what are you', 'to', 'it' yáº¿u",
+      focus:  "GO-ing, DO, a-BOUT nhấn — 'what are you', 'to', 'it' yếu",
       rule:   "reduced-function",
-      note:   "'going to' thÆ°á»ng giáº£m thÃ nh 'gonna' /É¡É™nÉ™/ trong kháº©u ngá»¯ â€” nhá»‹p rÆ¡i vÃ o GO vÃ  DO."
+      note:   "'going to' thường giảm thành 'gonna' /ɡənə/ trong khẩu ngữ — nhịp rơi vào GO và DO."
     },
     {
       plain:  "It's not as difficult as you think.",
       marked: "it's NOT as DIF-fi-cult as you THINK.",
-      focus:  "NOT, DIF (Ã¢m tiáº¿t 1 cá»§a difficult), THINK lÃ  nhá»‹p chÃ­nh",
+      focus:  "NOT, DIF (âm tiết 1 của difficult), THINK là nhịp chính",
       rule:   "sentence-stress",
-      note:   "'difficult' = DIF-fi-cult, trá»ng Ã¢m Ã¢m tiáº¿t Ä‘áº§u. 'as' giáº£m thÃ nh /É™z/."
+      note:   "'difficult' = DIF-fi-cult, trọng âm âm tiết đầu. 'as' giảm thành /əz/."
     },
     {
       plain:  "I haven't seen him for a long time.",
       marked: "i HAV-en't SEEN him for a LONG TIME.",
-      focus:  "SEEN, LONG, TIME nháº¥n â€” 'haven't' nháº¥n á»Ÿ HAV, 'him for a' giáº£m",
+      focus:  "SEEN, LONG, TIME nhấn — 'haven't' nhấn ở HAV, 'him for a' giảm",
       rule:   "content-words",
-      note:   "Phá»§ Ä‘á»‹nh 'haven't' mang trá»ng Ã¢m á»Ÿ HAV. Äáº¡i tá»« 'him' yáº¿u trong cÃ¢u."
+      note:   "Phủ định 'haven't' mang trọng âm ở HAV. Đại từ 'him' yếu trong câu."
     },
     {
       plain:  "She works at a hospital in the city.",
       marked: "she WORKS at a HOS-pi-tal in the CI-ty.",
-      focus:  "WORKS, HOS (hospital), CI (city) â€” 'at a', 'in the' lÆ°á»›t",
+      focus:  "WORKS, HOS (hospital), CI (city) — 'at a', 'in the' lướt",
       rule:   "content-words",
-      note:   "'hospital' = HOS-pi-tal (trá»ng Ã¢m Ä‘áº§u). 'city' = CI-ty. Giá»›i tá»« + máº¡o tá»« yáº¿u."
+      note:   "'hospital' = HOS-pi-tal (trọng âm đầu). 'city' = CI-ty. Giới từ + mạo từ yếu."
     },
     {
       plain:  "He told me he was going to call.",
       marked: "he TOLD me he was GOing to CALL.",
-      focus:  "TOLD, GO-ing, CALL lÃ  nhá»‹p â€” 'me', 'he was', 'to' yáº¿u",
+      focus:  "TOLD, GO-ing, CALL là nhịp — 'me', 'he was', 'to' yếu",
       rule:   "content-words",
-      note:   "Trong cÃ¢u giÃ¡n tiáº¿p: Ä‘á»™ng tá»« tÆ°á»ng thuáº­t 'told' vÃ  ná»™i dung chÃ­nh 'going to call' mang nhá»‹p."
+      note:   "Trong câu gián tiếp: động từ tường thuật 'told' và nội dung chính 'going to call' mang nhịp."
     },
     {
       plain:  "We need to leave by seven o'clock.",
       marked: "we NEED to LEAVE by SEV-en o'CLOCK.",
-      focus:  "NEED, LEAVE, SEV-en, o'CLOCK â€” 'to', 'by' yáº¿u",
+      focus:  "NEED, LEAVE, SEV-en, o'CLOCK — 'to', 'by' yếu",
       rule:   "content-words",
-      note:   "'seven o'clock' cÃ³ 2 beat: SEV-en vÃ  CLOCK. 'by' = giá»›i tá»« â†’ yáº¿u."
+      note:   "'seven o'clock' có 2 beat: SEV-en và CLOCK. 'by' = giới từ → yếu."
     },
     {
       plain:  "I'm not sure if that's a good idea.",
       marked: "i'm not SURE if that's a GOOD i-DEA.",
-      focus:  "SURE, GOOD, i-DEA lÃ  beat â€” 'not' mang nháº¥n phá»§ Ä‘á»‹nh, 'if that's a' yáº¿u",
+      focus:  "SURE, GOOD, i-DEA là beat — 'not' mang nhấn phủ định, 'if that's a' yếu",
       rule:   "sentence-stress",
-      note:   "'idea' = i-DEA-: trá»ng Ã¢m Ã¢m tiáº¿t 2. 'not' mang trá»ng Ã¢m khi phá»§ Ä‘á»‹nh."
+      note:   "'idea' = i-DEA-: trọng âm âm tiết 2. 'not' mang trọng âm khi phủ định."
     },
     {
       plain:  "The more you practice, the better you get.",
       marked: "the MORE you PRAC-tice, the BET-ter you GET.",
-      focus:  "MORE, PRAC, BET, GET lÃ  4 nhá»‹p chÃ­nh â€” 'the', 'you' yáº¿u",
+      focus:  "MORE, PRAC, BET, GET là 4 nhịp chính — 'the', 'you' yếu",
       rule:   "rhythm-pattern",
-      note:   "Cáº¥u trÃºc 'the moreâ€¦ the better' cÃ³ nhá»‹p Ä‘á»u Ä‘áº·n 2-beat má»—i váº¿."
+      note:   "Cấu trúc 'the more… the better' có nhịp đều đặn 2-beat mỗi vế."
     },
     {
       plain:  "Do you want to grab something to eat?",
       marked: "do you WANT to GRAB some-thing to EAT?",
-      focus:  "WANT, GRAB, EAT lÃ  nhá»‹p â€” 'do you', 'to', 'something to' yáº¿u",
+      focus:  "WANT, GRAB, EAT là nhịp — 'do you', 'to', 'something to' yếu",
       rule:   "reduced-function",
-      note:   "'something' = SOME-thing nhÆ°ng trong cÃ¢u thÆ°á»ng yáº¿u Ä‘i thÃ nh /ËˆsÊŒmÎ¸ÉªÅ‹/ â†’ /sÊŒmÎ¸ÉªÅ‹/."
+      note:   "'something' = SOME-thing nhưng trong câu thường yếu đi thành /ˈsʌmθɪŋ/ → /sʌmθɪŋ/."
     },
     {
       plain:  "It was one of the best days of my life.",
       marked: "it was ONE of the BEST DAYS of my LIFE.",
-      focus:  "ONE, BEST, DAYS, LIFE lÃ  4 beat â€” 'of the', 'of my' yáº¿u",
+      focus:  "ONE, BEST, DAYS, LIFE là 4 beat — 'of the', 'of my' yếu",
       rule:   "content-words",
-      note:   "'one of the' = 3 Ã¢m tiáº¿t nhÆ°ng chá»‰ ONE mang nhá»‹p. TÃ­nh tá»« 'best' vÃ  danh tá»« 'days', 'life' Ä‘á»u máº¡nh."
+      note:   "'one of the' = 3 âm tiết nhưng chỉ ONE mang nhịp. Tính từ 'best' và danh từ 'days', 'life' đều mạnh."
     },
     {
       plain:  "Could you speak a little more slowly?",
       marked: "could you SPEAK a LIT-tle more SLOW-ly?",
-      focus:  "SPEAK, LIT-tle, SLOW-ly â€” 'could you', 'a', 'more' yáº¿u",
+      focus:  "SPEAK, LIT-tle, SLOW-ly — 'could you', 'a', 'more' yếu",
       rule:   "polite-request",
-      note:   "YÃªu cáº§u lá»‹ch sá»± 'could you' thÆ°á»ng giáº£m thÃ nh /kÉ™djÉ™/. Äá»™ng tá»« chÃ­nh vÃ  tráº¡ng tá»« nháº¥n."
+      note:   "Yêu cầu lịch sự 'could you' thường giảm thành /kədjə/. Động từ chính và trạng từ nhấn."
     },
     {
       plain:  "I've been thinking about it all day.",
       marked: "i've been THINK-ing a-BOUT it all DAY.",
-      focus:  "THINK-ing, a-BOUT, DAY lÃ  nhá»‹p â€” 'i've been', 'it all' yáº¿u",
+      focus:  "THINK-ing, a-BOUT, DAY là nhịp — 'i've been', 'it all' yếu",
       rule:   "content-words",
-      note:   "Present perfect continuous: 'thinking' nháº¥n Ã¢m tiáº¿t 1. 'about' = a-BOUT, nháº¥n Ã¢m tiáº¿t 2."
+      note:   "Present perfect continuous: 'thinking' nhấn âm tiết 1. 'about' = a-BOUT, nhấn âm tiết 2."
     },
     {
       plain:  "You should have told me sooner.",
       marked: "you SHOULD have TOLD me SOON-er.",
-      focus:  "SHOULD, TOLD, SOON-er â€” 'you', 'have', 'me' yáº¿u",
+      focus:  "SHOULD, TOLD, SOON-er — 'you', 'have', 'me' yếu",
       rule:   "sentence-stress",
-      note:   "Modal 'should' nháº¥n khi chá»©a criticism/advice. 'have' trong modal perfect giáº£m â†’ /hÉ™v/ hay /É™v/."
+      note:   "Modal 'should' nhấn khi chứa criticism/advice. 'have' trong modal perfect giảm → /həv/ hay /əv/."
     },
     {
       plain:  "By the time you read this, I'll be gone.",
       marked: "by the TIME you READ this, i'll be GONE.",
-      focus:  "TIME, READ, GONE lÃ  3 nhá»‹p chÃ­nh â€” 'by the', 'you', 'this i'll be' yáº¿u",
+      focus:  "TIME, READ, GONE là 3 nhịp chính — 'by the', 'you', 'this i'll be' yếu",
       rule:   "rhythm-pattern",
-      note:   "Má»‡nh Ä‘á» thá»i gian 'by the time': TIME nháº¥n. 'I'll be' giáº£m thÃ nh /aÉªlbÉª/."
+      note:   "Mệnh đề thời gian 'by the time': TIME nhấn. 'I'll be' giảm thành /aɪlbɪ/."
     },
   ];
 
@@ -252,7 +252,7 @@
     document.head.appendChild(s);
   })();
 
-  // Convert CAPS words/syllables â†’ <span class="rhy-stress">word</span>
+  // Convert CAPS words/syllables → <span class="rhy-stress">word</span>
   function renderStress(marked) {
     // Tokenise preserving spaces and punctuation
     return marked.replace(/([A-Z][A-Z\-']*)/g, (m) => `<span class="rhy-stress">${m}</span>`);
@@ -264,38 +264,38 @@
     mount.innerHTML = `
       <div class="rhy-wrap">
         <div class="rhy-card">
-          <div class="rhy-bc"><a href="/">Trang chá»§</a> Â· <a href="/question-answer">Luyá»‡n theo cÃ¢u</a> Â· Luyá»‡n rhythm</div>
+          <div class="rhy-bc"><a href="/">Trang chủ</a> · <a href="/question-answer">Luyện theo câu</a> · Luyện rhythm</div>
           <div class="rhy-nav">
-            <button class="rhy-nav-btn" id="rhyPrev" ${STATE.idx === 0 ? "disabled" : ""}>â† cÃ¢u trÆ°á»›c</button>
-            <div class="rhy-counter">CÃ¢u ${STATE.idx + 1} <small>/ ${total}</small></div>
-            <button class="rhy-nav-btn" id="rhyNext" ${STATE.idx >= total - 1 ? "disabled" : ""}>cÃ¢u tiáº¿p â†’</button>
+            <button class="rhy-nav-btn" id="rhyPrev" ${STATE.idx === 0 ? "disabled" : ""}>← câu trước</button>
+            <div class="rhy-counter">Câu ${STATE.idx + 1} <small>/ ${total}</small></div>
+            <button class="rhy-nav-btn" id="rhyNext" ${STATE.idx >= total - 1 ? "disabled" : ""}>câu tiếp →</button>
           </div>
           <span class="rhy-rule-pill">${escHtml(s.rule)}</span>
           <div class="rhy-sentence-block">
             <div class="rhy-play-row">
-              <button class="rhy-play" id="rhyTts" title="Nghe máº«u">â–¶</button>
+              <button class="rhy-play" id="rhyTts" title="Nghe mẫu">▶</button>
               <div class="rhy-marked-text">${renderStress(s.marked)}</div>
             </div>
-            <div class="rhy-focus">ðŸŽ¯ ${escHtml(s.focus)}</div>
+            <div class="rhy-focus">🎯 ${escHtml(s.focus)}</div>
           </div>
-          <div class="rhy-hint"><span style="font-weight:700;color:#d97706;">CHá»® HOA</span> = nháº¥n máº¡nh (beat) Â· chá»¯ thÆ°á»ng = yáº¿u/nhanh â€” Nghe máº«u, sau Ä‘Ã³ ghi Ã¢m báº¯t chÆ°á»›c nhá»‹p.</div>
+          <div class="rhy-hint"><span style="font-weight:700;color:#d97706;">CHỮ HOA</span> = nhấn mạnh (beat) · chữ thường = yếu/nhanh — Nghe mẫu, sau đó ghi âm bắt chước nhịp.</div>
           <div id="rhyFeedbackHost"></div>
           <div class="rhy-actions">
-            <button class="rhy-rec-btn" id="rhyRec">ðŸŽ¤ Ghi Ã¢m ngay</button>
+            <button class="rhy-rec-btn" id="rhyRec">🎤 Ghi âm ngay</button>
           </div>
         </div>
         <div class="rhy-card rhy-rules">
-          <h3>Quy táº¯c nhá»‹p tiáº¿ng Anh</h3>
+          <h3>Quy tắc nhịp tiếng Anh</h3>
           <div class="rhy-legend">
-            <span><span class="rhy-legend-s">CHá»® HOA</span> = beat máº¡nh</span>
-            <span><span class="rhy-legend-w">chá»¯ thÆ°á»ng</span> = yáº¿u</span>
+            <span><span class="rhy-legend-s">CHỮ HOA</span> = beat mạnh</span>
+            <span><span class="rhy-legend-w">chữ thường</span> = yếu</span>
           </div>
-          <div class="rhy-rule-item"><b>Content words</b> (nháº¥n): danh tá»«, Ä‘á»™ng tá»« chÃ­nh, tÃ­nh tá»«, tráº¡ng tá»«, tá»« phá»§ Ä‘á»‹nh â†’ Ä‘á»c to, rÃµ, dÃ i hÆ¡n.</div>
-          <div class="rhy-rule-item"><b>Function words</b> (yáº¿u): máº¡o tá»« (a/the), giá»›i tá»« (to/of/in), Ä‘áº¡i tá»« (I/you/he), trá»£ Ä‘á»™ng tá»« (am/is/was/have) â†’ Ä‘á»c nháº¹, nhanh, thÆ°á»ng giáº£m Ã¢m.</div>
-          <div class="rhy-rule-item"><b>Vowel reduction</b>: NguyÃªn Ã¢m trong Ã¢m tiáº¿t yáº¿u thÆ°á»ng â†’ /É™/ (schwa). VD: "to" â†’ /tÉ™/, "of" â†’ /É™v/, "and" â†’ /É™n/.</div>
-          <div class="rhy-rule-item"><b>Nhá»‹p Ä‘iá»‡u Ä‘á»u</b>: Tiáº¿ng Anh lÃ  ngÃ´n ngá»¯ stress-timed â€” khoáº£ng cÃ¡ch giá»¯a cÃ¡c beat máº¡nh gáº§n báº±ng nhau, báº¥t ká»ƒ sá»‘ Ã¢m tiáº¿t giá»¯a chÃºng.</div>
-          <div class="rhy-rule-item"><b>LiÃªn Ã¢m & lÆ°á»›t</b>: "want to" â†’ "wanna", "going to" â†’ "gonna", "have to" â†’ "hafta" trong kháº©u ngá»¯.</div>
-          <div style="font-size:.78rem;color:#6b7280;margin-top:.7rem;">Lá»‹ch sá»­ gáº§n Ä‘Ã¢y:</div>
+          <div class="rhy-rule-item"><b>Content words</b> (nhấn): danh từ, động từ chính, tính từ, trạng từ, từ phủ định → đọc to, rõ, dài hơn.</div>
+          <div class="rhy-rule-item"><b>Function words</b> (yếu): mạo từ (a/the), giới từ (to/of/in), đại từ (I/you/he), trợ động từ (am/is/was/have) → đọc nhẹ, nhanh, thường giảm âm.</div>
+          <div class="rhy-rule-item"><b>Vowel reduction</b>: Nguyên âm trong âm tiết yếu thường → /ə/ (schwa). VD: "to" → /tə/, "of" → /əv/, "and" → /ən/.</div>
+          <div class="rhy-rule-item"><b>Nhịp điệu đều</b>: Tiếng Anh là ngôn ngữ stress-timed — khoảng cách giữa các beat mạnh gần bằng nhau, bất kể số âm tiết giữa chúng.</div>
+          <div class="rhy-rule-item"><b>Liên âm & lướt</b>: "want to" → "wanna", "going to" → "gonna", "have to" → "hafta" trong khẩu ngữ.</div>
+          <div style="font-size:.78rem;color:#6b7280;margin-top:.7rem;">Lịch sử gần đây:</div>
           <div class="rhy-hist" id="rhyHist"></div>
         </div>
       </div>
@@ -311,12 +311,12 @@
     const host = mount.querySelector("#rhyHist");
     if (!host) return;
     const list = STATE.history.slice(0, 12);
-    if (!list.length) { host.innerHTML = `<div style="color:#9ca3af;text-align:center;padding:.5rem;font-size:.78rem;">ChÆ°a luyá»‡n cÃ¢u nÃ o.</div>`; return; }
+    if (!list.length) { host.innerHTML = `<div style="color:#9ca3af;text-align:center;padding:.5rem;font-size:.78rem;">Chưa luyện câu nào.</div>`; return; }
     host.innerHTML = list.map(h => {
       const cls = h.score >= 7 ? "ok" : h.score >= 4 ? "mid" : "no";
       return `<div class="rhy-hist-row ${cls}">
-        <b>${escHtml((h.plain||"").slice(0,55))}${(h.plain||"").length>55?"â€¦":""}</b><br>
-        Äiá»ƒm rhythm: <b>${h.score}/10</b>
+        <b>${escHtml((h.plain||"").slice(0,55))}${(h.plain||"").length>55?"…":""}</b><br>
+        Điểm rhythm: <b>${h.score}/10</b>
       </div>`;
     }).join("");
   }
@@ -335,15 +335,15 @@
       STATE.recorder.start();
       STATE.recording = true;
       btn.classList.add("recording");
-      btn.textContent = "ðŸ›‘ Dá»«ng & cháº¥m";
-    } catch (e) { alert("KhÃ´ng truy cáº­p mic: " + e.message); }
+      btn.textContent = "🛑 Dừng & chấm";
+    } catch (e) { alert("Không truy cập mic: " + e.message); }
   }
 
   async function onStop() {
     STATE.stream?.getTracks().forEach(t => t.stop());
     STATE.recording = false;
     const btn = mount.querySelector("#rhyRec");
-    if (btn) { btn.classList.remove("recording"); btn.textContent = "â³ Äang cháº¥mâ€¦"; btn.disabled = true; }
+    if (btn) { btn.classList.remove("recording"); btn.textContent = "⏳ Đang chấm…"; btn.disabled = true; }
     const blob = new Blob(STATE.chunks, { type: "audio/webm" });
     const b64 = await blobToBase64(blob);
     const s = SENTENCES[STATE.idx];
@@ -355,7 +355,7 @@
           sentence: s.plain,
           audioBase64: b64.split(",")[1] || b64,
           mimeType: "audio/webm",
-          context: `RHYTHM & STRESS DRILL â€” Focus: ${s.rule}. The target sentence has the following stress pattern (CAPS = stressed beat, lowercase = weak/reduced): "${s.marked}". Key point: ${s.focus}. Judge ONLY rhythm and word stress â€” NOT individual sound pronunciation. Score 0-10 based on: (1) correct content words are louder/longer, (2) function words are reduced/fast, (3) overall isochronous beat pattern feels natural. Respond with JSON: { score: 0-10, feedback: "brief English feedback on what they did well or wrong with stress/rhythm", stressAccuracy: "good/partial/poor" }.`
+          context: `RHYTHM & STRESS DRILL — Focus: ${s.rule}. The target sentence has the following stress pattern (CAPS = stressed beat, lowercase = weak/reduced): "${s.marked}". Key point: ${s.focus}. Judge ONLY rhythm and word stress — NOT individual sound pronunciation. Score 0-10 based on: (1) correct content words are louder/longer, (2) function words are reduced/fast, (3) overall isochronous beat pattern feels natural. Respond with JSON: { score: 0-10, feedback: "brief English feedback on what they did well or wrong with stress/rhythm", stressAccuracy: "good/partial/poor" }.`
         })
       });
       const d = await r.json();
@@ -364,8 +364,8 @@
       showFeedback({ score, s, feedbackText, raw: d });
       saveAttempt({ plain: s.plain, score, rule: s.rule, feedback: feedbackText });
     } catch (e) {
-      if (btn) { btn.disabled = false; btn.textContent = "ðŸŽ¤ Ghi Ã¢m láº¡i"; }
-      alert("Lá»—i cháº¥m: " + e.message);
+      if (btn) { btn.disabled = false; btn.textContent = "🎤 Ghi âm lại"; }
+      alert("Lỗi chấm: " + e.message);
     }
   }
 
@@ -387,10 +387,10 @@
   function showFeedback({ score, s, feedbackText, raw }) {
     const host = mount.querySelector("#rhyFeedbackHost");
     const btn = mount.querySelector("#rhyRec");
-    if (btn) { btn.disabled = false; btn.textContent = "ðŸŽ¤ Ghi Ã¢m láº¡i"; }
+    if (btn) { btn.disabled = false; btn.textContent = "🎤 Ghi âm lại"; }
     const cls = score >= 7 ? "rhy-fb-ok" : score >= 4 ? "rhy-fb-mid" : "rhy-fb-no";
-    const icon = score >= 7 ? "âœ“" : score >= 4 ? "~" : "âœ—";
-    const title = score >= 7 ? "Nhá»‹p ráº¥t tá»± nhiÃªn!" : score >= 4 ? "Gáº§n Ä‘Ãºng nhá»‹p rá»“i!" : "Cáº§n luyá»‡n nhá»‹p thÃªm";
+    const icon = score >= 7 ? "✓" : score >= 4 ? "~" : "✗";
+    const title = score >= 7 ? "Nhịp rất tự nhiên!" : score >= 4 ? "Gần đúng nhịp rồi!" : "Cần luyện nhịp thêm";
     const stressAcc = raw?.stressAccuracy || "";
     host.innerHTML = `
       <div class="rhy-feedback">
@@ -398,13 +398,13 @@
           <div class="rhy-fb-badge ${cls}">${icon}</div>
           <div>
             <div class="rhy-fb-title">${title}</div>
-            <div class="rhy-fb-sub">Pattern: <b>${escHtml(s.rule)}</b>${stressAcc ? ` Â· Stress accuracy: ${escHtml(stressAcc)}` : ""}</div>
+            <div class="rhy-fb-sub">Pattern: <b>${escHtml(s.rule)}</b>${stressAcc ? ` · Stress accuracy: ${escHtml(stressAcc)}` : ""}</div>
           </div>
         </div>
-        <div class="rhy-fb-score">Äiá»ƒm rhythm: <b>${score}/10</b></div>
+        <div class="rhy-fb-score">Điểm rhythm: <b>${score}/10</b></div>
         ${feedbackText ? `<div class="rhy-fb-detail">${escHtml(feedbackText)}</div>` : ""}
-        ${raw?.phoneticHeard ? `<div class="rhy-fb-detail">Báº¡n Ä‘á»c: <i style="color:#d9381e;">${escHtml(raw.phoneticHeard)}</i></div>` : ""}
-        <div class="rhy-fb-note">ðŸ“Œ ${escHtml(s.note)}</div>
+        ${raw?.phoneticHeard ? `<div class="rhy-fb-detail">Bạn đọc: <i style="color:#d9381e;">${escHtml(raw.phoneticHeard)}</i></div>` : ""}
+        <div class="rhy-fb-note">📌 ${escHtml(s.note)}</div>
       </div>
     `;
   }

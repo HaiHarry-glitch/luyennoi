@@ -81,13 +81,13 @@
     .g-word-card:hover { border-color:#d9381e; box-shadow:0 2px 8px rgba(217, 56, 30,.1); transform:translateY(-1px); }
     .g-word-card:active { transform:translateY(0); }
     .g-word-text { font-size:1rem; font-weight:600; color:#171717; flex:1; min-width:0; line-height:2.4; word-spacing:.05em; }
-    /* TARGET grapheme â€” teal (highlighted) */
+    /* TARGET grapheme — teal (highlighted) */
     .g-word-text ruby.hit { color:#0d9488; }
     .g-word-text ruby.hit rt { color:#0d9488; font-size:.55em; font-weight:700; font-family:'Segoe UI Symbol','Segoe UI',sans-serif; letter-spacing:.02em; }
-    /* Context grapheme â€” muted purple (smaller, less prominent) */
+    /* Context grapheme — muted purple (smaller, less prominent) */
     .g-word-text ruby.ctx { color:#171717; }
     .g-word-text ruby.ctx rt { color:#d9381e; font-size:.5em; font-weight:600; font-family:'Segoe UI Symbol','Segoe UI',sans-serif; opacity:.85; letter-spacing:.02em; }
-    /* Silent grapheme â€” show dot */
+    /* Silent grapheme — show dot */
     .g-word-text ruby.silent { color:#171717; }
     .g-word-text ruby.silent rt { color:#9ca3af; font-size:.55em; }
     .g-word-actions { display:flex; gap:.25rem; flex-shrink:0; }
@@ -179,7 +179,7 @@ const groups = [
     ["f-s",     "/f/ /s/",                                "f, ph, s, c"],
   ]],
 ];
-// Ambiguous graphemes â€” letters that map to MULTIPLE IPA values.
+// Ambiguous graphemes — letters that map to MULTIPLE IPA values.
 // Used to generate the reverse drill: given a word + highlighted grapheme,
 // the learner picks the correct sound. The 4 candidate sounds are drawn from
 // all possible IPAs of that grapheme across the dictionary.
@@ -196,19 +196,19 @@ let reverseTest = null;               // { questions: [...], idx, correct, finis
 
 function render() {
   const sub = {
-    grapheme: "NguyÃªn Ã¢m tiáº¿ng Anh cÃ³ nhiá»u cÃ¡ch viáº¿t khÃ¡c nhau cho cÃ¹ng 1 Ã¢m. 26 bÃ i chia 3 nhÃ³m.",
-    reverse: "CÃ¹ng 1 cÃ¡ch viáº¿t (vd 'ea') cÃ³ thá»ƒ Ä‘á»c nhiá»u Ã¢m tuá»³ ngá»¯ cáº£nh. LÃ m mini test 10 cÃ¢u â€” tá»« vÃ  grapheme chá»n ngáº«u nhiÃªn tá»« thÆ° viá»‡n.",
+    grapheme: "Nguyên âm tiếng Anh có nhiều cách viết khác nhau cho cùng 1 âm. 26 bài chia 3 nhóm.",
+    reverse: "Cùng 1 cách viết (vd 'ea') có thể đọc nhiều âm tuỳ ngữ cảnh. Làm mini test 10 câu — từ và grapheme chọn ngẫu nhiên từ thư viện.",
   };
   root.innerHTML = `
     <div class="pronun-header">
       <div>
-        <h1>KhoÃ¡ phÃ¡t Ã¢m</h1>
+        <h1>Khoá phát âm</h1>
         <p>${sub[active] || sub.grapheme}</p>
       </div>
     </div>
     <div class="pronun-tabs">
       <button class="${active === "grapheme" ? "active" : ""}" data-tab="grapheme">Theo Grapheme</button>
-      <button class="${active === "reverse" ? "active" : ""}" data-tab="reverse">ðŸ”„ Luyá»‡n ngÆ°á»£c (Mini test)</button>
+      <button class="${active === "reverse" ? "active" : ""}" data-tab="reverse">🔄 Luyện ngược (Mini test)</button>
     </div>
     <section class="pronun-panel">${active === "grapheme" ? graphemeTab() : reverseTab()}</section>`;
   root.querySelectorAll("[data-tab]").forEach((b) => b.addEventListener("click", () => { active = b.dataset.tab; render(); }));
@@ -216,14 +216,14 @@ function render() {
 }
 
 
-// Pre-compute phonemeâ†’graphemeâ†’words map from LuyenDoc 20K dict.
+// Pre-compute phoneme→grapheme→words map from LuyenDoc 20K dict.
 // Cached so we only walk the dictionary once.
 let PHONEME_INDEX = null;
 async function buildPhonemeIndex() {
   if (PHONEME_INDEX) return PHONEME_INDEX;
   if (typeof window.lnDictReady !== "function") { PHONEME_INDEX = {}; return PHONEME_INDEX; }
   const dict = await window.lnDictReady();
-  const idx = {}; // { "iË": { "ea": ["sea","beach",...], "ee": [...] }, ... }
+  const idx = {}; // { "iː": { "ea": ["sea","beach",...], "ee": [...] }, ... }
   if (!dict || typeof dict.forEach !== "function") { PHONEME_INDEX = idx; return idx; }
   dict.forEach((entry, word) => {
     if (!Array.isArray(entry.graph2I)) return;
@@ -251,7 +251,7 @@ function escapeHtml(s) {
 
 // Smart-IPA render for a word inside the phonics card.
 // Shows IPA above EVERY grapheme. The TARGET grapheme is rendered in teal
-// (highlight), others in muted purple â€” so user sees full phonetic breakdown
+// (highlight), others in muted purple — so user sees full phonetic breakdown
 // but the focus grapheme still stands out.
 function renderSmartWord(word, targetGrapheme, targetIpa) {
   const entry = typeof window.lnLookupDict === "function" ? window.lnLookupDict(word) : null;
@@ -267,8 +267,8 @@ function renderSmartWord(word, targetGrapheme, targetIpa) {
     if (ipa) {
       out.push(`<ruby class="${isTarget ? "hit" : "ctx"}">${escapeHtml(slice)}<rt>${escapeHtml(ipa)}</rt></ruby>`);
     } else {
-      // Silent grapheme â€” mark with a small dot above
-      out.push(`<ruby class="silent">${escapeHtml(slice)}<rt>Â·</rt></ruby>`);
+      // Silent grapheme — mark with a small dot above
+      out.push(`<ruby class="silent">${escapeHtml(slice)}<rt>·</rt></ruby>`);
     }
     pos += gLen;
   }
@@ -276,7 +276,7 @@ function renderSmartWord(word, targetGrapheme, targetIpa) {
   return out.join("");
 }
 
-// Render Theo Grapheme tab â€” either summary LIST (default) or DETAIL view of one phoneme.
+// Render Theo Grapheme tab — either summary LIST (default) or DETAIL view of one phoneme.
 function graphemeTab() {
   if (phonemeSelected) {
     return graphemeDetailView(phonemeSelected);
@@ -284,7 +284,7 @@ function graphemeTab() {
   return graphemeListView();
 }
 
-// LIST view: 26 lessons grouped by Part, just summary stats â€” no words.
+// LIST view: 26 lessons grouped by Part, just summary stats — no words.
 function graphemeListView() {
   setTimeout(async () => {
     const idx = await buildPhonemeIndex();
@@ -304,9 +304,9 @@ function graphemeListView() {
             <span class="g-list-meta">
               <span class="g-list-tag">1 sound</span>
               <span class="g-list-tag">${graphemeList.length} graphemes</span>
-              <span class="g-list-tag">${totalWords} tá»«</span>
+              <span class="g-list-tag">${totalWords} từ</span>
             </span>
-            <span class="g-list-arrow">â†’</span>
+            <span class="g-list-arrow">→</span>
           </a>`;
       }).join("");
       return `<section class="phonics-group"><h2>${escapeHtml(groupName)}</h2><div class="g-list">${items}</div></section>`;
@@ -320,10 +320,10 @@ function graphemeListView() {
   }, 0);
   return `
     <div class="g-list-header">
-      <strong>Sound â†’ Phonogram</strong>
-      <small>26 bÃ i há»c Â· click vÃ o Ã¢m Ä‘á»ƒ xem chi tiáº¿t cÃ¡c cÃ¡ch viáº¿t vÃ  luyá»‡n phÃ¡t Ã¢m tá»«ng tá»«.</small>
+      <strong>Sound → Phonogram</strong>
+      <small>26 bài học · click vào âm để xem chi tiết các cách viết và luyện phát âm từng từ.</small>
     </div>
-    <div class="phonics-host"><div style="text-align:center;color:#9ca3af;padding:2rem;">â³ Äang táº£i tá»« Ä‘iá»ƒn 20K tá»«â€¦</div></div>`;
+    <div class="phonics-host"><div style="text-align:center;color:#9ca3af;padding:2rem;">⏳ Đang tải từ điển 20K từ…</div></div>`;
 }
 
 // DETAIL view: full grapheme breakdown for one phoneme, with click-to-practice words.
@@ -338,7 +338,7 @@ function graphemeDetailView(phonemeId) {
       const found = lessons.find(([id]) => id === phonemeId);
       if (found) { spec = found; groupLabel = g; break; }
     }
-    if (!spec) { host.innerHTML = "<p>KhÃ´ng tÃ¬m tháº¥y bÃ i há»c.</p>"; return; }
+    if (!spec) { host.innerHTML = "<p>Không tìm thấy bài học.</p>"; return; }
     const [pid, sound, graphemesStr] = spec;
     const ipaList = sound.replace(/\//g, "").trim().split(/\s+/);
     const graphemeList = graphemesStr.split(/,\s*/).map((g) => g.trim()).filter(Boolean);
@@ -353,33 +353,33 @@ function graphemeDetailView(phonemeId) {
     });
     host.innerHTML = `
       <div class="g-detail-head">
-        <a class="g-back" href="#" id="gBack">â† Táº¥t cáº£ bÃ i</a>
+        <a class="g-back" href="#" id="gBack">← Tất cả bài</a>
         <h2><span class="g-detail-sound">${escapeHtml(sound)}</span> <span class="g-detail-group">${escapeHtml(groupLabel)}</span></h2>
-        <p class="g-detail-stats"><b>1 sound</b> vá»›i <b>${graphemeList.length} cÃ¡ch viáº¿t</b> vÃ  <b>${totalAll} tá»« vÃ­ dá»¥</b>. Click ðŸŽ¤ á»Ÿ tá»« báº¥t ká»³ Ä‘á»ƒ ghi Ã¢m + cháº¥m Ä‘iá»ƒm.</p>
+        <p class="g-detail-stats"><b>1 sound</b> với <b>${graphemeList.length} cách viết</b> và <b>${totalAll} từ ví dụ</b>. Click 🎤 ở từ bất kỳ để ghi âm + chấm điểm.</p>
       </div>
       <aside class="g-toc">
-        <strong>Trong trang nÃ y</strong>
+        <strong>Trong trang này</strong>
         ${graphemeBlocks.map((b, i) => `<a href="#g-section-${i}" data-toc="${i}"><b>${escapeHtml(b.grapheme)}</b><small>${escapeHtml(b.ipa || "")}</small></a>`).join("")}
       </aside>
       <div class="g-body">
         ${graphemeBlocks.map((b, i) => `
           <details class="g-section" id="g-section-${i}" ${i === 0 ? "open" : ""}>
             <summary class="g-section-head">
-              <span class="g-caret">â–¸</span>
+              <span class="g-caret">▸</span>
               <span class="g-section-badge"><b>${escapeHtml(b.grapheme)}</b><small>${escapeHtml(b.ipa || "")}</small></span>
-              <span class="g-section-meta">${b.common.length + b.intermediate.length} tá»«</span>
+              <span class="g-section-meta">${b.common.length + b.intermediate.length} từ</span>
             </summary>
             <div class="g-section-content">
               <details class="g-subsec" open>
-                <summary class="g-subsec-head"><span class="g-caret">â–¸</span><span class="g-section-sub">COMMON WORDS Â· ${b.common.length}</span></summary>
+                <summary class="g-subsec-head"><span class="g-caret">▸</span><span class="g-section-sub">COMMON WORDS · ${b.common.length}</span></summary>
                 <div class="g-words-grid">
-                  ${b.common.length === 0 ? `<i style="color:#9ca3af;">â€” chÆ°a cÃ³ tá»« â€”</i>` :
+                  ${b.common.length === 0 ? `<i style="color:#9ca3af;">— chưa có từ —</i>` :
                     b.common.map((w) => wordCard(w, b.grapheme, b.ipa)).join("")}
                 </div>
               </details>
               ${b.intermediate.length ? `
                 <details class="g-subsec">
-                  <summary class="g-subsec-head"><span class="g-caret">â–¸</span><span class="g-section-sub">INTERMEDIATE Â· ${b.intermediate.length}</span></summary>
+                  <summary class="g-subsec-head"><span class="g-caret">▸</span><span class="g-section-sub">INTERMEDIATE · ${b.intermediate.length}</span></summary>
                   <div class="g-words-grid">
                     ${b.intermediate.map((w) => wordCard(w, b.grapheme, b.ipa)).join("")}
                   </div>
@@ -389,23 +389,23 @@ function graphemeDetailView(phonemeId) {
       </div>`;
     // Back button
     host.querySelector("#gBack").addEventListener("click", (e) => { e.preventDefault(); phonemeSelected = null; render(); });
-    // Word card clicks â†’ TTS or practice
+    // Word card clicks → TTS or practice
     host.querySelectorAll("[data-say]").forEach((b) => b.addEventListener("click", (e) => { e.stopPropagation(); speak(b.dataset.say); }));
     host.querySelectorAll("[data-practice]").forEach((b) => b.addEventListener("click", (e) => {
       e.stopPropagation();
       const word = b.dataset.practice;
       if (typeof window.openWordPracticeModal === "function") window.openWordPracticeModal(word, "");
-      else alert("Word practice popup chÆ°a load.");
+      else alert("Word practice popup chưa load.");
     }));
   }, 0);
-  return `<div class="phonics-host"><div style="text-align:center;color:#9ca3af;padding:2rem;">â³ Äang chuáº©n bá»‹â€¦</div></div>`;
+  return `<div class="phonics-host"><div style="text-align:center;color:#9ca3af;padding:2rem;">⏳ Đang chuẩn bị…</div></div>`;
 }
 
 function wordCard(word, grapheme, ipa) {
   return `
-    <div class="g-word-card" data-practice="${escapeHtml(word)}" title="Click Ä‘á»ƒ luyá»‡n phÃ¡t Ã¢m + cháº¥m Ä‘iá»ƒm">
+    <div class="g-word-card" data-practice="${escapeHtml(word)}" title="Click để luyện phát âm + chấm điểm">
       <div class="g-word-text">${renderSmartWord(word, grapheme, ipa)}</div>
-      <button class="g-word-btn g-word-tts" data-say="${escapeHtml(word)}" title="Nghe TTS">â–¶</button>
+      <button class="g-word-btn g-word-tts" data-say="${escapeHtml(word)}" title="Nghe TTS">▶</button>
     </div>`;
 }
 
@@ -423,7 +423,7 @@ async function generateReverseTest() {
       graphemeToIpas[g][ipa] = idx[ipa][g];
     }
   }
-  // Keep only graphemes with â‰¥ 2 different IPAs (otherwise no ambiguity)
+  // Keep only graphemes with ≥ 2 different IPAs (otherwise no ambiguity)
   const candidates = Object.entries(graphemeToIpas).filter(([, ipas]) => Object.keys(ipas).length >= 2);
   if (candidates.length === 0) return null;
   const questions = [];
@@ -445,7 +445,7 @@ async function generateReverseTest() {
     const others = ipaList.filter((x) => x !== correctIpa);
     let distractors = [...others];
     // Top up with generic vowel/consonant sounds if too few
-    const filler = ["iË", "Éª", "É›", "Ã¦", "ÊŒ", "É™", "eÉª", "aÉª", "k", "s"];
+    const filler = ["iː", "ɪ", "ɛ", "æ", "ʌ", "ə", "eɪ", "aɪ", "k", "s"];
     for (const f of filler) {
       if (distractors.length >= 3) break;
       if (f !== correctIpa && !distractors.includes(f)) distractors.push(f);
@@ -466,15 +466,15 @@ function reverseTab() {
       if (!host) return;
       host.innerHTML = `
         <div class="reverse-start">
-          <div class="reverse-icon">ðŸ”„</div>
-          <h2>Mini test: ÄoÃ¡n Ã¢m theo cÃ¡ch viáº¿t</h2>
-          <p>10 cÃ¢u tráº¯c nghiá»‡m. Má»—i cÃ¢u má»™t tá»« ngáº«u nhiÃªn vá»›i 1 grapheme Ä‘Æ°á»£c highlight. Báº¡n chá»n xem nÃ³ Ä‘á»c thÃ nh Ã¢m nÃ o.</p>
-          <button id="reverseStart" class="primary-pill">Báº¯t Ä‘áº§u mini test (10 cÃ¢u)</button>
+          <div class="reverse-icon">🔄</div>
+          <h2>Mini test: Đoán âm theo cách viết</h2>
+          <p>10 câu trắc nghiệm. Mỗi câu một từ ngẫu nhiên với 1 grapheme được highlight. Bạn chọn xem nó đọc thành âm nào.</p>
+          <button id="reverseStart" class="primary-pill">Bắt đầu mini test (10 câu)</button>
         </div>`;
       host.querySelector("#reverseStart").addEventListener("click", async () => {
-        host.innerHTML = `<div style="text-align:center;color:#9ca3af;padding:2rem;">â³ Äang chuáº©n bá»‹ cÃ¢u há»iâ€¦</div>`;
+        host.innerHTML = `<div style="text-align:center;color:#9ca3af;padding:2rem;">⏳ Đang chuẩn bị câu hỏi…</div>`;
         reverseTest = await generateReverseTest();
-        if (!reverseTest) { host.innerHTML = `<div style="text-align:center;color:var(--red);padding:2rem;">KhÃ´ng táº¡o Ä‘Æ°á»£c test. Reload thá»­ láº¡i.</div>`; return; }
+        if (!reverseTest) { host.innerHTML = `<div style="text-align:center;color:var(--red);padding:2rem;">Không tạo được test. Reload thử lại.</div>`; return; }
         render();
       });
     }, 0);
@@ -498,7 +498,7 @@ function reverseTab() {
       render();
     });
     root.querySelector("#reverseExit")?.addEventListener("click", () => {
-      if (confirm("ThoÃ¡t test? Tiáº¿n trÃ¬nh sáº½ máº¥t.")) { reverseTest = null; render(); }
+      if (confirm("Thoát test? Tiến trình sẽ mất.")) { reverseTest = null; render(); }
     });
     root.querySelector("#reverseTtsBig")?.addEventListener("click", () => speak(q.word));
   }, 0);
@@ -507,12 +507,12 @@ function reverseTab() {
 
   return `
     <div class="reverse-progress-bar"><span style="width:${progressPct}%"></span></div>
-    <div class="reverse-progress-label">CÃ¢u ${reverseTest.idx + 1}/${total} Â· Äiá»ƒm táº¡m: ${reverseTest.correct}/${reverseTest.idx + (last ? 1 : 0)}</div>
+    <div class="reverse-progress-label">Câu ${reverseTest.idx + 1}/${total} · Điểm tạm: ${reverseTest.correct}/${reverseTest.idx + (last ? 1 : 0)}</div>
     <article class="reverse-card">
-      <div class="reverse-prompt">Trong tá»« nÃ y, <b>${escapeHtml(q.grapheme)}</b> Ä‘á»c thÃ nh Ã¢m gÃ¬?</div>
+      <div class="reverse-prompt">Trong từ này, <b>${escapeHtml(q.grapheme)}</b> đọc thành âm gì?</div>
       <h2>
         ${wordHtml}
-        <button id="reverseTtsBig" class="reverse-tts" title="Nghe">â–¶</button>
+        <button id="reverseTtsBig" class="reverse-tts" title="Nghe">▶</button>
       </h2>
       <div class="choice-row">
         ${q.choices.map((c) => {
@@ -527,13 +527,13 @@ function reverseTab() {
       </div>
       ${last ? `
         <div class="reverse-feedback ${last.correct ? "ok" : "no"}">
-          ${last.correct ? "âœ“ ÄÃºng!" : "âœ— Sai."} ÄÃ¡p Ã¡n: <b>/${escapeHtml(q.correctIpa)}/</b>.
+          ${last.correct ? "✓ Đúng!" : "✗ Sai."} Đáp án: <b>/${escapeHtml(q.correctIpa)}/</b>.
         </div>
         <div style="text-align:center;margin-top:.8rem;">
-          <button id="reverseNext" class="primary-pill">${reverseTest.idx + 1 >= total ? "Xem káº¿t quáº£ â†’" : "CÃ¢u tiáº¿p â†’"}</button>
+          <button id="reverseNext" class="primary-pill">${reverseTest.idx + 1 >= total ? "Xem kết quả →" : "Câu tiếp →"}</button>
         </div>` : ""}
       <div style="text-align:center;margin-top:.6rem;">
-        <button id="reverseExit" style="background:none;border:none;color:#9ca3af;font-size:.78rem;cursor:pointer;text-decoration:underline;">ThoÃ¡t test</button>
+        <button id="reverseExit" style="background:none;border:none;color:#9ca3af;font-size:.78rem;cursor:pointer;text-decoration:underline;">Thoát test</button>
       </div>
     </article>`;
 }
@@ -558,7 +558,7 @@ function reverseResults() {
   const total = reverseTest.questions.length;
   const pct = Math.round((reverseTest.correct / total) * 100);
   const color = pct >= 80 ? "var(--ink)" : pct >= 60 ? "#d9381e" : pct >= 40 ? "var(--ink)" : "var(--red)";
-  const label = pct >= 80 ? "Xuáº¥t sáº¯c!" : pct >= 60 ? "KhÃ¡ tá»‘t." : pct >= 40 ? "Cáº§n luyá»‡n thÃªm." : "HÃ£y Ã´n láº¡i quy táº¯c grapheme.";
+  const label = pct >= 80 ? "Xuất sắc!" : pct >= 60 ? "Khá tốt." : pct >= 40 ? "Cần luyện thêm." : "Hãy ôn lại quy tắc grapheme.";
   setTimeout(() => {
     root.querySelector("#reverseRetry")?.addEventListener("click", async () => {
       reverseTest = null;
@@ -568,26 +568,26 @@ function reverseResults() {
   }, 0);
   return `
     <article class="reverse-card reverse-results">
-      <span>Káº¾T QUáº¢ MINI TEST</span>
+      <span>KẾT QUẢ MINI TEST</span>
       <div class="reverse-score" style="color:${color};">${reverseTest.correct}/${total}</div>
-      <div class="reverse-score-pct" style="color:${color};">${pct}% Â· ${label}</div>
+      <div class="reverse-score-pct" style="color:${color};">${pct}% · ${label}</div>
       <details class="reverse-review">
-        <summary>Xem chi tiáº¿t ${total} cÃ¢u</summary>
+        <summary>Xem chi tiết ${total} câu</summary>
         ${reverseTest.questions.map((q, i) => {
           const a = reverseTest.answered[i];
           return `
             <div class="reverse-review-row ${a?.correct ? "ok" : "no"}">
               <span class="rev-num">${i + 1}.</span>
               <span class="rev-word">${renderWordHighlight(q.word, q.grapheme)}</span>
-              <span class="rev-arrow">â†’</span>
+              <span class="rev-arrow">→</span>
               <span class="rev-ipa">/${escapeHtml(q.correctIpa)}/</span>
-              ${a && !a.correct ? `<span class="rev-bad">báº¡n chá»n /${escapeHtml(a.choice)}/</span>` : ""}
-              <button class="rev-say" data-say="${escapeHtml(q.word)}" title="Nghe">â–¶</button>
+              ${a && !a.correct ? `<span class="rev-bad">bạn chọn /${escapeHtml(a.choice)}/</span>` : ""}
+              <button class="rev-say" data-say="${escapeHtml(q.word)}" title="Nghe">▶</button>
             </div>`;
         }).join("")}
       </details>
       <div style="display:flex;gap:.5rem;justify-content:center;margin-top:1.2rem;">
-        <button id="reverseRetry" class="primary-pill">LÃ m test khÃ¡c</button>
+        <button id="reverseRetry" class="primary-pill">Làm test khác</button>
       </div>
     </article>`;
 }

@@ -1,7 +1,7 @@
 ﻿// =====================================================================
-//  Luyá»‡n NÃ³i â€” Full Test mode (custom IELTS-realistic flow)
+//  Luyện Nói — Full Test mode (custom IELTS-realistic flow)
 //  Activates only on /take-test/full-test. Takes over the page UI.
-//  Phase 1: setup screen + Part 1 flow (TTS â†’ auto-record â†’ press to advance).
+//  Phase 1: setup screen + Part 1 flow (TTS → auto-record → press to advance).
 //  Phase 2+: Part 2 cue card with 1-min prep, Part 3 same-topic, adaptive scoring.
 // =====================================================================
 (function () {
@@ -12,13 +12,13 @@
   const IS_CUSTOM_STRICT = TEST_MODE === "custom-strict";
   const PART_FILTER = (TEST_MODE === "full-test" || IS_CUSTOM_STRICT) ? null : TEST_MODE; // null = run all parts
 
-  // â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ State â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // ──────────────── State ────────────────
   const FT = {
     state: "loading",            // loading | setup | running | scoring | result
     voice: null,                 // SpeechSynthesisVoice
     voiceName: localStorage.getItem("ln.ttsVoice") || "",
     examMode: "strict",          // strict (timed) | relaxed
-    questionCount: 3,            // Part 1: 3 questions per topic Ã— 3 topics = 9 questions
+    questionCount: 3,            // Part 1: 3 questions per topic × 3 topics = 9 questions
     followUp: false,
     mode: TEST_MODE,             // for downstream branching
     strictSessionId: "",
@@ -39,7 +39,7 @@
     questionsData: null,         // loaded from /data/questions.json
   };
 
-  // â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ Utilities â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // ──────────────── Utilities ────────────────
   const getKey = () => {
     try {
       const multi = JSON.parse(localStorage.getItem("luyennoi.geminiKeys") || "[]");
@@ -120,20 +120,20 @@
       try { FT.recorder?.stop(); } catch {}
       try { FT.stream?.getTracks().forEach(t => t.stop()); } catch {}
       await finishStrictSession("invalidated", reason, payload);
-      alert("BÃ i thi chá»‘ng gian láº­n Ä‘Ã£ bá»‹ há»§y: " + reason + ". Báº¡n cáº§n lÃ m láº¡i tá»« Ä‘áº§u.");
+      alert("Bài thi chống gian lận đã bị hủy: " + reason + ". Bạn cần làm lại từ đầu.");
       location.href = "/take-test/home";
     };
     document.addEventListener("fullscreenchange", () => {
       if (FT.strictGuardActive && !document.fullscreenElement) {
         strictEvent("fullscreen_exit");
-        invalidate("ThoÃ¡t toÃ n mÃ n hÃ¬nh");
+        invalidate("Thoát toàn màn hình");
       }
     });
     document.addEventListener("visibilitychange", () => {
       if (document.hidden) {
         hiddenAt = Date.now();
         strictEvent("visibility_hidden");
-        invalidate("áº¨n tab/chuyá»ƒn á»©ng dá»¥ng");
+        invalidate("Ẩn tab/chuyển ứng dụng");
       } else {
         strictEvent("visibility_visible", { hiddenMs: hiddenAt ? Date.now() - hiddenAt : 0 });
       }
@@ -166,7 +166,7 @@
 
   function speak(text) {
     return new Promise((resolve) => {
-      if (!text || !window.speechSynthesis) { console.warn("[FT-TTS] skip â€” no text or no speechSynthesis"); return resolve(); }
+      if (!text || !window.speechSynthesis) { console.warn("[FT-TTS] skip — no text or no speechSynthesis"); return resolve(); }
       console.log("[FT-TTS] speaking:", String(text).slice(0, 60), "voices:", speechSynthesis.getVoices().length, "current voice:", FT.voice?.name || "(browser default)");
       try { speechSynthesis.cancel(); } catch {}
       // Some browsers get stuck in a "paused" state; explicitly resume.
@@ -192,12 +192,12 @@
           done();
         };
         try { speechSynthesis.speak(u); } catch (e) { console.warn("[FT-TTS] speak threw", e); done(); }
-        // Safety net â€” if onend/onerror never fires within a reasonable time, unblock the flow.
+        // Safety net — if onend/onerror never fires within a reasonable time, unblock the flow.
         // Roughly 0.06s per character + 1.5s base.
         const safetyMs = Math.max(2000, 1500 + text.length * 60);
         setTimeout(done, safetyMs);
       };
-      // Tiny delay AFTER cancel â€” Chrome/Edge can ignore speak() if fired in the same tick as cancel
+      // Tiny delay AFTER cancel — Chrome/Edge can ignore speak() if fired in the same tick as cancel
       setTimeout(start, 80);
     });
   }
@@ -210,26 +210,26 @@
       document.getElementById("ft-key-modal")?.remove();
       const ov = document.createElement("div");
       ov.id = "ft-key-modal";
-      // Append to #ft-root (NOT body) â€” mountRoot hides every other direct body child.
+      // Append to #ft-root (NOT body) — mountRoot hides every other direct body child.
       // Use !important display so nothing else can hide it.
       ov.style.cssText = "position:fixed;inset:0;background:rgba(15,23,42,.55);z-index:99999;display:flex !important;align-items:center;justify-content:center;font-family:Lexend,sans-serif;padding:1rem;";
       ov.innerHTML = `
         <div style="background:white;border-radius:1rem;max-width:480px;width:100%;box-shadow:0 12px 48px rgba(0,0,0,.25);padding:1.4rem 1.5rem;">
-          <div style="font-size:.74rem;color:#9ca3af;font-weight:700;">Cáº¦N API KEY</div>
-          <h2 style="font-size:1.2rem;font-weight:700;color:#171717;margin:.2rem 0 .5rem;">Nháº­p Gemini API key</h2>
+          <div style="font-size:.74rem;color:#9ca3af;font-weight:700;">CẦN API KEY</div>
+          <h2 style="font-size:1.2rem;font-weight:700;color:#171717;margin:.2rem 0 .5rem;">Nhập Gemini API key</h2>
           <p style="font-size:.85rem;color:#4b5563;line-height:1.55;margin-bottom:1rem;">
-            BÃ i thi cáº§n Gemini Ä‘á»ƒ cháº¥m Ä‘iá»ƒm. Láº¥y key miá»…n phÃ­ táº¡i
+            Bài thi cần Gemini để chấm điểm. Lấy key miễn phí tại
             <a href="https://aistudio.google.com/app/apikey" target="_blank" style="color:#d9381e;font-weight:600;">Google AI Studio</a>.
-            Key Ä‘Æ°á»£c lÆ°u trong trÃ¬nh duyá»‡t cá»§a báº¡n, khÃ´ng gá»­i lÃªn server bÃªn thá»© ba.
+            Key được lưu trong trình duyệt của bạn, không gửi lên server bên thứ ba.
           </p>
           <input id="ft-key-input" type="password" placeholder="AIza..." autocomplete="off"
             style="width:100%;padding:.7rem .9rem;border:1.5px solid #e0e0f0;border-radius:.5rem;font-size:.95rem;outline:none;box-sizing:border-box;font-family:'Courier New',monospace;" />
           <div id="ft-key-error" style="display:none;color:var(--red);font-size:.78rem;margin-top:.4rem;"></div>
           <div style="display:flex;justify-content:space-between;gap:.5rem;margin-top:1.1rem;">
-            <button class="ft-btn ft-btn-ghost" id="ft-key-cancel" style="padding:.55rem 1.1rem;">Äá»ƒ sau</button>
+            <button class="ft-btn ft-btn-ghost" id="ft-key-cancel" style="padding:.55rem 1.1rem;">Để sau</button>
             <div style="display:flex;gap:.5rem;">
-              <a class="ft-btn ft-btn-ghost" href="/settings" style="padding:.55rem 1rem;text-decoration:none;">âš™ CÃ i Ä‘áº·t</a>
-              <button class="ft-btn ft-btn-primary" id="ft-key-save" style="padding:.55rem 1.1rem;">LÆ°u & tiáº¿p tá»¥c</button>
+              <a class="ft-btn ft-btn-ghost" href="/settings" style="padding:.55rem 1rem;text-decoration:none;">⚙ Cài đặt</a>
+              <button class="ft-btn ft-btn-primary" id="ft-key-save" style="padding:.55rem 1.1rem;">Lưu & tiếp tục</button>
             </div>
           </div>
         </div>
@@ -246,7 +246,7 @@
         const v = (input.value || "").trim();
         if (!v || !/^AIza[a-zA-Z0-9_\-]{10,}$/.test(v)) {
           err.style.display = "block";
-          err.textContent = "Key trÃ´ng khÃ´ng Ä‘Ãºng Ä‘á»‹nh dáº¡ng. Pháº£i báº¯t Ä‘áº§u báº±ng AIza...";
+          err.textContent = "Key trông không đúng định dạng. Phải bắt đầu bằng AIza...";
           input.style.borderColor = "var(--red)";
           return;
         }
@@ -267,7 +267,7 @@
     });
   }
 
-  // â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ Mount root â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // ──────────────── Mount root ────────────────
   let root = null;
   function mount() {
     // Hide the entire body content from the original Svelte page
@@ -311,7 +311,7 @@
     document.body.appendChild(root);
   }
 
-  // â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ Voices â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // ──────────────── Voices ────────────────
   function loadVoices() {
     return new Promise((resolve) => {
       let voices = speechSynthesis.getVoices();
@@ -333,10 +333,10 @@
     return voices;
   }
 
-  // â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ Load question data â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // ──────────────── Load question data ────────────────
   // We pull from TWO sources:
-  //  â€¢ /data/questions.json â€” light Part 1 list (topic + questions[])
-  //  â€¢ /real/_app/immutable/chunks/forecast-map-*.js â€” rich Part 2/3 data
+  //  • /data/questions.json — light Part 1 list (topic + questions[])
+  //  • /real/_app/immutable/chunks/forecast-map-*.js — rich Part 2/3 data
   //    (each card has its own cueCards[] AND its own Part 3 questions[])
   async function loadQuestionData() {
     let questionsJson = { part1: { topics: [] }, part2: { topics: [] }, part3: { topics: [] } };
@@ -346,11 +346,11 @@
     } catch (e) { console.warn("[FT] failed to load questions.json", e); }
 
     // The forecast-map chunk exports the detailed Part 2/3 data as the `c` export
-    // (`x as c` in the bundle â†’ that's the original `n` array with full cueCards + questions).
+    // (`x as c` in the bundle → that's the original `n` array with full cueCards + questions).
     let part23Detailed = null;
     try {
       const mod = await import("/real/_app/immutable/chunks/forecast-map-a2d894f2.js");
-      // Try common export names â€” the chunk maps internal vars to short letters.
+      // Try common export names — the chunk maps internal vars to short letters.
       part23Detailed = mod.c || mod.b || mod.default || null;
       // Validate shape: array of {topic, data: [{title, cueCards[], questions[]}]}
       if (!Array.isArray(part23Detailed) || !part23Detailed[0]?.data?.[0]?.cueCards) {
@@ -372,7 +372,7 @@
     FT.part23Detailed = part23Detailed; // [{topic:"Person", data:[{title, cueCards[], questions[]}]}, ...]
   }
 
-  // â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ Build questions for the test â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // ──────────────── Build questions for the test ────────────────
   function buildQuestionsForTest() {
     const data = FT.questionsData;
 
@@ -407,7 +407,7 @@
       return;
     }
 
-    // â”€â”€ PART 1 â€” pick 3 random topics Ã— N questions â”€â”€
+    // ── PART 1 — pick 3 random topics × N questions ──
     const p1Topics = pickRandom(data.part1?.topics || [], 3);
     FT.questions.part1 = [];
     p1Topics.forEach(t => {
@@ -422,7 +422,7 @@
       });
     });
 
-    // â”€â”€ PART 2 & 3 â€” pull from rich forecast-map chunk if available â”€â”€
+    // ── PART 2 & 3 — pull from rich forecast-map chunk if available ──
     let p2Card = null;
     let p3Questions = [];
     if (Array.isArray(FT.part23Detailed) && FT.part23Detailed.length) {
@@ -438,7 +438,7 @@
       }
     }
 
-    // Fallback: questions.json only has titles â†’ synthesise a minimal cue card
+    // Fallback: questions.json only has titles → synthesise a minimal cue card
     if (!p2Card) {
       const flat = [];
       (data.part2?.topics || []).forEach(g => (g.questions || []).forEach(title => flat.push({ title, group: g.title })));
@@ -489,7 +489,7 @@
     });
   }
 
-  // â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ Setup screen â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // ──────────────── Setup screen ────────────────
   function showCustomStrictSetup(voices) {
     const p1Topics = FT.questionsData?.part1?.topics || [];
     const allCards = [];
@@ -503,21 +503,21 @@
     FT.state = "setup";
     root.innerHTML = `
       <div class="ft-card" style="max-width:860px;">
-        <a class="ft-back" href="/take-test/home">â† Quay láº¡i</a>
-        <h1 class="ft-h1" style="margin-top:.5rem;">TÃ¹y chá»n Ä‘á» chá»‘ng gian láº­n</h1>
-        <p class="ft-hint">Cháº¿ Ä‘á»™ nÃ y dÃ¹ng Ä‘á»ƒ dá»± Ä‘oÃ¡n band nghiÃªm tÃºc hÆ¡n. ThoÃ¡t toÃ n mÃ n hÃ¬nh, Ä‘á»•i tab, reload hoáº·c chuyá»ƒn app sáº½ há»§y bÃ i tá»« Ä‘áº§u.</p>
+        <a class="ft-back" href="/take-test/home">← Quay lại</a>
+        <h1 class="ft-h1" style="margin-top:.5rem;">Tùy chọn đề chống gian lận</h1>
+        <p class="ft-hint">Chế độ này dùng để dự đoán band nghiêm túc hơn. Thoát toàn màn hình, đổi tab, reload hoặc chuyển app sẽ hủy bài từ đầu.</p>
         <div class="ft-row" style="background:#fff7ed;border:1px solid #fed7aa;border-radius:.7rem;padding:.8rem 1rem;color:#9a3412;font-size:.84rem;line-height:1.55;">
-          <b>SiÃªu chá»‘ng gian láº­n - chá»‘ng Ä‘á»c:</b> khÃ´ng cÃ³ cÃ¢u máº«u, khÃ´ng AI gá»£i Ã½, khÃ´ng IPA, khÃ´ng tá»« vá»±ng. TrÃªn Ä‘iá»‡n thoáº¡i há»‡ thá»‘ng theo dÃµi áº©n tab/chuyá»ƒn app/khÃ³a mÃ n hÃ¬nh báº±ng lifecycle events.
+          <b>Siêu chống gian lận - chống đọc:</b> không có câu mẫu, không AI gợi ý, không IPA, không từ vựng. Trên điện thoại hệ thống theo dõi ẩn tab/chuyển app/khóa màn hình bằng lifecycle events.
         </div>
         <div class="ft-row">
-          <label class="ft-label">Giá»ng giÃ¡m kháº£o</label>
+          <label class="ft-label">Giọng giám khảo</label>
           <select id="ft-voice" class="ft-select">
             ${voices.map(v => `<option value="${escapeHtml(v.name)}" ${v.name === FT.voice?.name ? "selected" : ""}>${escapeHtml(v.name)} (${escapeHtml(v.lang)})</option>`).join("")}
           </select>
-          <button id="ft-voice-test" class="ft-btn ft-btn-ghost" style="padding:.35rem .8rem;font-size:.78rem;margin-top:.4rem;">â–¶ Nghe thá»­</button>
+          <button id="ft-voice-test" class="ft-btn ft-btn-ghost" style="padding:.35rem .8rem;font-size:.78rem;margin-top:.4rem;">▶ Nghe thử</button>
         </div>
         <div class="ft-row">
-          <label class="ft-label">Chá»n tá»‘i Ä‘a 3 nhÃ³m Part 1</label>
+          <label class="ft-label">Chọn tối đa 3 nhóm Part 1</label>
           <div id="strict-p1-topics" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:.45rem;max-height:260px;overflow:auto;border:1px solid #e5e7eb;border-radius:.7rem;padding:.7rem;">
             ${p1Topics.map(t => `
               <label class="ft-toggle" style="font-size:.82rem;background:#f9fafb;border-radius:.5rem;padding:.45rem .55rem;">
@@ -529,15 +529,15 @@
           <div class="ft-hint" id="strict-p1-count"></div>
         </div>
         <div class="ft-row">
-          <label class="ft-label">Chá»n 1 chá»§ Ä‘á» Part 2</label>
+          <label class="ft-label">Chọn 1 chủ đề Part 2</label>
           <select id="strict-p2-topic" class="ft-select">
-            ${allCards.map(c => `<option value="${escapeHtml(c.key)}" ${c.key === FT.selectedPart2Key ? "selected" : ""}>${escapeHtml(c.group)} Â· ${escapeHtml(c.title)}</option>`).join("")}
+            ${allCards.map(c => `<option value="${escapeHtml(c.key)}" ${c.key === FT.selectedPart2Key ? "selected" : ""}>${escapeHtml(c.group)} · ${escapeHtml(c.title)}</option>`).join("")}
           </select>
-          <div class="ft-hint">Part 3 sáº½ tá»± Ä‘i theo chá»§ Ä‘á» Part 2 Ä‘Ã£ chá»n.</div>
+          <div class="ft-hint">Part 3 sẽ tự đi theo chủ đề Part 2 đã chọn.</div>
         </div>
         <div style="display:flex;justify-content:space-between;gap:.5rem;margin-top:1.5rem;">
-          <button id="ft-cancel" class="ft-btn ft-btn-danger">Huá»·</button>
-          <button id="ft-start" class="ft-btn ft-btn-primary">Báº¯t Ä‘áº§u fullscreen</button>
+          <button id="ft-cancel" class="ft-btn ft-btn-danger">Huỷ</button>
+          <button id="ft-start" class="ft-btn ft-btn-primary">Bắt đầu fullscreen</button>
         </div>
       </div>
     `;
@@ -545,7 +545,7 @@
       const checks = [...root.querySelectorAll('#strict-p1-topics input[type="checkbox"]')];
       FT.selectedPart1Topics = checks.filter(c => c.checked).map(c => c.value).slice(0, 3);
       checks.forEach(c => { c.disabled = !c.checked && FT.selectedPart1Topics.length >= 3; });
-      root.querySelector("#strict-p1-count").textContent = `ÄÃ£ chá»n ${FT.selectedPart1Topics.length}/3 nhÃ³m.`;
+      root.querySelector("#strict-p1-count").textContent = `Đã chọn ${FT.selectedPart1Topics.length}/3 nhóm.`;
       root.querySelector("#ft-start").disabled = FT.selectedPart1Topics.length === 0 || !FT.selectedPart2Key;
     };
     root.querySelector("#ft-voice").addEventListener("change", (e) => {
@@ -566,41 +566,41 @@
     if (IS_CUSTOM_STRICT) return showCustomStrictSetup(voices);
     root.innerHTML = `
       <div class="ft-card">
-        <a class="ft-back" href="/take-test/home">â† Quay láº¡i</a>
+        <a class="ft-back" href="/take-test/home">← Quay lại</a>
         <h1 class="ft-h1" style="margin-top:.5rem;">${
-          TEST_MODE === "full-test" ? "Full Test â€” Thi thá»­ IELTS Speaking" :
-          TEST_MODE === "part1"     ? "Thi Part 1 â€” Personal questions" :
-          TEST_MODE === "part2"     ? "Thi Part 2 â€” Cue card" :
-                                       "Thi Part 3 â€” Discussion"
+          TEST_MODE === "full-test" ? "Full Test — Thi thử IELTS Speaking" :
+          TEST_MODE === "part1"     ? "Thi Part 1 — Personal questions" :
+          TEST_MODE === "part2"     ? "Thi Part 2 — Cue card" :
+                                       "Thi Part 3 — Discussion"
         }</h1>
-        <p class="ft-hint">Cáº¥u hÃ¬nh bÃ i thi: giá»ng giÃ¡m kháº£o${TEST_MODE === "full-test" ? ", sá»‘ cÃ¢u Part 1, follow-up" : ""}.</p>
+        <p class="ft-hint">Cấu hình bài thi: giọng giám khảo${TEST_MODE === "full-test" ? ", số câu Part 1, follow-up" : ""}.</p>
 
         <div class="ft-row">
-          <label class="ft-label">Giá»ng giÃ¡m kháº£o</label>
+          <label class="ft-label">Giọng giám khảo</label>
           <select id="ft-voice" class="ft-select">
             ${voices.map(v => `<option value="${escapeHtml(v.name)}" ${v.name === FT.voice?.name ? "selected" : ""}>${escapeHtml(v.name)} (${escapeHtml(v.lang)})</option>`).join("")}
           </select>
           <div style="margin-top:.4rem;">
-            <button id="ft-voice-test" class="ft-btn ft-btn-ghost" style="padding:.35rem .8rem;font-size:.78rem;">â–¶ Nghe thá»­</button>
+            <button id="ft-voice-test" class="ft-btn ft-btn-ghost" style="padding:.35rem .8rem;font-size:.78rem;">▶ Nghe thử</button>
           </div>
         </div>
 
         <div class="ft-row">
-          <label class="ft-label">Cáº¥u trÃºc bÃ i thi</label>
+          <label class="ft-label">Cấu trúc bài thi</label>
           <div style="background:#ffffff;border-radius:.5rem;padding:.7rem .9rem;font-size:.82rem;color:#171717;line-height:1.6;">
             ${TEST_MODE === "full-test" ? `
-              <b>Part 1:</b> 3 chá»§ Ä‘á» Ã— 3 cÃ¢u = 9 cÃ¢u (~5 phÃºt)<br>
-              <b>Part 2:</b> 1 cue card, ghi chÃº 1 phÃºt â†’ nÃ³i 2-2:30 phÃºt<br>
-              <b>Part 3:</b> 4-5 cÃ¢u tháº£o luáº­n cÃ¹ng chá»§ Ä‘á» Part 2 (~5 phÃºt)
+              <b>Part 1:</b> 3 chủ đề × 3 câu = 9 câu (~5 phút)<br>
+              <b>Part 2:</b> 1 cue card, ghi chú 1 phút → nói 2-2:30 phút<br>
+              <b>Part 3:</b> 4-5 câu thảo luận cùng chủ đề Part 2 (~5 phút)
             ` : TEST_MODE === "part1" ? `
-              <b>Part 1:</b> 3 chá»§ Ä‘á» Ã— 3 cÃ¢u = <b>9 cÃ¢u</b> (~5 phÃºt).<br>
-              Má»—i cÃ¢u: TTS há»i â†’ tá»± Ä‘á»™ng ghi Ã¢m â†’ báº¥m "Ghi nháº­n cÃ¢u tráº£ lá»i" Ä‘á»ƒ qua cÃ¢u.
+              <b>Part 1:</b> 3 chủ đề × 3 câu = <b>9 câu</b> (~5 phút).<br>
+              Mỗi câu: TTS hỏi → tự động ghi âm → bấm "Ghi nhận câu trả lời" để qua câu.
             ` : TEST_MODE === "part2" ? `
-              <b>Part 2:</b> 1 cue card, ghi chÃº 1 phÃºt â†’ nÃ³i tá»‘i Ä‘a 2:30 phÃºt.<br>
-              Cue card cÃ³ 4 Ã½ gá»£i Ã½ (you should say).
+              <b>Part 2:</b> 1 cue card, ghi chú 1 phút → nói tối đa 2:30 phút.<br>
+              Cue card có 4 ý gợi ý (you should say).
             ` : `
-              <b>Part 3:</b> 1 cÃ¢u tháº£o luáº­n chá»§ Ä‘á» chung (~40s).<br>
-              Tráº£ lá»i theo dáº¡ng phÃ¢n tÃ­ch, nÃ³i vá» Ã½ chung chá»© khÃ´ng pháº£i tráº£i nghiá»‡m cÃ¡ nhÃ¢n.
+              <b>Part 3:</b> 1 câu thảo luận chủ đề chung (~40s).<br>
+              Trả lời theo dạng phân tích, nói về ý chung chứ không phải trải nghiệm cá nhân.
             `}
           </div>
           <div id="ft-diagnostic" style="margin-top:.5rem;font-size:.72rem;color:#9ca3af;"></div>
@@ -610,21 +610,21 @@
         <div class="ft-row">
           <label class="ft-toggle">
             <input type="checkbox" id="ft-followup" ${FT.followUp ? "checked" : ""}>
-            <span><b>Báº­t follow-up question</b> â€” náº¿u há»c sinh tráº£ lá»i quÃ¡ ngáº¯n, giÃ¡m kháº£o há»i thÃªm 1 cÃ¢u Part 3 liÃªn quan Ä‘á»ƒ má»Ÿ rá»™ng.</span>
+            <span><b>Bật follow-up question</b> — nếu học sinh trả lời quá ngắn, giám khảo hỏi thêm 1 câu Part 3 liên quan để mở rộng.</span>
           </label>
         </div>` : ""}
 
         <div class="ft-row">
-          <label class="ft-label">Cháº¿ Ä‘á»™ thi</label>
+          <label class="ft-label">Chế độ thi</label>
           <label class="ft-toggle">
             <input type="checkbox" id="ft-strict" ${FT.examMode === "strict" ? "checked" : ""}>
-            <span><b>CÄƒng â€” chuáº©n phÃ²ng thi.</b> GiÃ¡m kháº£o há»i liÃªn tá»¥c, há»c sinh báº¥m "Ghi nháº­n cÃ¢u tráº£ lá»i" Ä‘á»ƒ qua cÃ¢u. Part 2 tá»‘i Ä‘a 2:30.</span>
+            <span><b>Căng — chuẩn phòng thi.</b> Giám khảo hỏi liên tục, học sinh bấm "Ghi nhận câu trả lời" để qua câu. Part 2 tối đa 2:30.</span>
           </label>
         </div>
 
         <div style="display:flex;justify-content:space-between;gap:.5rem;margin-top:1.5rem;">
-          <button id="ft-cancel" class="ft-btn ft-btn-danger">Huá»·</button>
-          <button id="ft-start" class="ft-btn ft-btn-primary">Báº¯t Ä‘áº§u thi</button>
+          <button id="ft-cancel" class="ft-btn ft-btn-danger">Huỷ</button>
+          <button id="ft-start" class="ft-btn ft-btn-primary">Bắt đầu thi</button>
         </div>
       </div>
     `;
@@ -646,10 +646,10 @@
     const p2Pool = richP23
       ? FT.part23Detailed.reduce((n, g) => n + (g.data || []).length, 0)
       : (FT.questionsData?.part2?.topics || []).reduce((n, g) => n + (g.questions || []).length, 0);
-    diag.innerHTML = `ÄÃ£ load: <b>${p1Topics}</b> chá»§ Ä‘á» Part 1 Â· <b>${p2Pool}</b> cue card Part 2 ${richP23 ? "(rich + Part 3 questions âœ“)" : "(synthesised fallback âš )"}`;
+    diag.innerHTML = `Đã load: <b>${p1Topics}</b> chủ đề Part 1 · <b>${p2Pool}</b> cue card Part 2 ${richP23 ? "(rich + Part 3 questions ✓)" : "(synthesised fallback ⚠)"}`;
   }
 
-  // â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ Start the test â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // ──────────────── Start the test ────────────────
   async function startTest() {
     console.log("[FT] startTest clicked, has key:", !!getKey());
     if (!getKey()) {
@@ -659,7 +659,7 @@
       if (!ok) return;
     }
     buildQuestionsForTest();
-    // Validate based on mode â€” don't require Part 1 when running Part 2/3 alone
+    // Validate based on mode — don't require Part 1 when running Part 2/3 alone
     const haveContent =
       (TEST_MODE === "full-test" && FT.questions.part1.length && FT.questions.part2) ||
       (IS_CUSTOM_STRICT        && FT.questions.part1.length && FT.questions.part2 && FT.questions.part3.length) ||
@@ -667,13 +667,13 @@
       (TEST_MODE === "part2"     && FT.questions.part2) ||
       (TEST_MODE === "part3"     && FT.questions.part3.length);
     if (!haveContent) {
-      alert("KhÃ´ng táº£i Ä‘Æ°á»£c dá»¯ liá»‡u cÃ¢u há»i cho cháº¿ Ä‘á»™ nÃ y. Reload thá»­ nhÃ©.");
+      alert("Không tải được dữ liệu câu hỏi cho chế độ này. Reload thử nhé.");
       return;
     }
     if (IS_CUSTOM_STRICT) {
       const ok = await enterStrictFullscreen();
       if (!ok) {
-        alert("KhÃ´ng thá»ƒ báº¯t Ä‘áº§u cháº¿ Ä‘á»™ chá»‘ng gian láº­n náº¿u chÆ°a vÃ o toÃ n mÃ n hÃ¬nh.");
+        alert("Không thể bắt đầu chế độ chống gian lận nếu chưa vào toàn màn hình.");
         return;
       }
       await startStrictSession();
@@ -689,7 +689,7 @@
   }
 
   async function runIntro() {
-    setStatus("GiÃ¡m kháº£o Ä‘ang giá»›i thiá»‡u...");
+    setStatus("Giám khảo đang giới thiệu...");
     if (IS_CUSTOM_STRICT) {
       showQuestion("Strict IELTS Speaking test.", "Intro");
       await speak("Good morning. This is your strict IELTS Speaking test. Please stay in fullscreen until the test is finished.");
@@ -701,7 +701,7 @@
       await speak("Good morning. Let's begin with some questions about yourself.");
     } else if (TEST_MODE === "part2") {
       showQuestion("Welcome to Part 2.", "Intro");
-      // Don't speak yet â€” runPart2 has its own intro
+      // Don't speak yet — runPart2 has its own intro
     } else {
       showQuestion("Welcome to Part 3.", "Intro");
       await speak("Now I'd like to discuss a more general topic with you.");
@@ -709,22 +709,22 @@
     await wait(300);
   }
 
-  // â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ Test running UI â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // ──────────────── Test running UI ────────────────
   function renderTestUI() {
     const total = FT.questions.part1.length + (FT.questions.part2 ? 1 : 0) + FT.questions.part3.length;
     root.innerHTML = `
       <div class="ft-card" style="max-width:760px;">
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:.4rem;">
           <span class="ft-section-chip" id="ft-section-chip">PART 1</span>
-          <button id="ft-quit" class="ft-btn ft-btn-ghost" style="padding:.3rem .9rem;font-size:.78rem;">ThoÃ¡t</button>
+          <button id="ft-quit" class="ft-btn ft-btn-ghost" style="padding:.3rem .9rem;font-size:.78rem;">Thoát</button>
         </div>
         <div class="ft-progress"><div class="ft-progress-bar" id="ft-progress-bar" style="width:0%"></div></div>
         <div id="ft-topic" style="font-size:.78rem;color:#9ca3af;margin-bottom:.4rem;"></div>
-        <div class="ft-question" id="ft-question">â€¦</div>
-        <div class="ft-status" id="ft-status">GiÃ¡m kháº£o Ä‘ang nÃ³iâ€¦ <span class="ft-tts-pulse"></span></div>
+        <div class="ft-question" id="ft-question">…</div>
+        <div class="ft-status" id="ft-status">Giám khảo đang nói… <span class="ft-tts-pulse"></span></div>
         <div style="display:flex;gap:.5rem;margin-top:1.2rem;">
-          <button id="ft-skip-speak" class="ft-btn ft-btn-ghost" style="padding:.5rem 1rem;font-size:.78rem;">Bá» qua, sáºµn sÃ ng ghi Ã¢m</button>
-          <button id="ft-record" class="ft-btn ft-btn-primary" style="display:none;flex:1;">ðŸŽ¤ Äang ghi Ã¢m â€” báº¥m Ä‘á»ƒ dá»«ng & qua cÃ¢u</button>
+          <button id="ft-skip-speak" class="ft-btn ft-btn-ghost" style="padding:.5rem 1rem;font-size:.78rem;">Bỏ qua, sẵn sàng ghi âm</button>
+          <button id="ft-record" class="ft-btn ft-btn-primary" style="display:none;flex:1;">🎤 Đang ghi âm — bấm để dừng & qua câu</button>
         </div>
       </div>
     `;
@@ -737,7 +737,7 @@
     const qEl = root.querySelector("#ft-question");
     if (qEl) qEl.textContent = text;
     const tEl = root.querySelector("#ft-topic");
-    if (tEl) tEl.textContent = topic ? `Chá»§ Ä‘á»: ${topic}` : "";
+    if (tEl) tEl.textContent = topic ? `Chủ đề: ${topic}` : "";
   }
 
   function setStatus(text, withMic = false, withTts = false) {
@@ -763,11 +763,11 @@
     if (s) s.style.display = visible ? "none" : "";
   }
 
-  // â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ Question loop â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // ──────────────── Question loop ────────────────
   async function runQuestionFlow() {
     const isFull = TEST_MODE === "full-test";
 
-    // â”€â”€ PART 1 â”€â”€
+    // ── PART 1 ──
     if (FT.questions.part1.length) {
       FT.section = "part1";
       FT.currentIdx = 0;
@@ -778,28 +778,28 @@
       }
     }
 
-    // â”€â”€ PART 2 â”€â”€
+    // ── PART 2 ──
     if (FT.questions.part2) {
       FT.section = "part2";
       FT.currentIdx = 0;
       renderTestUI();
       updateProgress();
       if (isFull) {
-        setStatus("Chuyá»ƒn sang Part 2â€¦", false, true);
+        setStatus("Chuyển sang Part 2…", false, true);
         await speak("Thank you. Now, let's move on to Part 2.");
         await wait(400);
       }
       await runPart2(FT.questions.part2);
     }
 
-    // â”€â”€ PART 3 â”€â”€
+    // ── PART 3 ──
     if (FT.questions.part3.length) {
       FT.section = "part3";
       FT.currentIdx = 0;
       renderTestUI();
       updateProgress();
       if (isFull) {
-        setStatus("Chuyá»ƒn sang Part 3â€¦", false, true);
+        setStatus("Chuyển sang Part 3…", false, true);
         const p2title = (FT.questions.part2?.title || "").toLowerCase().replace(/^describe\s+/, "");
         await speak(`Let's move on to Part 3. I'd like to discuss some more general questions related to ${p2title || "the topic"}.`);
         await wait(400);
@@ -811,13 +811,13 @@
       }
     }
 
-    // Done â€” show preliminary summary (full scoring lands in Phase 3)
-    setStatus("BÃ i thi hoÃ n thÃ nh â€” Ä‘ang cháº¥m sÆ¡ bá»™â€¦");
+    // Done — show preliminary summary (full scoring lands in Phase 3)
+    setStatus("Bài thi hoàn thành — đang chấm sơ bộ…");
     await wait(800);
     await scoreAllAndShowSummary();
   }
 
-  // â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ Part 2 â€” cue card with 1-min prep + 2:30 record â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // ──────────────── Part 2 — cue card with 1-min prep + 2:30 record ────────────────
   async function runPart2(cue) {
     // 1) Render cue card with prep timer + note area
     const cueHtml = `
@@ -831,16 +831,16 @@
     `;
     const notesHtml = `
       <div style="margin-top:1rem;">
-        <label style="display:block;font-size:.78rem;font-weight:600;color:#374151;margin-bottom:.3rem;">ðŸ“ Ghi chÃº cá»§a báº¡n (1 phÃºt):</label>
-        <textarea id="ft-p2-notes" rows="5" style="width:100%;padding:.6rem .7rem;border:1.5px solid #e5e7eb;border-radius:.5rem;font-family:inherit;font-size:.88rem;resize:vertical;" placeholder="Ghi nhanh Ã½ chÃ­nh ra Ä‘Ã¢yâ€¦"></textarea>
+        <label style="display:block;font-size:.78rem;font-weight:600;color:#374151;margin-bottom:.3rem;">📝 Ghi chú của bạn (1 phút):</label>
+        <textarea id="ft-p2-notes" rows="5" style="width:100%;padding:.6rem .7rem;border:1.5px solid #e5e7eb;border-radius:.5rem;font-family:inherit;font-size:.88rem;resize:vertical;" placeholder="Ghi nhanh ý chính ra đây…"></textarea>
       </div>
     `;
     root.querySelector("#ft-question").innerHTML = cueHtml + notesHtml;
-    root.querySelector("#ft-topic").textContent = `Part 2 cue card Â· ${cue.group || ""}`;
+    root.querySelector("#ft-topic").textContent = `Part 2 cue card · ${cue.group || ""}`;
     setRecordBtn(false);
 
     // 2) Speak the prep prompt
-    setStatus("GiÃ¡m kháº£o Ä‘ang nÃ³iâ€¦ ", false, true);
+    setStatus("Giám khảo đang nói… ", false, true);
     await speak("Now I'd like you to talk about a topic for one to two minutes. Before you talk, you'll have one minute to think and make some notes if you wish. Your topic is:");
     await speak(cue.title);
     for (const c of (cue.cueCards || [])) {
@@ -849,14 +849,14 @@
     }
     await speak("You have one minute to prepare. You can make notes if you wish.");
 
-    // 3) Prep countdown (60s) â€” show "CÃ²n láº¡i Xs" + skip button
+    // 3) Prep countdown (60s) — show "Còn lại Xs" + skip button
     const prepStart = Date.now();
     const PREP_MS = 60_000;
     let prepDone = false;
     const skipPrepBtn = document.createElement("button");
     skipPrepBtn.className = "ft-btn ft-btn-ghost";
     skipPrepBtn.style.cssText = "padding:.5rem 1rem;font-size:.78rem;";
-    skipPrepBtn.textContent = "Sáºµn sÃ ng nÃ³i ngay";
+    skipPrepBtn.textContent = "Sẵn sàng nói ngay";
     skipPrepBtn.addEventListener("click", () => { prepDone = true; });
     // Insert before the record button
     const btnRow = root.querySelector("#ft-record")?.parentElement;
@@ -864,26 +864,26 @@
 
     while (!prepDone && Date.now() - prepStart < PREP_MS) {
       const remain = Math.ceil((PREP_MS - (Date.now() - prepStart)) / 1000);
-      setStatus(`â± Chuáº©n bá»‹ â€” cÃ²n ${remain}s. Ghi chÃº vÃ o textarea.`);
+      setStatus(`⏱ Chuẩn bị — còn ${remain}s. Ghi chú vào textarea.`);
       await wait(250);
     }
     skipPrepBtn.remove();
 
     // 4) Cue start of speaking
-    setStatus("Báº¯t Ä‘áº§u nÃ³i. Tá»‘i Ä‘a 2:30. ", true);
+    setStatus("Bắt đầu nói. Tối đa 2:30. ", true);
     await speak("All right? Remember, you have one to two minutes for this. Now please start speaking.");
     await wait(300);
 
     // 5) Record up to 2:30 OR until user clicks the stop button
     setRecordBtn(true);
     const recBtn = root.querySelector("#ft-record");
-    if (recBtn) recBtn.textContent = "ðŸŽ¤ Äang nÃ³i Part 2 â€” báº¥m Ä‘á»ƒ dá»«ng (max 2:30)";
+    if (recBtn) recBtn.textContent = "🎤 Đang nói Part 2 — bấm để dừng (max 2:30)";
 
     // Build the question entry for storage
     const cueQ = {
       section: "part2",
       topic: cue.title,
-      question: `${cue.title}\n${(cue.cueCards || []).map(c => "â€¢ " + c).join("\n")}`,
+      question: `${cue.title}\n${(cue.cueCards || []).map(c => "• " + c).join("\n")}`,
     };
 
     // Auto-stop timer
@@ -895,7 +895,7 @@
       const elapsed = Date.now() - startedAt;
       if (elapsed >= MAX_MS) {
         clearInterval(autoStopTimer);
-        if (recBtn) recBtn.textContent = "â± Háº¿t giá» â€” Ä‘ang lÆ°uâ€¦";
+        if (recBtn) recBtn.textContent = "⏱ Hết giờ — đang lưu…";
         stopRecording();
         return;
       }
@@ -903,7 +903,7 @@
       const remain = Math.max(0, Math.ceil((MAX_MS - elapsed) / 1000));
       const mm = String(Math.floor(remain / 60)).padStart(1, "0");
       const ss = String(remain % 60).padStart(2, "0");
-      if (recBtn) recBtn.textContent = `ðŸŽ¤ Äang nÃ³i Part 2 â€” báº¥m Ä‘á»ƒ dá»«ng (${mm}:${ss})`;
+      if (recBtn) recBtn.textContent = `🎤 Đang nói Part 2 — bấm để dừng (${mm}:${ss})`;
     }, 500);
 
     await startedRecPromise;
@@ -924,7 +924,7 @@
   async function runOneQuestion(q) {
     showQuestion(q.question, q.topic);
     updateProgress();
-    setStatus("GiÃ¡m kháº£o Ä‘ang nÃ³iâ€¦ ", false, true);
+    setStatus("Giám khảo đang nói… ", false, true);
     setRecordBtn(false);
 
     // If it's the first question in a topic, speak a short intro lead-in
@@ -937,17 +937,17 @@
 
     // Auto-start recording after 2-second countdown
     for (let s = 2; s >= 1; s--) {
-      setStatus(`Sáºµn sÃ ng ghi Ã¢m trong ${s}â€¦`);
+      setStatus(`Sẵn sàng ghi âm trong ${s}…`);
       await wait(1000);
     }
-    setStatus("Äang ghi Ã¢m. Báº¥m nÃºt Ä‘á»ƒ dá»«ng & qua cÃ¢u tiáº¿p theo. ", true);
+    setStatus("Đang ghi âm. Bấm nút để dừng & qua câu tiếp theo. ", true);
     setRecordBtn(true);
 
     // Start recording, await stop
     await startRecording(q);
   }
 
-  // â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ Recording â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // ──────────────── Recording ────────────────
   async function startRecording(q) {
     return new Promise(async (resolve) => {
       try {
@@ -972,7 +972,7 @@
         rec.start();
         strictEvent("record_start", { section: q.section, topic: q.topic, question: q.question });
       } catch (e) {
-        alert("KhÃ´ng truy cáº­p Ä‘Æ°á»£c mic: " + e.message);
+        alert("Không truy cập được mic: " + e.message);
         resolve();
       }
     });
@@ -985,7 +985,7 @@
   }
 
   function quit() {
-    if (!confirm("ThoÃ¡t khá»i bÃ i thi? Má»i tiáº¿n trÃ¬nh sáº½ máº¥t.")) return;
+    if (!confirm("Thoát khỏi bài thi? Mọi tiến trình sẽ mất.")) return;
     if (IS_CUSTOM_STRICT) {
       FT.strictCancelled = true;
       strictEvent("strict_test_cancelled", { reason: "user_exit" });
@@ -996,7 +996,7 @@
     location.href = "/take-test/home";
   }
 
-  // â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ PHASE 3 â€” full scoring + aggregation + history save â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // ──────────────── PHASE 3 — full scoring + aggregation + history save ────────────────
 
   // Compute duration of an audio blob (seconds). Useful for Part 2 < 2:00 cap.
   function blobDuration(blob) {
@@ -1006,7 +1006,7 @@
       a.onloadedmetadata = () => resolve(a.duration || 0);
       a.onerror = () => resolve(0);
       a.src = URL.createObjectURL(blob);
-      // Safari sometimes leaves duration as Infinity â€” give it a tiny nudge
+      // Safari sometimes leaves duration as Infinity — give it a tiny nudge
       setTimeout(() => resolve(a.duration || 0), 1200);
     });
   }
@@ -1035,17 +1035,17 @@
 
   // Apply strict caps per IELTS rules.
   function applyCaps(part2Agg, part2Duration, part3Agg, part3Combined) {
-    // Part 2 cap: under 2 minutes (120s) â†’ cap band at 5
+    // Part 2 cap: under 2 minutes (120s) → cap band at 5
     if (part2Agg && part2Duration < 120) {
-      part2Agg.cap = `Part 2 chá»‰ ${Math.round(part2Duration)}s (<2 phÃºt) â†’ cap band 5.`;
+      part2Agg.cap = `Part 2 chỉ ${Math.round(part2Duration)}s (<2 phút) → cap band 5.`;
       ["fluency","vocabulary","grammar","pronunciation"].forEach(k => {
         if (part2Agg.criteria[k] > 5) part2Agg.criteria[k] = 5;
       });
       part2Agg.band = Math.min(part2Agg.band, 5);
     }
-    // Part 3 cap: combined sentences < 8 â†’ cap band at 5
+    // Part 3 cap: combined sentences < 8 → cap band at 5
     if (part3Agg && part3Combined?.sentenceCount < 8) {
-      part3Agg.cap = `Part 3 chá»‰ ${part3Combined.sentenceCount} cÃ¢u (<8) â†’ cap band 5.`;
+      part3Agg.cap = `Part 3 chỉ ${part3Combined.sentenceCount} câu (<8) → cap band 5.`;
       ["fluency","vocabulary","grammar","pronunciation"].forEach(k => {
         if (part3Agg.criteria[k] > 5) part3Agg.criteria[k] = 5;
       });
@@ -1053,7 +1053,7 @@
     }
   }
 
-  // Final overall: base = average(P1, P2); P3 adjusts Â±0.5 band depending on whether it
+  // Final overall: base = average(P1, P2); P3 adjusts ±0.5 band depending on whether it
   // outperforms or underperforms the base.
   function computeOverall(p1, p2, p3) {
     const base = avg([p1?.band, p2?.band].filter(Boolean));
@@ -1069,7 +1069,7 @@
 
   // Save a scored answer into the per-question practice history so the student can
   // click into that question's detail page and see the attempt there.
-  // The detail page (overlay.js â†’ restoreCachedAssist) reads
+  // The detail page (overlay.js → restoreCachedAssist) reads
   //   ln.scoreHistory:<encodeURIComponent(question_text_as_shown_on_page)>
   // so we MUST use the exact same key.
   function saveToPerQuestionHistory(ans, score) {
@@ -1116,10 +1116,10 @@
     // Render a progress-y holding screen while we score
     root.innerHTML = `
       <div class="ft-card" style="max-width:720px;text-align:center;">
-        <h1 class="ft-h1">Äang cháº¥m Ä‘iá»ƒm bÃ i thiâ€¦</h1>
-        <p class="ft-hint" id="ft-score-prog">Chuáº©n bá»‹ cháº¥m ${total} cÃ¢u.</p>
+        <h1 class="ft-h1">Đang chấm điểm bài thi…</h1>
+        <p class="ft-hint" id="ft-score-prog">Chuẩn bị chấm ${total} câu.</p>
         <div class="ft-progress" style="margin:1.5rem 0;"><div class="ft-progress-bar" id="ft-score-bar" style="width:0%"></div></div>
-        <div style="font-size:.78rem;color:#9ca3af;">CÃ³ thá»ƒ máº¥t 1-3 phÃºt tuá»³ máº¡ng. Äá»«ng Ä‘Ã³ng tab.</div>
+        <div style="font-size:.78rem;color:#9ca3af;">Có thể mất 1-3 phút tuỳ mạng. Đừng đóng tab.</div>
       </div>
     `;
 
@@ -1127,7 +1127,7 @@
     for (let i = 0; i < total; i++) {
       const ans = FT.answers[i];
       const partLabel = { part1: "PART 1", part2: "PART 2", part3: "PART 3" }[ans.section] || "PART 1";
-      root.querySelector("#ft-score-prog").textContent = `Äang cháº¥m cÃ¢u ${i+1}/${total} (${partLabel})â€¦`;
+      root.querySelector("#ft-score-prog").textContent = `Đang chấm câu ${i+1}/${total} (${partLabel})…`;
       root.querySelector("#ft-score-bar").style.width = Math.round((i / total) * 100) + "%";
       try {
         const b64 = await blobToBase64(ans.blob);
@@ -1139,7 +1139,7 @@
             question: ans.question, part: partLabel,
             audioBase64: b64.split(",")[1] || b64,
             mimeType: "audio/webm",
-            note: "FULL TEST. Give GENERAL (not personal) feedback in Vietnamese â€” avoid phrasing like 'I think', 'mÃ¬nh tháº¥y báº¡n...'. Be objective and concise.",
+            note: "FULL TEST. Give GENERAL (not personal) feedback in Vietnamese — avoid phrasing like 'I think', 'mình thấy bạn...'. Be objective and concise.",
           }),
         });
         const data = await r.json();
@@ -1169,7 +1169,7 @@
 
     const overallRes = computeOverall(p1, p2, p3);
 
-    // Save to full-test history (strip audio blob URLs â€” they don't survive reload)
+    // Save to full-test history (strip audio blob URLs — they don't survive reload)
     try {
       const ftKey = "ln.fullTestHistory";
       const list = JSON.parse(localStorage.getItem(ftKey) || "[]");
@@ -1186,7 +1186,7 @@
           criteria: s.score.criteria,
           feedback: s.score.feedback,
           warning: s.score.warning,
-          // skip heavy fields like grammarIssues to keep storage small â€” they live in per-question history
+          // skip heavy fields like grammarIssues to keep storage small — they live in per-question history
         } : null,
       }));
       list.unshift({
@@ -1206,7 +1206,7 @@
       });
       try { localStorage.setItem(ftKey, JSON.stringify(list.slice(0, 5))); }
       catch (qe) {
-        // Quota â€” drop answers from older entries
+        // Quota — drop answers from older entries
         const trimmed = list.slice(0, 5).map((t, i) => i === 0 ? t : ({ ...t, answers: undefined }));
         localStorage.setItem(ftKey, JSON.stringify(trimmed));
       }
@@ -1222,7 +1222,7 @@
       });
       try { if (document.fullscreenElement) await document.exitFullscreen(); } catch {}
 
-      // â”€â”€ Sync Ä‘iá»ƒm lÃªn Supabase (chá»‰ cho thi chá»‘ng gian láº­n) â”€â”€
+      // ── Sync điểm lên Supabase (chỉ cho thi chống gian lận) ──
       try {
         const attempts = scored.map(s => {
           const c = s.score?.criteria || {};
@@ -1263,7 +1263,7 @@
   }
 
   // Aggregate criteria across all parts to one general comment string. We DO NOT
-  // hand the model a single Gemini call for this â€” we just pick the lowest-scoring
+  // hand the model a single Gemini call for this — we just pick the lowest-scoring
   // dimension and offer a generic Vietnamese suggestion (avoids extra latency).
   function buildGeneralFeedback(p1, p2, p3) {
     const merged = { fluency: 0, vocabulary: 0, grammar: 0, pronunciation: 0 };
@@ -1274,22 +1274,22 @@
         n++;
       }
     });
-    if (n === 0) return "ChÆ°a cÃ³ Ä‘á»§ dá»¯ liá»‡u Ä‘á»ƒ Ä‘Æ°a ra nháº­n xÃ©t chung.";
+    if (n === 0) return "Chưa có đủ dữ liệu để đưa ra nhận xét chung.";
     Object.keys(merged).forEach(k => merged[k] /= n);
     const ranked = Object.entries(merged).sort((a, b) => a[1] - b[1]);
     const weakest = ranked[0];
-    const labels = { fluency: "Äá»™ trÃ´i cháº£y", vocabulary: "Vá»‘n tá»« vá»±ng", grammar: "Ngá»¯ phÃ¡p", pronunciation: "PhÃ¡t Ã¢m" };
+    const labels = { fluency: "Độ trôi chảy", vocabulary: "Vốn từ vựng", grammar: "Ngữ pháp", pronunciation: "Phát âm" };
     const tips = {
-      fluency: "Luyá»‡n nÃ³i liá»n máº¡ch, háº¡n cháº¿ filler ('uh', 'um'), kÃ©o dÃ i cÃ¢u tráº£ lá»i vá»›i connectors.",
-      vocabulary: "Má»Ÿ rá»™ng vocab chá»§ Ä‘á», dÃ¹ng collocation thay vÃ¬ tá»« phá»• thÃ´ng nhÆ° 'good', 'bad'.",
-      grammar: "Trá»™n cÃ¢u phá»©c + cÃ¢u ghÃ©p, chÃº Ã½ thÃ¬ + sá»± hoÃ  há»£p chá»§-vá»‹.",
-      pronunciation: "Luyá»‡n trá»ng Ã¢m + intonation, Ä‘áº·c biá»‡t cÃ¡c Ã¢m cuá»‘i /s/, /t/, /d/.",
+      fluency: "Luyện nói liền mạch, hạn chế filler ('uh', 'um'), kéo dài câu trả lời với connectors.",
+      vocabulary: "Mở rộng vocab chủ đề, dùng collocation thay vì từ phổ thông như 'good', 'bad'.",
+      grammar: "Trộn câu phức + câu ghép, chú ý thì + sự hoà hợp chủ-vị.",
+      pronunciation: "Luyện trọng âm + intonation, đặc biệt các âm cuối /s/, /t/, /d/.",
     };
-    return `Äiá»ƒm yáº¿u nháº¥t hiá»‡n táº¡i: <b>${labels[weakest[0]]}</b> (band ${weakest[1].toFixed(1)}). ${tips[weakest[0]]}`;
+    return `Điểm yếu nhất hiện tại: <b>${labels[weakest[0]]}</b> (band ${weakest[1].toFixed(1)}). ${tips[weakest[0]]}`;
   }
 
   function sectionBox(label, agg, color = "#d9381e") {
-    if (!agg || !agg.count) return `<div style="background:#f3f4f6;border-radius:.5rem;padding:.7rem;font-size:.82rem;color:#9ca3af;">${label}: chÆ°a cÃ³ dá»¯ liá»‡u</div>`;
+    if (!agg || !agg.count) return `<div style="background:#f3f4f6;border-radius:.5rem;padding:.7rem;font-size:.82rem;color:#9ca3af;">${label}: chưa có dữ liệu</div>`;
     return `
       <div style="background:#ffffff;border:1px solid #ffffff;border-radius:.6rem;padding:.7rem .9rem;">
         <div style="display:flex;justify-content:space-between;align-items:center;">
@@ -1297,12 +1297,12 @@
           <div style="font-size:1.3rem;font-weight:800;color:${color};">${agg.band.toFixed(1)}</div>
         </div>
         <div style="display:flex;flex-wrap:wrap;gap:.3rem;margin-top:.5rem;font-size:.72rem;">
-          <span style="background:white;border-radius:9999px;padding:.15rem .6rem;">TrÃ´i cháº£y: <b>${agg.criteria.fluency.toFixed(1)}</b></span>
-          <span style="background:white;border-radius:9999px;padding:.15rem .6rem;">Tá»« vá»±ng: <b>${agg.criteria.vocabulary.toFixed(1)}</b></span>
-          <span style="background:white;border-radius:9999px;padding:.15rem .6rem;">Ngá»¯ phÃ¡p: <b>${agg.criteria.grammar.toFixed(1)}</b></span>
-          <span style="background:white;border-radius:9999px;padding:.15rem .6rem;">PhÃ¡t Ã¢m: <b>${agg.criteria.pronunciation.toFixed(1)}</b></span>
+          <span style="background:white;border-radius:9999px;padding:.15rem .6rem;">Trôi chảy: <b>${agg.criteria.fluency.toFixed(1)}</b></span>
+          <span style="background:white;border-radius:9999px;padding:.15rem .6rem;">Từ vựng: <b>${agg.criteria.vocabulary.toFixed(1)}</b></span>
+          <span style="background:white;border-radius:9999px;padding:.15rem .6rem;">Ngữ pháp: <b>${agg.criteria.grammar.toFixed(1)}</b></span>
+          <span style="background:white;border-radius:9999px;padding:.15rem .6rem;">Phát âm: <b>${agg.criteria.pronunciation.toFixed(1)}</b></span>
         </div>
-        ${agg.cap ? `<div style="margin-top:.4rem;font-size:.72rem;color:var(--red);">âš  ${agg.cap}</div>` : ""}
+        ${agg.cap ? `<div style="margin-top:.4rem;font-size:.72rem;color:var(--red);">⚠ ${agg.cap}</div>` : ""}
       </div>
     `;
   }
@@ -1317,21 +1317,21 @@
         <div style="font-size:3rem;font-weight:800;line-height:1;">${overall.overall.toFixed(1)}</div>
         <div style="font-size:.74rem;opacity:.85;margin-top:.4rem;">
           Base (Part 1 + Part 2): ${overall.base.toFixed(1)}
-          ${overall.delta !== 0 ? ` Â· Part 3 Ä‘iá»u chá»‰nh ${overall.delta > 0 ? "+" : ""}${overall.delta}` : " Â· Part 3 trung láº­p"}
+          ${overall.delta !== 0 ? ` · Part 3 điều chỉnh ${overall.delta > 0 ? "+" : ""}${overall.delta}` : " · Part 3 trung lập"}
         </div>
       </div>` : "";
 
     const sectionsBlock = `
       <div style="display:grid;grid-template-columns:1fr;gap:.6rem;margin-bottom:1rem;">
-        ${sectionBox("Part 1 â€” Personal", p1, "#d9381e")}
-        ${sectionBox(`Part 2 â€” Cue card (${Math.round(part2Duration)}s)`, p2, "#d9381e")}
-        ${sectionBox("Part 3 â€” Discussion", p3, "#d9381e")}
+        ${sectionBox("Part 1 — Personal", p1, "#d9381e")}
+        ${sectionBox(`Part 2 — Cue card (${Math.round(part2Duration)}s)`, p2, "#d9381e")}
+        ${sectionBox("Part 3 — Discussion", p3, "#d9381e")}
       </div>
     `;
 
     const feedbackBlock = general ? `
       <div style="background:#fffbeb;border:1px solid #fde68a;border-radius:.6rem;padding:.8rem 1rem;margin-bottom:1rem;">
-        <div style="font-weight:700;color:#92400e;margin-bottom:.3rem;">ðŸ’¡ Nháº­n xÃ©t chung</div>
+        <div style="font-weight:700;color:#92400e;margin-bottom:.3rem;">💡 Nhận xét chung</div>
         <div style="font-size:.86rem;color:#171717;line-height:1.6;">${general}</div>
       </div>` : "";
 
@@ -1339,21 +1339,21 @@
       const partLabel = { part1: "PART 1", part2: "PART 2", part3: "PART 3" }[s.section] || "";
       const url = detailUrlFor(s);
       const ov = s.score?.overall;
-      const txt = s.score?.transcript || "(khÃ´ng cÃ³ transcript)";
+      const txt = s.score?.transcript || "(không có transcript)";
       return `
         <div style="border:1px solid #e5e7eb;border-radius:.6rem;padding:.7rem .9rem;margin-bottom:.5rem;background:white;">
           <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:.6rem;">
             <div style="flex:1;">
-              <div style="font-size:.7rem;color:#9ca3af;font-weight:700;">${partLabel}${s.topic ? " Â· " + escapeHtml(s.topic) : ""}</div>
+              <div style="font-size:.7rem;color:#9ca3af;font-weight:700;">${partLabel}${s.topic ? " · " + escapeHtml(s.topic) : ""}</div>
               <div style="font-weight:600;font-size:.88rem;margin:.2rem 0;color:#171717;">${escapeHtml(s.question.split("\n")[0])}</div>
             </div>
             ${typeof ov === "number" ? `<div style="background:#d9381e;color:white;border-radius:9999px;padding:.2rem .7rem;font-weight:700;font-size:.78rem;flex-shrink:0;">${ov}</div>` : ""}
           </div>
           <audio controls src="${s.audioUrl}" style="width:100%;margin:.4rem 0;"></audio>
-          <div style="font-size:.78rem;color:#4b5563;line-height:1.55;">${escapeHtml(txt).slice(0, 280)}${txt.length > 280 ? "â€¦" : ""}</div>
+          <div style="font-size:.78rem;color:#4b5563;line-height:1.55;">${escapeHtml(txt).slice(0, 280)}${txt.length > 280 ? "…" : ""}</div>
           <div style="display:flex;justify-content:space-between;align-items:center;margin-top:.5rem;">
-            ${s.score?.warning ? `<div style="color:var(--red);font-size:.72rem;">âš  ${escapeHtml(s.score.warning)}</div>` : "<div></div>"}
-            <a href="${url}" class="ft-back" style="font-weight:600;color:#d9381e;">Luyá»‡n láº¡i cÃ¢u nÃ y â†’</a>
+            ${s.score?.warning ? `<div style="color:var(--red);font-size:.72rem;">⚠ ${escapeHtml(s.score.warning)}</div>` : "<div></div>"}
+            <a href="${url}" class="ft-back" style="font-weight:600;color:#d9381e;">Luyện lại câu này →</a>
           </div>
         </div>
       `;
@@ -1362,37 +1362,37 @@
     root.innerHTML = `
       <div class="ft-card" style="max-width:780px;">
         <h1 class="ft-h1" style="margin-bottom:.7rem;">${
-          TEST_MODE === "full-test" ? "Káº¿t quáº£ Full Test" :
-          TEST_MODE === "part1" ? "Káº¿t quáº£ Thi Part 1" :
-          TEST_MODE === "part2" ? "Káº¿t quáº£ Thi Part 2" :
-                                   "Káº¿t quáº£ Thi Part 3"
+          TEST_MODE === "full-test" ? "Kết quả Full Test" :
+          TEST_MODE === "part1" ? "Kết quả Thi Part 1" :
+          TEST_MODE === "part2" ? "Kết quả Thi Part 2" :
+                                   "Kết quả Thi Part 3"
         }</h1>
         ${overallBlock}
         ${sectionsBlock}
         ${feedbackBlock}
         ${scored.length ? `
           <details style="margin-bottom:1rem;" open>
-            <summary style="cursor:pointer;font-weight:600;color:#d9381e;font-size:.88rem;padding:.4rem 0;">ðŸ“‹ Xem chi tiáº¿t ${scored.length} cÃ¢u Ä‘Ã£ thi</summary>
+            <summary style="cursor:pointer;font-weight:600;color:#d9381e;font-size:.88rem;padding:.4rem 0;">📋 Xem chi tiết ${scored.length} câu đã thi</summary>
             <div style="margin-top:.6rem;">${answersBlock}</div>
           </details>` : `
           <div style="background:#fef3c7;border:1px solid #fde68a;border-radius:.6rem;padding:.8rem 1rem;margin-bottom:1rem;font-size:.82rem;color:#92400e;">
-            âš  <b>BÃ i thi cÅ© khÃ´ng lÆ°u chi tiáº¿t tá»«ng cÃ¢u.</b> CÃ¡c cÃ¢u tráº£ lá»i Ä‘Ã£ Ä‘Æ°á»£c lÆ°u vÃ o lá»‹ch sá»­ luyá»‡n táº­p riÃªng cá»§a tá»«ng cÃ¢u â€” vÃ o <a href="/question-answer/part1" style="color:#d9381e;font-weight:600;">Luyá»‡n theo cÃ¢u</a> Ä‘á»ƒ xem. Thi má»›i Ä‘á»ƒ cÃ³ chi tiáº¿t Ä‘áº§y Ä‘á»§ á»Ÿ Ä‘Ã¢y.
+            ⚠ <b>Bài thi cũ không lưu chi tiết từng câu.</b> Các câu trả lời đã được lưu vào lịch sử luyện tập riêng của từng câu — vào <a href="/question-answer/part1" style="color:#d9381e;font-weight:600;">Luyện theo câu</a> để xem. Thi mới để có chi tiết đầy đủ ở đây.
           </div>`}
         <div style="display:flex;justify-content:space-between;margin-top:1rem;">
-          <button class="ft-btn ft-btn-ghost" onclick="location.href='/take-test/home'">Vá» trang thi thá»­</button>
-          <button class="ft-btn ft-btn-primary" onclick="location.reload()">Thi láº¡i</button>
+          <button class="ft-btn ft-btn-ghost" onclick="location.href='/take-test/home'">Về trang thi thử</button>
+          <button class="ft-btn ft-btn-primary" onclick="location.reload()">Thi lại</button>
         </div>
       </div>
     `;
   }
 
-  // â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ Past-result viewer â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // ──────────────── Past-result viewer ────────────────
   function showPastResult(ts) {
     let list = [];
     try { list = JSON.parse(localStorage.getItem("ln.fullTestHistory") || "[]"); } catch {}
     const entry = list.find(t => t.ts === ts);
     if (!entry) {
-      root.innerHTML = `<div class="ft-card"><h1 class="ft-h1">KhÃ´ng tÃ¬m tháº¥y káº¿t quáº£</h1><a class="ft-back" href="/take-test/home">â† Vá» trang thi thá»­</a></div>`;
+      root.innerHTML = `<div class="ft-card"><h1 class="ft-h1">Không tìm thấy kết quả</h1><a class="ft-back" href="/take-test/home">← Về trang thi thử</a></div>`;
       return;
     }
     // Re-hydrate "scored" array shape expected by showSummary
@@ -1412,7 +1412,7 @@
     });
   }
 
-  // â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ Boot â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // ──────────────── Boot ────────────────
   async function boot() {
     mount();
     const params = new URLSearchParams(location.search);

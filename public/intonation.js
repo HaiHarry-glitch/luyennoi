@@ -1,5 +1,5 @@
 ﻿// =====================================================================
-//  Luyen intonation â€” /alphafeature/intonation
+//  Luyen intonation — /alphafeature/intonation
 //  Students practise English pitch movement: rising, falling, list,
 //  choice, and fall-rise patterns. Gemini scores recorded attempts.
 // =====================================================================
@@ -8,26 +8,26 @@
   if (!mount) return;
 
   const SENTENCES = [
-    { plain: "Where do you live?", marked: "Where do you LIVE? â†˜", pattern: "â†˜ falling", focus: "WH-question: giá»ng xuá»‘ng cuá»‘i cÃ¢u", note: "CÃ¢u há»i WH thÆ°á»ng xuá»‘ng giá»ng á»Ÿ cuá»‘i vÃ¬ ngÆ°á»i há»i cáº§n thÃ´ng tin cá»¥ thá»ƒ." },
-    { plain: "I really enjoyed the movie.", marked: "I really enjoyed the MOVIE. â†˜", pattern: "â†˜ falling", focus: "Statement: kháº³ng Ä‘á»‹nh cháº¯c cháº¯n", note: "CÃ¢u tráº§n thuáº­t tá»± nhiÃªn thÆ°á»ng xuá»‘ng á»Ÿ tá»« cuá»‘i mang nghÄ©a chÃ­nh." },
-    { plain: "Close the door, please.", marked: "Close the DOOR, please. â†˜", pattern: "â†˜ falling", focus: "Command/request: xuá»‘ng rÃµ cuá»‘i cÃ¢u", note: "Má»‡nh lá»‡nh hoáº·c yÃªu cáº§u trá»±c tiáº¿p cáº§n káº¿t thÃºc gá»n, cháº¯c." },
-    { plain: "What time does the train leave?", marked: "What TIME does the train LEAVE? â†˜", pattern: "â†˜ falling", focus: "WH-question: xuá»‘ng á»Ÿ cÃ¢u há»i thÃ´ng tin", note: "Äá»«ng kÃ©o lÃªn nhÆ° yes/no question; hÃ£y háº¡ pitch á»Ÿ cuá»‘i." },
-    { plain: "That was absolutely fantastic.", marked: "That was absolutely fanTAS-tic. â†˜", pattern: "â†˜ falling", focus: "Emphasis statement: nháº¥n rá»“i xuá»‘ng", note: "Tá»« cáº£m xÃºc váº«n xuá»‘ng cuá»‘i náº¿u lÃ  nháº­n xÃ©t hoÃ n chá»‰nh." },
-    { plain: "Are you coming to the party?", marked: "Are you coming to the PAR-ty? â†—", pattern: "â†— rising", focus: "Yes/No question: giá»ng lÃªn cuá»‘i cÃ¢u", note: "CÃ¢u há»i cÃ³/khÃ´ng thÆ°á»ng lÃªn giá»ng Ä‘á»ƒ má»Ÿ lá»±a chá»n tráº£ lá»i." },
-    { plain: "You finished already?", marked: "You finished al-REA-dy? â†—", pattern: "â†— rising", focus: "Surprise/checking: lÃªn cuá»‘i", note: "Khi kiá»ƒm tra hoáº·c hÆ¡i ngáº¡c nhiÃªn, pitch tÄƒng nháº¹ á»Ÿ cuá»‘i." },
-    { plain: "Is this your first time here?", marked: "Is this your FIRST time HERE? â†—", pattern: "â†— rising", focus: "Yes/No question: lÃªn á»Ÿ tá»« cuá»‘i", note: "Giá»¯ pháº§n Ä‘áº§u tá»± nhiÃªn, chá»‰ nÃ¢ng rÃµ á»Ÿ cuá»‘i cÃ¢u." },
-    { plain: "Really?", marked: "REAL-ly? â†—", pattern: "â†— rising", focus: "Reaction question: lÃªn nhanh", note: "Má»™t tá»« cÅ©ng cÃ³ contour; há»i láº¡i hoáº·c ngáº¡c nhiÃªn thÃ¬ lÃªn." },
-    { plain: "Do you have any questions?", marked: "Do you have any QUES-tions? â†—", pattern: "â†— rising", focus: "Invitation/checking: lÃªn lá»‹ch sá»±", note: "LÃªn nháº¹ khiáº¿n cÃ¢u há»i má»Ÿ vÃ  thÃ¢n thiá»‡n hÆ¡n." },
-    { plain: "I bought apples, oranges, and bananas.", marked: "AP-ples â†—, OR-an-ges â†—, ba-NA-nas â†˜.", pattern: "â†—â†˜ list", focus: "List: item giá»¯a lÃªn, item cuá»‘i xuá»‘ng", note: "Danh sÃ¡ch chÆ°a káº¿t thÃºc thÃ¬ lÃªn; item cuá»‘i xuá»‘ng Ä‘á»ƒ bÃ¡o háº¿t Ã½." },
-    { plain: "I like coffee, but she prefers tea.", marked: "COF-fee â†—, TEA â†˜.", pattern: "â†—â†˜ contrast", focus: "Contrast: váº¿ Ä‘áº§u má»Ÿ, váº¿ cuá»‘i Ä‘Ã³ng", note: "Váº¿ Ä‘áº§u lÃªn nháº¹ Ä‘á»ƒ giá»¯ cÃ¢u, váº¿ cuá»‘i xuá»‘ng Ä‘á»ƒ hoÃ n táº¥t." },
-    { plain: "On Monday, Tuesday, and Wednesday, I have class.", marked: "MON-day â†—, TUES-day â†—, WEDNES-day â†—, CLASS â†˜.", pattern: "â†—â†˜ list", focus: "Long list: cÃ¡c item lÃªn, thÃ´ng tin chÃ­nh xuá»‘ng", note: "Náº¿u sau danh sÃ¡ch cÃ²n má»‡nh Ä‘á» chÃ­nh, má»‡nh Ä‘á» chÃ­nh thÆ°á»ng káº¿t báº±ng falling." },
-    { plain: "She speaks English, French, and Spanish.", marked: "ENG-lish â†—, FRENCH â†—, SPAN-ish â†˜.", pattern: "â†—â†˜ list", focus: "Three-item list: lÃªn, lÃªn, xuá»‘ng", note: "Äá»«ng xuá»‘ng quÃ¡ sá»›m á»Ÿ item 1 hoáº·c 2, vÃ¬ ngÆ°á»i nghe sáº½ tÆ°á»Ÿng cÃ¢u Ä‘Ã£ háº¿t." },
-    { plain: "You can have the red one or the blue one.", marked: "RED one â†— or BLUE one â†˜.", pattern: "â†—â†˜ choice", focus: "Choice with or: lá»±a chá»n Ä‘áº§u lÃªn, lá»±a chá»n cuá»‘i xuá»‘ng", note: "CÃ¢u lá»±a chá»n dÃ¹ng 'or' thÆ°á»ng cÃ³ rise-fall giá»¯a hai lá»±a chá»n." },
-    { plain: "I suppose so.", marked: "I sup-POSE so. â†˜â†—", pattern: "â†˜â†— fall-rise", focus: "Uncertain: xuá»‘ng rá»“i nháº¥c nháº¹", note: "Fall-rise táº¡o cáº£m giÃ¡c chÆ°a cháº¯c cháº¯n hoáº·c cÃ²n dÃ¨ dáº·t." },
-    { plain: "It's nice, but...", marked: "It's NICE â†˜â†—, but...", pattern: "â†˜â†— fall-rise", focus: "Incomplete idea: chÆ°a nÃ³i háº¿t", note: "Xuá»‘ng rá»“i lÃªn Ä‘á»ƒ bÃ¡o cÃ²n Ã½ phÃ­a sau." },
-    { plain: "Thank you.", marked: "THANK you. â†˜â†—", pattern: "â†˜â†— fall-rise", focus: "Polite thanks: má»m hÆ¡n falling máº¡nh", note: "Fall-rise lÃ m lá»i cáº£m Æ¡n nháº¹ vÃ  lá»‹ch sá»± hÆ¡n trong há»™i thoáº¡i." },
-    { plain: "I think we should wait.", marked: "I THINK we should WAIT. â†˜â†—", pattern: "â†˜â†— fall-rise", focus: "Suggestion: khÃ´ng quÃ¡ Ã¡p Ä‘áº·t", note: "Khi Ä‘Æ°a Ã½ kiáº¿n dÃ¨ dáº·t, fall-rise giÃºp cÃ¢u bá»›t cá»©ng." },
-    { plain: "Well, it depends.", marked: "WELL â†—, it de-PENDS. â†˜â†—", pattern: "â†˜â†— fall-rise", focus: "Hedging: má»Ÿ Ã½ rá»“i káº¿t thÃºc chÆ°a tuyá»‡t Ä‘á»‘i", note: "DÃ¹ng khi cÃ¢u tráº£ lá»i cÃ³ Ä‘iá»u kiá»‡n hoáº·c chÆ°a cháº¯c cháº¯n." },
+    { plain: "Where do you live?", marked: "Where do you LIVE? ↘", pattern: "↘ falling", focus: "WH-question: giọng xuống cuối câu", note: "Câu hỏi WH thường xuống giọng ở cuối vì người hỏi cần thông tin cụ thể." },
+    { plain: "I really enjoyed the movie.", marked: "I really enjoyed the MOVIE. ↘", pattern: "↘ falling", focus: "Statement: khẳng định chắc chắn", note: "Câu trần thuật tự nhiên thường xuống ở từ cuối mang nghĩa chính." },
+    { plain: "Close the door, please.", marked: "Close the DOOR, please. ↘", pattern: "↘ falling", focus: "Command/request: xuống rõ cuối câu", note: "Mệnh lệnh hoặc yêu cầu trực tiếp cần kết thúc gọn, chắc." },
+    { plain: "What time does the train leave?", marked: "What TIME does the train LEAVE? ↘", pattern: "↘ falling", focus: "WH-question: xuống ở câu hỏi thông tin", note: "Đừng kéo lên như yes/no question; hãy hạ pitch ở cuối." },
+    { plain: "That was absolutely fantastic.", marked: "That was absolutely fanTAS-tic. ↘", pattern: "↘ falling", focus: "Emphasis statement: nhấn rồi xuống", note: "Từ cảm xúc vẫn xuống cuối nếu là nhận xét hoàn chỉnh." },
+    { plain: "Are you coming to the party?", marked: "Are you coming to the PAR-ty? ↗", pattern: "↗ rising", focus: "Yes/No question: giọng lên cuối câu", note: "Câu hỏi có/không thường lên giọng để mở lựa chọn trả lời." },
+    { plain: "You finished already?", marked: "You finished al-REA-dy? ↗", pattern: "↗ rising", focus: "Surprise/checking: lên cuối", note: "Khi kiểm tra hoặc hơi ngạc nhiên, pitch tăng nhẹ ở cuối." },
+    { plain: "Is this your first time here?", marked: "Is this your FIRST time HERE? ↗", pattern: "↗ rising", focus: "Yes/No question: lên ở từ cuối", note: "Giữ phần đầu tự nhiên, chỉ nâng rõ ở cuối câu." },
+    { plain: "Really?", marked: "REAL-ly? ↗", pattern: "↗ rising", focus: "Reaction question: lên nhanh", note: "Một từ cũng có contour; hỏi lại hoặc ngạc nhiên thì lên." },
+    { plain: "Do you have any questions?", marked: "Do you have any QUES-tions? ↗", pattern: "↗ rising", focus: "Invitation/checking: lên lịch sự", note: "Lên nhẹ khiến câu hỏi mở và thân thiện hơn." },
+    { plain: "I bought apples, oranges, and bananas.", marked: "AP-ples ↗, OR-an-ges ↗, ba-NA-nas ↘.", pattern: "↗↘ list", focus: "List: item giữa lên, item cuối xuống", note: "Danh sách chưa kết thúc thì lên; item cuối xuống để báo hết ý." },
+    { plain: "I like coffee, but she prefers tea.", marked: "COF-fee ↗, TEA ↘.", pattern: "↗↘ contrast", focus: "Contrast: vế đầu mở, vế cuối đóng", note: "Vế đầu lên nhẹ để giữ câu, vế cuối xuống để hoàn tất." },
+    { plain: "On Monday, Tuesday, and Wednesday, I have class.", marked: "MON-day ↗, TUES-day ↗, WEDNES-day ↗, CLASS ↘.", pattern: "↗↘ list", focus: "Long list: các item lên, thông tin chính xuống", note: "Nếu sau danh sách còn mệnh đề chính, mệnh đề chính thường kết bằng falling." },
+    { plain: "She speaks English, French, and Spanish.", marked: "ENG-lish ↗, FRENCH ↗, SPAN-ish ↘.", pattern: "↗↘ list", focus: "Three-item list: lên, lên, xuống", note: "Đừng xuống quá sớm ở item 1 hoặc 2, vì người nghe sẽ tưởng câu đã hết." },
+    { plain: "You can have the red one or the blue one.", marked: "RED one ↗ or BLUE one ↘.", pattern: "↗↘ choice", focus: "Choice with or: lựa chọn đầu lên, lựa chọn cuối xuống", note: "Câu lựa chọn dùng 'or' thường có rise-fall giữa hai lựa chọn." },
+    { plain: "I suppose so.", marked: "I sup-POSE so. ↘↗", pattern: "↘↗ fall-rise", focus: "Uncertain: xuống rồi nhấc nhẹ", note: "Fall-rise tạo cảm giác chưa chắc chắn hoặc còn dè dặt." },
+    { plain: "It's nice, but...", marked: "It's NICE ↘↗, but...", pattern: "↘↗ fall-rise", focus: "Incomplete idea: chưa nói hết", note: "Xuống rồi lên để báo còn ý phía sau." },
+    { plain: "Thank you.", marked: "THANK you. ↘↗", pattern: "↘↗ fall-rise", focus: "Polite thanks: mềm hơn falling mạnh", note: "Fall-rise làm lời cảm ơn nhẹ và lịch sự hơn trong hội thoại." },
+    { plain: "I think we should wait.", marked: "I THINK we should WAIT. ↘↗", pattern: "↘↗ fall-rise", focus: "Suggestion: không quá áp đặt", note: "Khi đưa ý kiến dè dặt, fall-rise giúp câu bớt cứng." },
+    { plain: "Well, it depends.", marked: "WELL ↗, it de-PENDS. ↘↗", pattern: "↘↗ fall-rise", focus: "Hedging: mở ý rồi kết thúc chưa tuyệt đối", note: "Dùng khi câu trả lời có điều kiện hoặc chưa chắc chắn." },
   ];
 
   const STATE = {
@@ -165,10 +165,10 @@
 
   function renderArrows(marked) {
     return escHtml(marked)
-      .replaceAll("â†˜â†—", '<span class="int-arrow-mix">â†˜â†—</span>')
-      .replaceAll("â†—â†˜", '<span class="int-arrow-mix">â†—â†˜</span>')
-      .replaceAll("â†—", '<span class="int-arrow-up">â†—</span>')
-      .replaceAll("â†˜", '<span class="int-arrow-down">â†˜</span>');
+      .replaceAll("↘↗", '<span class="int-arrow-mix">↘↗</span>')
+      .replaceAll("↗↘", '<span class="int-arrow-mix">↗↘</span>')
+      .replaceAll("↗", '<span class="int-arrow-up">↗</span>')
+      .replaceAll("↘", '<span class="int-arrow-down">↘</span>');
   }
 
   function render() {
@@ -177,31 +177,31 @@
     mount.innerHTML = `
       <div class="int-wrap">
         <div class="int-card">
-          <div class="int-bc"><a href="/">Trang chá»§</a> Â· <a href="/question-answer">Luyá»‡n theo cÃ¢u</a> Â· Luyá»‡n intonation</div>
+          <div class="int-bc"><a href="/">Trang chủ</a> · <a href="/question-answer">Luyện theo câu</a> · Luyện intonation</div>
           <div class="int-nav">
-            <button class="int-nav-btn" id="intPrev" ${STATE.idx === 0 ? "disabled" : ""}>â† cÃ¢u trÆ°á»›c</button>
-            <div class="int-counter">CÃ¢u ${STATE.idx + 1} <small>/ ${total}</small></div>
-            <button class="int-nav-btn" id="intNext" ${STATE.idx >= total - 1 ? "disabled" : ""}>cÃ¢u tiáº¿p â†’</button>
+            <button class="int-nav-btn" id="intPrev" ${STATE.idx === 0 ? "disabled" : ""}>← câu trước</button>
+            <div class="int-counter">Câu ${STATE.idx + 1} <small>/ ${total}</small></div>
+            <button class="int-nav-btn" id="intNext" ${STATE.idx >= total - 1 ? "disabled" : ""}>câu tiếp →</button>
           </div>
           <span class="int-pattern ${patternClass(s.pattern)}">${escHtml(s.pattern)}</span>
           <div class="int-sentence">
             <div class="int-play-row">
-              <button class="int-play" id="intTts" title="Nghe máº«u">â–¶</button>
+              <button class="int-play" id="intTts" title="Nghe mẫu">▶</button>
               <div class="int-marked">${renderArrows(s.marked)}</div>
             </div>
-            <div class="int-focus">ðŸŽ¯ ${escHtml(s.focus)}</div>
+            <div class="int-focus">🎯 ${escHtml(s.focus)}</div>
           </div>
-          <div class="int-note">${escHtml(s.note)} Nghe máº«u, báº¯t chÆ°á»›c hÆ°á»›ng mÅ©i tÃªn, rá»“i ghi Ã¢m Ä‘á»ƒ cháº¥m.</div>
+          <div class="int-note">${escHtml(s.note)} Nghe mẫu, bắt chước hướng mũi tên, rồi ghi âm để chấm.</div>
           <div id="intFeedbackHost">${STATE.feedback ? feedbackHtml(STATE.feedback) : ""}</div>
           <div class="int-actions">
-            <button class="int-soft-btn" id="intRandom">Äá»•i cÃ¢u ngáº«u nhiÃªn</button>
-            <button class="int-rec-btn" id="intRec">ðŸŽ¤ Ghi Ã¢m ngay</button>
+            <button class="int-soft-btn" id="intRandom">Đổi câu ngẫu nhiên</button>
+            <button class="int-rec-btn" id="intRec">🎤 Ghi âm ngay</button>
           </div>
         </div>
         <div class="int-card int-rules">
-          <h3>Quy táº¯c intonation</h3>
+          <h3>Quy tắc intonation</h3>
           ${ruleHtml(s.pattern)}
-          <div class="int-hist-title">Lá»‹ch sá»­ gáº§n Ä‘Ã¢y:</div>
+          <div class="int-hist-title">Lịch sử gần đây:</div>
           <div class="int-hist" id="intHist"></div>
         </div>
       </div>
@@ -223,26 +223,26 @@
   function ruleHtml(activePattern) {
     const is = (key) => activePattern.toLowerCase().includes(key);
     return `
-      <div class="int-rule ${is("falling") ? "active" : ""}"><b><span class="down">â†˜</span> Falling:</b> CÃ¢u tráº§n thuáº­t, WH-question, má»‡nh lá»‡nh â†’ xuá»‘ng cuá»‘i.</div>
-      <div class="int-rule ${is("rising") ? "active" : ""}"><b><span class="up">â†—</span> Rising:</b> Yes/No question, ngáº¡c nhiÃªn, kiá»ƒm tra â†’ lÃªn cuá»‘i.</div>
-      <div class="int-rule ${is("list") || is("choice") || is("contrast") ? "active" : ""}"><b><span class="mix">â†—â†˜</span> List/Choice:</b> Má»—i item lÃªn, item cuá»‘i xuá»‘ng. CÃ¢u lá»±a chá»n "or" cÅ©ng váº­y.</div>
-      <div class="int-rule ${is("fall-rise") ? "active" : ""}"><b><span class="mix">â†˜â†—</span> Fall-rise:</b> KhÃ´ng cháº¯c, lá»‹ch sá»±, chÆ°a nÃ³i háº¿t â†’ xuá»‘ng rá»“i lÃªn nháº¹.</div>
+      <div class="int-rule ${is("falling") ? "active" : ""}"><b><span class="down">↘</span> Falling:</b> Câu trần thuật, WH-question, mệnh lệnh → xuống cuối.</div>
+      <div class="int-rule ${is("rising") ? "active" : ""}"><b><span class="up">↗</span> Rising:</b> Yes/No question, ngạc nhiên, kiểm tra → lên cuối.</div>
+      <div class="int-rule ${is("list") || is("choice") || is("contrast") ? "active" : ""}"><b><span class="mix">↗↘</span> List/Choice:</b> Mỗi item lên, item cuối xuống. Câu lựa chọn "or" cũng vậy.</div>
+      <div class="int-rule ${is("fall-rise") ? "active" : ""}"><b><span class="mix">↘↗</span> Fall-rise:</b> Không chắc, lịch sự, chưa nói hết → xuống rồi lên nhẹ.</div>
     `;
   }
 
   function feedbackHtml(fb) {
     const cls = fb.score >= 7 ? "int-ok" : fb.score >= 4 ? "int-mid" : "int-no";
-    const title = fb.score >= 7 ? "Intonation khÃ¡ tá»± nhiÃªn!" : fb.score >= 4 ? "ÄÃºng má»™t pháº§n rá»“i" : "Cáº§n rÃµ hÆ°á»›ng giá»ng hÆ¡n";
+    const title = fb.score >= 7 ? "Intonation khá tự nhiên!" : fb.score >= 4 ? "Đúng một phần rồi" : "Cần rõ hướng giọng hơn";
     return `
       <div class="int-feedback">
         <div class="int-fb-head">
           <div class="int-score ${cls}">${escHtml(fb.score)}/10</div>
           <div>
             <div class="int-fb-title">${title}</div>
-            <div class="int-fb-sub">Pattern match: <b>${escHtml(fb.patternMatch || "partial")}</b> Â· ${escHtml(fb.pattern)}</div>
+            <div class="int-fb-sub">Pattern match: <b>${escHtml(fb.patternMatch || "partial")}</b> · ${escHtml(fb.pattern)}</div>
           </div>
         </div>
-        <div class="int-fb-text">${escHtml(fb.feedback || "HÃ£y nghe máº«u vÃ  thá»­ kiá»ƒm soÃ¡t hÆ°á»›ng pitch rÃµ hÆ¡n á»Ÿ cuá»‘i cÃ¢u.")}</div>
+        <div class="int-fb-text">${escHtml(fb.feedback || "Hãy nghe mẫu và thử kiểm soát hướng pitch rõ hơn ở cuối câu.")}</div>
       </div>
     `;
   }
@@ -252,15 +252,15 @@
     if (!host) return;
     const list = STATE.history.slice(0, 12);
     if (!list.length) {
-      host.innerHTML = `<div style="color:#9ca3af;text-align:center;padding:.55rem;font-size:.78rem;">ChÆ°a luyá»‡n cÃ¢u nÃ o.</div>`;
+      host.innerHTML = `<div style="color:#9ca3af;text-align:center;padding:.55rem;font-size:.78rem;">Chưa luyện câu nào.</div>`;
       return;
     }
     host.innerHTML = list.map(h => {
       const cls = h.score >= 7 ? "ok" : h.score >= 4 ? "mid" : "no";
       const plain = h.plain || "";
       return `<div class="int-hist-row ${cls}">
-        <b>${escHtml(plain.slice(0, 58))}${plain.length > 58 ? "â€¦" : ""}</b><br>
-        ${escHtml(h.pattern || "")} Â· <b>${escHtml(h.score)}/10</b>
+        <b>${escHtml(plain.slice(0, 58))}${plain.length > 58 ? "…" : ""}</b><br>
+        ${escHtml(h.pattern || "")} · <b>${escHtml(h.score)}/10</b>
       </div>`;
     }).join("");
   }
@@ -285,9 +285,9 @@
       STATE.recorder.start();
       STATE.recording = true;
       btn.classList.add("recording");
-      btn.textContent = "ðŸ›‘ Dá»«ng & cháº¥m";
+      btn.textContent = "🛑 Dừng & chấm";
     } catch (e) {
-      alert("KhÃ´ng truy cáº­p mic: " + e.message);
+      alert("Không truy cập mic: " + e.message);
     }
   }
 
@@ -297,14 +297,14 @@
     const btn = mount.querySelector("#intRec");
     if (btn) {
       btn.classList.remove("recording");
-      btn.textContent = "â³ Äang cháº¥mâ€¦";
+      btn.textContent = "⏳ Đang chấm…";
       btn.disabled = true;
     }
     const blob = new Blob(STATE.chunks, { type: "audio/webm" });
     const b64 = await blobToBase64(blob);
     const s = SENTENCES[STATE.idx];
-    const context = `INTONATION DRILL â€” Pattern: "${s.pattern}". Target: "${s.marked}".
-Judge ONLY intonation pattern â€” NOT individual sound pronunciation or rhythm.
+    const context = `INTONATION DRILL — Pattern: "${s.pattern}". Target: "${s.marked}".
+Judge ONLY intonation pattern — NOT individual sound pronunciation or rhythm.
 Score 0-10: (1) correct rising/falling at sentence end, (2) correct list intonation if applicable, (3) natural pitch movement.
 Respond with JSON: { score: 0-10, feedback: "brief feedback on intonation pattern", patternMatch: "good/partial/poor" }`;
     try {
@@ -330,9 +330,9 @@ Respond with JSON: { score: 0-10, feedback: "brief feedback on intonation patter
     } catch (e) {
       if (btn) {
         btn.disabled = false;
-        btn.textContent = "ðŸŽ¤ Ghi Ã¢m láº¡i";
+        btn.textContent = "🎤 Ghi âm lại";
       }
-      alert("Lá»—i cháº¥m: " + e.message);
+      alert("Lỗi chấm: " + e.message);
     }
   }
 
@@ -363,7 +363,7 @@ Respond with JSON: { score: 0-10, feedback: "brief feedback on intonation patter
     const btn = mount.querySelector("#intRec");
     if (btn) {
       btn.disabled = false;
-      btn.textContent = "ðŸŽ¤ Ghi Ã¢m láº¡i";
+      btn.textContent = "🎤 Ghi âm lại";
     }
     if (host && STATE.feedback) host.innerHTML = feedbackHtml(STATE.feedback);
     renderHistory();

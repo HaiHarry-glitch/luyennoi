@@ -1,10 +1,10 @@
 ﻿// =====================================================================
-//  Pronunciation course â€” /alphafeature/pronun/lesson<N>/section<M>
-//  Section 1: embedded YouTube video (Dan Hauer 42 ngÃ y phÃ¡t Ã¢m)
-//  Section 2: 8 FIXED example words â†’ click to practice + score
-//  Section 3: 5 FIXED example phrases â†’ record + score per phrase
+//  Pronunciation course — /alphafeature/pronun/lesson<N>/section<M>
+//  Section 1: embedded YouTube video (Dan Hauer 42 ngày phát âm)
+//  Section 2: 8 FIXED example words → click to practice + score
+//  Section 3: 5 FIXED example phrases → record + score per phrase
 //  Static lesson data loaded from /real/_app/immutable/chunks/lessons_data-*.js
-//  No Gemini generation for content â€” everything pre-baked.
+//  No Gemini generation for content — everything pre-baked.
 // =====================================================================
 (function () {
   const lessonMatch = location.pathname.match(/^\/alphafeature\/pronun\/lesson(\d+)\/section(\d+)\/?$/i);
@@ -64,10 +64,10 @@
     } catch {}
   }
 
-  // â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ INDEX PAGE â€” keep scraped list, wire history tab â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // ──────────────── INDEX PAGE — keep scraped list, wire history tab ────────────────
   function wireHistoryTab() {
-    const histBtn = [...document.querySelectorAll("button[role=tab]")].find(b => /lá»‹ch sá»­/i.test(b.textContent || ""));
-    const lessonBtn = [...document.querySelectorAll("button[role=tab]")].find(b => /bÃ i há»c/i.test(b.textContent || ""));
+    const histBtn = [...document.querySelectorAll("button[role=tab]")].find(b => /lịch sử/i.test(b.textContent || ""));
+    const lessonBtn = [...document.querySelectorAll("button[role=tab]")].find(b => /bài học/i.test(b.textContent || ""));
     if (!histBtn || histBtn.__lnWired) return;
     histBtn.__lnWired = true;
     const lessonsContainer = lessonBtn?.parentElement?.parentElement;
@@ -94,7 +94,7 @@
       wrap.id = "ln-pronun-history";
       wrap.style.cssText = "font-family:Lexend,sans-serif;padding:1rem 0;";
       if (!list.length) {
-        wrap.innerHTML = `<div style="text-align:center;color:#9ca3af;padding:3rem 1rem;font-size:.9rem;">ðŸ“ ChÆ°a cÃ³ lá»‹ch sá»­ luyá»‡n phÃ¡t Ã¢m. VÃ o bÃ i há»c, báº¥m "ðŸŽ¤ Luyá»‡n" Ä‘á»ƒ báº¯t Ä‘áº§u.</div>`;
+        wrap.innerHTML = `<div style="text-align:center;color:#9ca3af;padding:3rem 1rem;font-size:.9rem;">📝 Chưa có lịch sử luyện phát âm. Vào bài học, bấm "🎤 Luyện" để bắt đầu.</div>`;
       } else {
         const fmtTime = ts => new Date(ts).toLocaleString("vi-VN", { hour: "2-digit", minute: "2-digit", day: "2-digit", month: "2-digit" });
         wrap.innerHTML = list.slice(0, 60).map(h => {
@@ -105,12 +105,12 @@
             <div style="border:1px solid #e5e7eb;border-radius:.55rem;padding:.6rem .9rem;margin-bottom:.45rem;display:flex;gap:.7rem;align-items:center;">
               <div style="background:${color};color:white;font-weight:800;border-radius:9999px;min-width:2.4rem;height:2.4rem;display:flex;align-items:center;justify-content:center;font-size:.85rem;flex-shrink:0;">${sc}</div>
               <div style="flex:1;min-width:0;">
-                <div style="font-size:.7rem;color:#9ca3af;font-weight:700;">${(h.kind || "word").toUpperCase()} Â· /${h.phoneme || "?"}/ Â· ${fmtTime(h.ts)}</div>
+                <div style="font-size:.7rem;color:#9ca3af;font-weight:700;">${(h.kind || "word").toUpperCase()} · /${h.phoneme || "?"}/ · ${fmtTime(h.ts)}</div>
                 <div style="font-weight:600;color:#171717;margin-top:.1rem;">${escHtml(target || "")}</div>
-                ${h.phoneticHeard ? `<div style="font-size:.78rem;color:#d9381e;">Nghe Ä‘Æ°á»£c: ${escHtml(h.phoneticHeard)}</div>` : ""}
+                ${h.phoneticHeard ? `<div style="font-size:.78rem;color:#d9381e;">Nghe được: ${escHtml(h.phoneticHeard)}</div>` : ""}
                 ${h.verdict ? `<div style="font-size:.78rem;color:#4b5563;">${escHtml(h.verdict)}</div>` : ""}
               </div>
-              <button data-text="${escHtml(target || "")}" style="background:transparent;border:1.5px solid #171717;color:#171717;border-radius:50%;width:2rem;height:2rem;cursor:pointer;flex-shrink:0;">â–¶</button>
+              <button data-text="${escHtml(target || "")}" style="background:transparent;border:1.5px solid #171717;color:#171717;border-radius:50%;width:2rem;height:2rem;cursor:pointer;flex-shrink:0;">▶</button>
             </div>`;
         }).join("");
       }
@@ -125,7 +125,7 @@
     return;
   }
 
-  // â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ LESSON SECTION PAGE â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // ──────────────── LESSON SECTION PAGE ────────────────
   const lessonNum  = +lessonMatch[1];
   const sectionNum = +lessonMatch[2];
 
@@ -199,7 +199,7 @@
     return root;
   }
 
-  // â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ State for one-at-a-time drills â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // ──────────────── State for one-at-a-time drills ────────────────
   const PC = { itemIdx: 0, recorder: null, stream: null, chunks: [], recording: false, lastResult: null };
 
   function blobToBase64Async(blob) {
@@ -211,46 +211,46 @@
     });
   }
 
-  // â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ LuyenDoc grapheme map (phoneme â†’ graphemes + LuyenDoc lesson ID) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-  // Mapped from the 28 sound-to-phonogram lessons. Each entry: phoneme IPA â†’ { graphemes[], ldId, name }
+  // ──────────────── LuyenDoc grapheme map (phoneme → graphemes + LuyenDoc lesson ID) ────────────────
+  // Mapped from the 28 sound-to-phonogram lessons. Each entry: phoneme IPA → { graphemes[], ldId, name }
   // (ldId is the LuyenDoc lesson ID for /luyendoc/sound-to-phonograpm/<id>/learn link.)
   const LD_GRAPHEME_MAP = {
-    "iË":  { ldId: 1,  name: "Long E /iË/",      graphemes: ["e","ee","y","ea","ie","ei","i","ey"] },
-    "eÉª":  { ldId: 2,  name: "Long A /eÉª/",      graphemes: ["a_e","a","ai","ay","ea","ey","ei","eigh"] },
-    "aÉª":  { ldId: 4,  name: "Long I /aÉª/",      graphemes: ["i_e","i","y","igh","ie","eigh","ui","uy"] },
-    "oÊŠ":  { ldId: 5,  name: "Long O /oÊŠ/",      graphemes: ["o","o_e","oa","ow","oe","ough"] },
-    "uË":  { ldId: 8,  name: "Long OO /uË/",     graphemes: ["oo","u_e","u","ew","ue","ou","ui","o"] },
-    "juË": { ldId: 8,  name: "Long U /juË/",     graphemes: ["u_e","u","ew","ue","ui"] },
-    "Éª":   { ldId: 11, name: "Short I /Éª/",      graphemes: ["i","y","ui"] },
-    "É›":   { ldId: 12, name: "Short E /É›/",      graphemes: ["e","ea"] },
+    "iː":  { ldId: 1,  name: "Long E /iː/",      graphemes: ["e","ee","y","ea","ie","ei","i","ey"] },
+    "eɪ":  { ldId: 2,  name: "Long A /eɪ/",      graphemes: ["a_e","a","ai","ay","ea","ey","ei","eigh"] },
+    "aɪ":  { ldId: 4,  name: "Long I /aɪ/",      graphemes: ["i_e","i","y","igh","ie","eigh","ui","uy"] },
+    "oʊ":  { ldId: 5,  name: "Long O /oʊ/",      graphemes: ["o","o_e","oa","ow","oe","ough"] },
+    "uː":  { ldId: 8,  name: "Long OO /uː/",     graphemes: ["oo","u_e","u","ew","ue","ou","ui","o"] },
+    "juː": { ldId: 8,  name: "Long U /juː/",     graphemes: ["u_e","u","ew","ue","ui"] },
+    "ɪ":   { ldId: 11, name: "Short I /ɪ/",      graphemes: ["i","y","ui"] },
+    "ɛ":   { ldId: 12, name: "Short E /ɛ/",      graphemes: ["e","ea"] },
     "e":   { ldId: 12, name: "Short E /e/",      graphemes: ["e","ea"] },
-    "Ã¦":   { ldId: 14, name: "Short A /Ã¦/",      graphemes: ["a"] },
-    "ÊŒ":   { ldId: 16, name: "Short U /ÊŒ/",      graphemes: ["u","o","ou"] },
-    "ÊŠ":   { ldId: 17, name: "Short OO /ÊŠ/",    graphemes: ["oo","u","oul"] },
-    "É’":   { ldId: 21, name: "Short O /É’/",      graphemes: ["o","a"] },
-    "É”Ë":  { ldId: 41, name: "Broad AW /É”Ë/",    graphemes: ["aw","au","augh","ough"] },
-    "É‘Ër": { ldId: 42, name: "R-AR /É‘Ër/",       graphemes: ["ar"] },
-    "É‘Ë":  { ldId: 42, name: "AR /É‘Ë/",          graphemes: ["ar"] },
-    "aÊŠ":  { ldId: 22, name: "Diphthong OW /aÊŠ/", graphemes: ["ou","ow"] },
-    "É”Éª":  { ldId: 43, name: "Diphthong OI /É”Éª/", graphemes: ["oi","oy"] },
-    "ÉœËr": { ldId: 24, name: "Stressed R /ÉœËr/", graphemes: ["er","ir","ur","or","ear"] },
-    "ÉœË":  { ldId: 24, name: "Schwa-R /ÉœË/",     graphemes: ["er","ir","ur","or","ear"] },
-    "É”Ër": { ldId: 25, name: "R-Controlled /É”Ër/", graphemes: ["or","ore","oar","our"] },
-    "É›É™r": { ldId: 28, name: "R-Care /É›É™r/",     graphemes: ["air","are","ear","ere","eir"] },
-    "ÉªÉ™r": { ldId: 44, name: "R-Here /ÉªÉ™r/",     graphemes: ["ear","eer","ere","ier"] },
-    "aÉªÉ™r":{ ldId: 45, name: "R-Fire /aÉªÉ™r/",    graphemes: ["ire","ier","oir"] },
-    "jÊŠÉ™r":{ ldId: 46, name: "R-Pure /jÊŠÉ™r/",   graphemes: ["ure","ewer"] },
-    "É™":   { ldId: 30, name: "Schwa /É™/",        graphemes: ["a","e","i","o","u"] },
+    "æ":   { ldId: 14, name: "Short A /æ/",      graphemes: ["a"] },
+    "ʌ":   { ldId: 16, name: "Short U /ʌ/",      graphemes: ["u","o","ou"] },
+    "ʊ":   { ldId: 17, name: "Short OO /ʊ/",    graphemes: ["oo","u","oul"] },
+    "ɒ":   { ldId: 21, name: "Short O /ɒ/",      graphemes: ["o","a"] },
+    "ɔː":  { ldId: 41, name: "Broad AW /ɔː/",    graphemes: ["aw","au","augh","ough"] },
+    "ɑːr": { ldId: 42, name: "R-AR /ɑːr/",       graphemes: ["ar"] },
+    "ɑː":  { ldId: 42, name: "AR /ɑː/",          graphemes: ["ar"] },
+    "aʊ":  { ldId: 22, name: "Diphthong OW /aʊ/", graphemes: ["ou","ow"] },
+    "ɔɪ":  { ldId: 43, name: "Diphthong OI /ɔɪ/", graphemes: ["oi","oy"] },
+    "ɜːr": { ldId: 24, name: "Stressed R /ɜːr/", graphemes: ["er","ir","ur","or","ear"] },
+    "ɜː":  { ldId: 24, name: "Schwa-R /ɜː/",     graphemes: ["er","ir","ur","or","ear"] },
+    "ɔːr": { ldId: 25, name: "R-Controlled /ɔːr/", graphemes: ["or","ore","oar","our"] },
+    "ɛər": { ldId: 28, name: "R-Care /ɛər/",     graphemes: ["air","are","ear","ere","eir"] },
+    "ɪər": { ldId: 44, name: "R-Here /ɪər/",     graphemes: ["ear","eer","ere","ier"] },
+    "aɪər":{ ldId: 45, name: "R-Fire /aɪər/",    graphemes: ["ire","ier","oir"] },
+    "jʊər":{ ldId: 46, name: "R-Pure /jʊər/",   graphemes: ["ure","ewer"] },
+    "ə":   { ldId: 30, name: "Schwa /ə/",        graphemes: ["a","e","i","o","u"] },
     "k":   { ldId: 33, name: "/k/ Trap",         graphemes: ["c","k","ck","ch","que"] },
-    "Êƒ":   { ldId: 34, name: "Palatal /Êƒ/",      graphemes: ["sh","ti","ci","si","ch","s"] },
-    "Ê’":   { ldId: 34, name: "Palatal /Ê’/",      graphemes: ["s","ge"] },
-    "tÊƒ":  { ldId: 36, name: "Affricate /tÊƒ/",   graphemes: ["ch","tch","t"] },
-    "dÊ’":  { ldId: 36, name: "Affricate /dÊ’/",   graphemes: ["j","g","dge"] },
+    "ʃ":   { ldId: 34, name: "Palatal /ʃ/",      graphemes: ["sh","ti","ci","si","ch","s"] },
+    "ʒ":   { ldId: 34, name: "Palatal /ʒ/",      graphemes: ["s","ge"] },
+    "tʃ":  { ldId: 36, name: "Affricate /tʃ/",   graphemes: ["ch","tch","t"] },
+    "dʒ":  { ldId: 36, name: "Affricate /dʒ/",   graphemes: ["j","g","dge"] },
     "f":   { ldId: 37, name: "/f/ Illusion",     graphemes: ["f","ff","ph","gh"] },
     "s":   { ldId: 37, name: "/s/ Illusion",     graphemes: ["s","ss","c","sc"] },
   };
 
-  // â”€â”€ Section 1 â€” YouTube embed + Graphemes table â”€â”€
+  // ── Section 1 — YouTube embed + Graphemes table ──
   function renderSection1(root, lesson) {
     const embed = ytEmbedFromUrl(lesson.videoUrl);
     const ldEntry = LD_GRAPHEME_MAP[lesson.phoneme];
@@ -258,13 +258,13 @@
       <div style="margin-top:1.4rem;background:#ffffff;border-radius:.7rem;padding:1rem 1.2rem;">
         <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:.7rem;margin-bottom:.6rem;">
           <div>
-            <div style="font-size:.72rem;color:#9ca3af;font-weight:700;letter-spacing:.05em;">CÃCH VIáº¾T Ã‚M NÃ€Y (GRAPHEMES)</div>
+            <div style="font-size:.72rem;color:#9ca3af;font-weight:700;letter-spacing:.05em;">CÁCH VIẾT ÂM NÀY (GRAPHEMES)</div>
             <div style="font-weight:700;color:#171717;font-size:1.05rem;margin-top:.15rem;">${escHtml(ldEntry.name)}</div>
-            <div style="font-size:.78rem;color:#6b7280;margin-top:.2rem;">Ã‚m nÃ y cÃ³ <b>${ldEntry.graphemes.length}</b> cÃ¡ch viáº¿t khÃ¡c nhau trong tiáº¿ng Anh:</div>
+            <div style="font-size:.78rem;color:#6b7280;margin-top:.2rem;">Âm này có <b>${ldEntry.graphemes.length}</b> cách viết khác nhau trong tiếng Anh:</div>
           </div>
           <a href="/luyendoc/sound-to-phonograpm/${ldEntry.ldId}/learn/" target="_blank"
              style="background:#d9381e;color:white;padding:.4rem .8rem;border-radius:9999px;font-size:.74rem;font-weight:600;text-decoration:none;white-space:nowrap;">
-            ðŸ“š Há»c sÃ¢u (LuyenDoc) â†’
+            📚 Học sâu (LuyenDoc) →
           </a>
         </div>
         <div style="display:flex;flex-wrap:wrap;gap:.4rem;">
@@ -275,24 +275,24 @@
           `).join("")}
         </div>
         <div style="margin-top:.6rem;font-size:.74rem;color:#6b7280;">
-          ðŸ’¡ Click "Há»c sÃ¢u" Ä‘á»ƒ xem vÃ­ dá»¥ + bÃ i táº­p cho tá»«ng cÃ¡ch viáº¿t táº¡i LuyenDoc.
+          💡 Click "Học sâu" để xem ví dụ + bài tập cho từng cách viết tại LuyenDoc.
         </div>
       </div>
     ` : "";
 
     root.innerHTML = `
       <div class="pc-card">
-        <div class="pc-bc"><a href="/alphafeature/pronun">â† KhoÃ¡ há»c phÃ¡t Ã¢m</a> Â· BÃ i ${lessonNum}</div>
-        <h1 class="pc-h1">HÆ°á»›ng dáº«n luyá»‡n Ã¢m: /${escHtml(lesson.phoneme)}/</h1>
-        <p class="pc-hint">Video hÆ°á»›ng dáº«n cá»§a tháº§y Dan Hauer â€” phÃ¡t Ã¢m chuáº©n IPA + cÃ¡ch Ä‘áº·t mÃ´i lÆ°á»¡i.</p>
+        <div class="pc-bc"><a href="/alphafeature/pronun">← Khoá học phát âm</a> · Bài ${lessonNum}</div>
+        <h1 class="pc-h1">Hướng dẫn luyện âm: /${escHtml(lesson.phoneme)}/</h1>
+        <p class="pc-hint">Video hướng dẫn của thầy Dan Hauer — phát âm chuẩn IPA + cách đặt môi lưỡi.</p>
         ${embed ? `
           <div style="position:relative;padding-bottom:56.25%;height:0;overflow:hidden;border-radius:.7rem;background:black;">
             <iframe src="${embed}" style="position:absolute;top:0;left:0;width:100%;height:100%;border:0;" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
-          </div>` : `<div style="background:#ffffff;color:var(--red);padding:1rem;border-radius:.5rem;">âš  BÃ i nÃ y chÆ°a cÃ³ video. Link gá»‘c: <a href="${escHtml(lesson.videoUrl || "")}" target="_blank" style="color:#d9381e;">${escHtml(lesson.videoUrl || "")}</a></div>`}
+          </div>` : `<div style="background:#ffffff;color:var(--red);padding:1rem;border-radius:.5rem;">⚠ Bài này chưa có video. Link gốc: <a href="${escHtml(lesson.videoUrl || "")}" target="_blank" style="color:#d9381e;">${escHtml(lesson.videoUrl || "")}</a></div>`}
         ${graphemesPanel}
         <div class="pc-nav">
-          ${lessonNum > 1 ? `<a class="pc-btn pc-btn-ghost" href="/alphafeature/pronun/lesson${lessonNum - 1}/section1">â† BÃ i trÆ°á»›c</a>` : "<span></span>"}
-          <a class="pc-btn pc-btn-primary" href="/alphafeature/pronun/lesson${lessonNum}/section2">BÃ i há»c tiáº¿p â†’</a>
+          ${lessonNum > 1 ? `<a class="pc-btn pc-btn-ghost" href="/alphafeature/pronun/lesson${lessonNum - 1}/section1">← Bài trước</a>` : "<span></span>"}
+          <a class="pc-btn pc-btn-primary" href="/alphafeature/pronun/lesson${lessonNum}/section2">Bài học tiếp →</a>
         </div>
       </div>
     `;
@@ -310,16 +310,16 @@
     if (ipa) PC_IPA_CACHE.set(text, ipa);
     return ipa;
   }
-  // Synchronous best-guess fallback ONLY for first render â€” gets replaced once IPA loads.
+  // Synchronous best-guess fallback ONLY for first render — gets replaced once IPA loads.
   function fauxIpa(word) {
     return "/" + word.toLowerCase().split("").join(" ") + "/";
   }
 
-  // â”€â”€ Section 2 â€” Word practice (ONE word at a time, matches reference UI) â”€â”€
+  // ── Section 2 — Word practice (ONE word at a time, matches reference UI) ──
   function renderSection2(root, lesson) {
     const words = lesson.wordExamples || [];
     if (!words.length) {
-      root.innerHTML = `<div class="pc-card"><h1 class="pc-h1">BÃ i nÃ y chÆ°a cÃ³ dá»¯ liá»‡u tá»«</h1></div>`;
+      root.innerHTML = `<div class="pc-card"><h1 class="pc-h1">Bài này chưa có dữ liệu từ</h1></div>`;
       return;
     }
     if (PC.itemIdx < 0) PC.itemIdx = 0;
@@ -331,30 +331,30 @@
       const progressPct = ((PC.itemIdx + 1) / total) * 100;
       root.innerHTML = `
         <div class="pc-card">
-          <div class="pc-bc"><a href="/alphafeature/pronun">â† KhoÃ¡ há»c phÃ¡t Ã¢m</a> Â· BÃ i ${lessonNum} Â· Luyá»‡n phÃ¡t Ã¢m tá»«</div>
-          <h1 class="pc-h1">Luyá»‡n phÃ¡t Ã¢m tá»«</h1>
+          <div class="pc-bc"><a href="/alphafeature/pronun">← Khoá học phát âm</a> · Bài ${lessonNum} · Luyện phát âm từ</div>
+          <h1 class="pc-h1">Luyện phát âm từ</h1>
           <div class="pc-progress-wrap">
             <div class="pc-progress-bar"><div style="width:${progressPct}%;"></div></div>
-            <div class="pc-progress-label">Tá»« ${PC.itemIdx + 1}/${total}</div>
+            <div class="pc-progress-label">Từ ${PC.itemIdx + 1}/${total}</div>
           </div>
           <div class="pc-topnav">
-            <button class="pc-pill pc-pill-purple" id="pc-back" ${PC.itemIdx === 0 ? "disabled" : ""}>â† Back</button>
-            <button class="pc-pill pc-pill-purple" id="pc-next" ${PC.itemIdx === total - 1 ? "disabled" : ""}>Next â†’</button>
+            <button class="pc-pill pc-pill-purple" id="pc-back" ${PC.itemIdx === 0 ? "disabled" : ""}>← Back</button>
+            <button class="pc-pill pc-pill-purple" id="pc-next" ${PC.itemIdx === total - 1 ? "disabled" : ""}>Next →</button>
           </div>
           <div class="pc-hero">
-            <button class="pc-play" id="pc-tts" title="Nghe TTS">â–¶</button>
+            <button class="pc-play" id="pc-tts" title="Nghe TTS">▶</button>
             <span class="pc-hero-text">${escHtml(w)}</span>
             <span class="pc-ipa-center" id="pc-ipa-now" style="margin-bottom:0;">${escHtml(fauxIpa(w))}</span>
           </div>
           <div class="pc-divider"></div>
-          <div class="pc-prompt" id="pc-prompt">Nháº¥n nÃºt <b>Ghi Ã¢m ngay</b> á»Ÿ dÆ°á»›i Ä‘á»ƒ luyá»‡n phÃ¡t Ã¢m</div>
+          <div class="pc-prompt" id="pc-prompt">Nhấn nút <b>Ghi âm ngay</b> ở dưới để luyện phát âm</div>
           <div id="pc-result-host"></div>
           <div class="pc-actions">
-            <button class="pc-rec" id="pc-rec">Ghi Ã¢m ngay</button>
+            <button class="pc-rec" id="pc-rec">Ghi âm ngay</button>
           </div>
           <div class="pc-lessonnav">
-            <button class="pc-pill pc-pill-purple" onclick="location.href='/alphafeature/pronun/lesson${lessonNum}/section1'">â† BÃ i há»c trÆ°á»›c</button>
-            <button class="pc-pill pc-pill-purple" onclick="location.href='/alphafeature/pronun/lesson${lessonNum}/section3'">BÃ i há»c tiáº¿p â†’</button>
+            <button class="pc-pill pc-pill-purple" onclick="location.href='/alphafeature/pronun/lesson${lessonNum}/section1'">← Bài học trước</button>
+            <button class="pc-pill pc-pill-purple" onclick="location.href='/alphafeature/pronun/lesson${lessonNum}/section3'">Bài học tiếp →</button>
           </div>
         </div>
       `;
@@ -386,15 +386,15 @@
       PC.recorder.start();
       PC.recording = true;
       btn.classList.add("recording");
-      btn.textContent = "ðŸ›‘ Dá»«ng & cháº¥m";
-    } catch (e) { alert("KhÃ´ng truy cáº­p Ä‘Æ°á»£c mic: " + e.message); }
+      btn.textContent = "🛑 Dừng & chấm";
+    } catch (e) { alert("Không truy cập được mic: " + e.message); }
   }
 
   async function onStopWord(word, phoneme) {
     PC.stream?.getTracks().forEach(t => t.stop());
     PC.recording = false;
     const btn = root.querySelector("#pc-rec");
-    if (btn) { btn.classList.remove("recording"); btn.textContent = "â³ Äang cháº¥mâ€¦"; btn.disabled = true; }
+    if (btn) { btn.classList.remove("recording"); btn.textContent = "⏳ Đang chấm…"; btn.disabled = true; }
     const blob = new Blob(PC.chunks, { type: "audio/webm" });
     const b64 = await blobToBase64Async(blob);
     try {
@@ -407,13 +407,13 @@
       saveHistory({ kind: "word", phoneme, word, score: sc, phoneticHeard: d.phoneticHeard, verdict: d.verdict, tips: d.tips });
       renderResultBlock({ score: sc, raw: d });
     } catch (e) {
-      renderResultBlock({ score: "?", raw: { verdict: "Lá»—i: " + e.message } });
+      renderResultBlock({ score: "?", raw: { verdict: "Lỗi: " + e.message } });
     }
   }
 
   function renderResultBlock({ score, raw }) {
     const btn = root.querySelector("#pc-rec");
-    if (btn) { btn.disabled = false; btn.textContent = "Ghi Ã¢m láº¡i"; }
+    if (btn) { btn.disabled = false; btn.textContent = "Ghi âm lại"; }
     const host = root.querySelector("#pc-result-host");
     if (!host) return;
     const color = typeof score === "number" ? (score >= 75 ? "var(--ink)" : score >= 60 ? "#d9381e" : score >= 40 ? "var(--ink)" : "var(--red)") : "#9ca3af";
@@ -421,22 +421,22 @@
       <div class="pc-result">
         <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:.8rem;">
           <div style="flex:1;">
-            <div style="font-size:.72rem;color:#9ca3af;font-weight:700;">ÄIá»‚M PHÃT Ã‚M</div>
+            <div style="font-size:.72rem;color:#9ca3af;font-weight:700;">ĐIỂM PHÁT ÂM</div>
             <div class="pc-result-score" style="color:${color};">${score}/100</div>
-            ${raw?.phoneticHeard ? `<div class="pc-result-meta">Nghe Ä‘Æ°á»£c: <b style="color:#d9381e;">${escHtml(raw.phoneticHeard)}</b></div>` : ""}
+            ${raw?.phoneticHeard ? `<div class="pc-result-meta">Nghe được: <b style="color:#d9381e;">${escHtml(raw.phoneticHeard)}</b></div>` : ""}
             ${raw?.verdict ? `<div class="pc-result-meta">${escHtml(raw.verdict)}</div>` : ""}
           </div>
         </div>
-        ${raw?.tips ? `<div class="pc-result-tip">ðŸ’¡ ${escHtml(raw.tips)}</div>` : ""}
+        ${raw?.tips ? `<div class="pc-result-tip">💡 ${escHtml(raw.tips)}</div>` : ""}
       </div>
     `;
   }
 
-  // â”€â”€ Section 3 â€” Phrase practice (ONE phrase at a time) â”€â”€
+  // ── Section 3 — Phrase practice (ONE phrase at a time) ──
   function renderSection3(root, lesson) {
     const phrases = lesson.sentenceExamples || [];
     if (!phrases.length) {
-      root.innerHTML = `<div class="pc-card"><h1 class="pc-h1">BÃ i nÃ y chÆ°a cÃ³ dá»¯ liá»‡u cÃ¢u</h1></div>`;
+      root.innerHTML = `<div class="pc-card"><h1 class="pc-h1">Bài này chưa có dữ liệu câu</h1></div>`;
       return;
     }
 
@@ -449,30 +449,30 @@
       const wordsIpa = fauxWords;
       root.innerHTML = `
         <div class="pc-card">
-          <div class="pc-bc"><a href="/alphafeature/pronun">â† KhoÃ¡ há»c phÃ¡t Ã¢m</a> Â· BÃ i ${lessonNum} Â· Luyá»‡n phÃ¡t Ã¢m cá»¥m tá»«</div>
-          <h1 class="pc-h1">Luyá»‡n phÃ¡t Ã¢m cá»¥m tá»«:</h1>
+          <div class="pc-bc"><a href="/alphafeature/pronun">← Khoá học phát âm</a> · Bài ${lessonNum} · Luyện phát âm cụm từ</div>
+          <h1 class="pc-h1">Luyện phát âm cụm từ:</h1>
           <div class="pc-progress-wrap">
             <div class="pc-progress-bar"><div style="width:${progressPct}%;"></div></div>
-            <div class="pc-progress-label">Cá»¥m tá»« ${PC.itemIdx + 1}/${total}</div>
+            <div class="pc-progress-label">Cụm từ ${PC.itemIdx + 1}/${total}</div>
           </div>
           <div class="pc-topnav">
-            <button class="pc-pill pc-pill-purple" id="pc-back" ${PC.itemIdx === 0 ? "disabled" : ""}>â† Back</button>
-            <button class="pc-pill pc-pill-purple" id="pc-next" ${PC.itemIdx === total - 1 ? "disabled" : ""}>Next â†’</button>
+            <button class="pc-pill pc-pill-purple" id="pc-back" ${PC.itemIdx === 0 ? "disabled" : ""}>← Back</button>
+            <button class="pc-pill pc-pill-purple" id="pc-next" ${PC.itemIdx === total - 1 ? "disabled" : ""}>Next →</button>
           </div>
           <div class="pc-hero">
-            <button class="pc-play" id="pc-tts" title="Nghe TTS">â–¶</button>
+            <button class="pc-play" id="pc-tts" title="Nghe TTS">▶</button>
             <span class="pc-hero-text phrase">${escHtml(p)}</span>
           </div>
           <div class="pc-ipa-center" id="pc-ipa-now">${escHtml(wordsIpa)}</div>
           <div class="pc-divider"></div>
-          <div class="pc-prompt">Nháº¥n nÃºt <b>Ghi Ã¢m ngay</b> á»Ÿ dÆ°á»›i Ä‘á»ƒ luyá»‡n phÃ¡t Ã¢m</div>
+          <div class="pc-prompt">Nhấn nút <b>Ghi âm ngay</b> ở dưới để luyện phát âm</div>
           <div id="pc-result-host"></div>
           <div class="pc-actions">
-            <button class="pc-rec" id="pc-rec">Ghi Ã¢m ngay</button>
+            <button class="pc-rec" id="pc-rec">Ghi âm ngay</button>
           </div>
           <div class="pc-lessonnav">
-            <button class="pc-pill pc-pill-purple" onclick="location.href='/alphafeature/pronun/lesson${lessonNum}/section2'">â† BÃ i há»c trÆ°á»›c</button>
-            <button class="pc-pill pc-pill-purple" onclick="location.href='/alphafeature/pronun/lesson${lessonNum + 1}/section1'">BÃ i há»c tiáº¿p â†’</button>
+            <button class="pc-pill pc-pill-purple" onclick="location.href='/alphafeature/pronun/lesson${lessonNum}/section2'">← Bài học trước</button>
+            <button class="pc-pill pc-pill-purple" onclick="location.href='/alphafeature/pronun/lesson${lessonNum + 1}/section1'">Bài học tiếp →</button>
           </div>
         </div>
       `;
@@ -510,15 +510,15 @@
       PC.recorder.start();
       PC.recording = true;
       btn.classList.add("recording");
-      btn.textContent = "ðŸ›‘ Dá»«ng & cháº¥m";
-    } catch (e) { alert("KhÃ´ng truy cáº­p Ä‘Æ°á»£c mic: " + e.message); }
+      btn.textContent = "🛑 Dừng & chấm";
+    } catch (e) { alert("Không truy cập được mic: " + e.message); }
   }
 
   async function onStopPhrase(sentence, phoneme) {
     PC.stream?.getTracks().forEach(t => t.stop());
     PC.recording = false;
     const btn = root.querySelector("#pc-rec");
-    if (btn) { btn.classList.remove("recording"); btn.textContent = "â³ Äang cháº¥mâ€¦"; btn.disabled = true; }
+    if (btn) { btn.classList.remove("recording"); btn.textContent = "⏳ Đang chấm…"; btn.disabled = true; }
     const blob = new Blob(PC.chunks, { type: "audio/webm" });
     const b64 = await blobToBase64Async(blob);
     try {
@@ -531,24 +531,24 @@
       saveHistory({ kind: "phrase", phoneme, sentence, score: sc, phoneticHeard: d.phoneticHeard, verdict: d.verdict, tips: d.tips, worstWords: d.worstWords });
       renderResultBlock({ score: sc, raw: d });
     } catch (e) {
-      renderResultBlock({ score: "?", raw: { verdict: "Lá»—i: " + e.message } });
+      renderResultBlock({ score: "?", raw: { verdict: "Lỗi: " + e.message } });
     }
   }
 
-  // â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ Boot â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // ──────────────── Boot ────────────────
   (async function boot() {
     const root = mountRoot();
-    root.innerHTML = `<div class="pc-card" style="text-align:center;color:#9ca3af;">â³ Äang táº£i dá»¯ liá»‡u bÃ i há»câ€¦</div>`;
+    root.innerHTML = `<div class="pc-card" style="text-align:center;color:#9ca3af;">⏳ Đang tải dữ liệu bài học…</div>`;
     const lessons = await loadLessons();
     const lesson = lessons?.[lessonNum - 1];
     if (!lesson) {
-      root.innerHTML = `<div class="pc-card"><h1 class="pc-h1">KhÃ´ng tÃ¬m tháº¥y bÃ i ${lessonNum}</h1><a class="pc-btn pc-btn-primary" href="/alphafeature/pronun">â† Vá» khoÃ¡ há»c</a></div>`;
+      root.innerHTML = `<div class="pc-card"><h1 class="pc-h1">Không tìm thấy bài ${lessonNum}</h1><a class="pc-btn pc-btn-primary" href="/alphafeature/pronun">← Về khoá học</a></div>`;
       return;
     }
     if (sectionNum === 1) renderSection1(root, lesson);
     else if (sectionNum === 2) renderSection2(root, lesson);
     else if (sectionNum === 3) renderSection3(root, lesson);
-    else root.innerHTML = `<div class="pc-card"><h1 class="pc-h1">Section ${sectionNum} khÃ´ng tá»“n táº¡i</h1><a class="pc-btn pc-btn-primary" href="/alphafeature/pronun/lesson${lessonNum}/section1">Vá» section 1</a></div>`;
+    else root.innerHTML = `<div class="pc-card"><h1 class="pc-h1">Section ${sectionNum} không tồn tại</h1><a class="pc-btn pc-btn-primary" href="/alphafeature/pronun/lesson${lessonNum}/section1">Về section 1</a></div>`;
   })();
 })();
 

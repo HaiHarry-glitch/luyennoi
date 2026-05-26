@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
   <link rel="icon" href="/real/favicon.png" type="image/png" />
   <link href="/real/_app/immutable/assets/_layout-a55bae1d.css" rel="stylesheet">
-  <title>CÃ¢u Báº¡n thÃªm | Luyá»‡n NÃ³i</title>
+  <title>Câu Bạn thêm | Luyện Nói</title>
   <style>
     body { font-family: Lexend, sans-serif; margin: 0; background: #fff; color: #171717; }
     .layout { display: flex; min-height: 100vh; }
@@ -42,30 +42,30 @@
 <body>
   <div class="layout">
     <aside class="sidebar">
-      <a href="/" class="brand"><img src="/real/cloudfront/media/logo.webp" alt="Luyá»‡n NÃ³i">Luyá»‡n NÃ³i</a>
-      <a href="/">ðŸ  Trang chá»§</a>
-      <a href="/question-answer" class="active">ðŸŽ™ï¸ Luyá»‡n theo cÃ¢u</a>
-      <a href="/take-test/home">ðŸ“‹ Thi thá»­</a>
+      <a href="/" class="brand"><img src="/real/cloudfront/media/logo.webp" alt="Luyện Nói">Luyện Nói</a>
+      <a href="/">🏠 Trang chủ</a>
+      <a href="/question-answer" class="active">🎙️ Luyện theo câu</a>
+      <a href="/take-test/home">📋 Thi thử</a>
       <div class="progress-box">
         <div class="progress-circle">0<small>/25</small></div>
-        <a href="/alphafeature/payment" class="btn-upgrade">Mua Xá»‹n</a>
+        <a href="/alphafeature/payment" class="btn-upgrade">Mua Xịn</a>
       </div>
     </aside>
     <main class="main">
       <div class="tabs">
-        <a href="/question-answer/part1" class="tab">Luyá»‡n Part 1</a>
-        <a href="/question-answer/part2" class="tab">Luyá»‡n Part 2</a>
-        <a href="/question-answer/part3" class="tab">Luyá»‡n Part 3</a>
-        <a href="/question-answer/user-question" class="tab active">CÃ¢u Báº¡n thÃªm</a>
+        <a href="/question-answer/part1" class="tab">Luyện Part 1</a>
+        <a href="/question-answer/part2" class="tab">Luyện Part 2</a>
+        <a href="/question-answer/part3" class="tab">Luyện Part 3</a>
+        <a href="/question-answer/user-question" class="tab active">Câu Bạn thêm</a>
       </div>
       <form id="uq-form" class="form-row" onsubmit="return false;">
-        <input id="uq-input" class="form-input" type="text" placeholder="Nháº­p cÃ¢u há»i cá»§a báº¡n vÃ o Ä‘Ã¢y..." maxlength="300" required>
+        <input id="uq-input" class="form-input" type="text" placeholder="Nhập câu hỏi của bạn vào đây..." maxlength="300" required>
         <select id="uq-part" class="form-select">
           <option value="1">Part 1</option>
           <option value="2">Part 2</option>
           <option value="3">Part 3</option>
         </select>
-        <button id="uq-add" class="btn-add" type="submit">ThÃªm CÃ¢u há»i</button>
+        <button id="uq-add" class="btn-add" type="submit">Thêm Câu hỏi</button>
       </form>
       <div id="uq-list" class="q-list"></div>
     </main>
@@ -80,7 +80,7 @@
         const list = document.getElementById("uq-list");
         const items = load();
         if (!items.length) {
-          list.innerHTML = '<div class="empty">ChÆ°a cÃ³ cÃ¢u há»i nÃ o. HÃ£y thÃªm cÃ¢u há»i Ä‘áº§u tiÃªn cá»§a báº¡n!</div>';
+          list.innerHTML = '<div class="empty">Chưa có câu hỏi nào. Hãy thêm câu hỏi đầu tiên của bạn!</div>';
           return;
         }
         list.innerHTML = items.map((q, i) => `
@@ -88,7 +88,7 @@
             <div class="q-text">${q.text.replace(/</g,"&lt;")}</div>
             <div class="q-meta">
               <span class="q-part">PART ${q.part}</span>
-              <button class="q-del" data-del="${i}" type="button">XoÃ¡</button>
+              <button class="q-del" data-del="${i}" type="button">Xoá</button>
             </div>
           </div>`).join("");
         // Wire clicks

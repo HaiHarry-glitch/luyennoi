@@ -12,6 +12,7 @@ const ROUTES = [
   { path: "/take-test/home" },
   { path: "/take-test/full-test" },
   { path: "/alphafeature/pronun" },
+  { path: "/reading", checkMojibake: true },
   { path: "/reading/short-stories" },
   { path: "/settings", final: ["/home", "/home/"] },
   { path: "/settings/", final: ["/home", "/home/"] }
@@ -110,6 +111,12 @@ function normalizePath(path) {
 
     if (navOk && !page.isClosed()) {
       try {
+        const bodyText = await page.locator("body").innerText().catch(() => "");
+        const mojibakeRe = /[\u0081\u008d\u008f\u0090\u009d]|Ã[\u00A0-\u00FF]|Ä[ƒ\u00A0-\u00FF]|Æ°|á»‡|á»‹|á»c/;
+        if (mojibakeRe.test(bodyText)) {
+          const sample = (bodyText.match(/[^\s]{0,40}(Ã[^\s]{0,15}|Ä[^\s]{0,15}|Æ°[^\s]{0,15}|á»[^\s]{0,15}|[\u0081\u008d\u008f\u0090\u009d][^\s]{0,15})/) || [bodyText.slice(0, 80)])[0];
+          record(route.path, "mojibake", `garbled Vietnamese: ${sample}`);
+        }
         if (/^\/question-answer\/part[123]$/i.test(route.path)) {
           const toggleCount = await page.locator(":text-matches(\"^\\\\s*(Ẩn|Hiện) câu đã (trả lời|làm rồi)\")").count();
           if (toggleCount !== 1) record(route.path, "ui", `answered toggle count: ${toggleCount}`);

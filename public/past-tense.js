@@ -1,5 +1,5 @@
 ﻿// =====================================================================
-//  Luyá»‡n thÃ¬ quÃ¡ khá»© â€” /alphafeature/past-tense
+//  Luyện thì quá khứ — /alphafeature/past-tense
 //  Sentences show the verb in parentheses (uninflected). Student must
 //  conjugate to the correct past tense form and say the full sentence.
 //  AI (Gemini) scores correctness + flags wrong tense.
@@ -8,34 +8,34 @@
   const mount = document.getElementById("pastTenseRoot");
   if (!mount) return;
 
-  // â”€â”€ Static sentence library â€” verbs in parens, student picks past form â”€â”€
+  // ── Static sentence library — verbs in parens, student picks past form ──
   // Each: { template (with "(verb)"), correct (with conjugated verb), tense, note }
   const SENTENCES = [
-    { template: "Yesterday I (go) to the cinema with my friends.",       correct: "went",        tense: "simple past",     note: "go â†’ went (irregular)" },
-    { template: "She (eat) breakfast at 7 a.m. this morning.",            correct: "ate",         tense: "simple past",     note: "eat â†’ ate (irregular)" },
-    { template: "When I arrived, they (already / leave).",                correct: "had already left", tense: "past perfect", note: "QuÃ¡ khá»© hoÃ n thÃ nh: had + V3 cho hÃ nh Ä‘á»™ng trÆ°á»›c hÃ nh Ä‘á»™ng khÃ¡c trong quÃ¡ khá»©" },
-    { template: "He (study) for three hours when his mom came home.",     correct: "had been studying", tense: "past perfect continuous", note: "had been + V-ing â€” diá»…n táº£ hÃ nh Ä‘á»™ng kÃ©o dÃ i Ä‘áº¿n 1 má»‘c thá»i gian quÃ¡ khá»©" },
-    { template: "I (watch) TV when the phone (ring).",                    correct: "was watching ... rang", tense: "past continuous + simple past", note: "was/were V-ing cho hÃ nh Ä‘á»™ng Ä‘ang xáº£y ra, simple past cho hÃ nh Ä‘á»™ng chen vÃ o" },
-    { template: "They (play) football yesterday afternoon.",              correct: "played",      tense: "simple past",     note: "Regular verb: play â†’ played" },
-    { template: "My family (visit) Hanoi last summer.",                   correct: "visited",     tense: "simple past",     note: "Regular verb: visit â†’ visited" },
-    { template: "While we (walk) home, it (start) to rain.",              correct: "were walking ... started", tense: "past continuous + simple past", note: "Cáº¥u trÃºc song hÃ nh: while + V-ing, simple past" },
-    { template: "She (not finish) her homework when the bell rang.",      correct: "had not finished (hadn't finished)", tense: "past perfect", note: "Phá»§ Ä‘á»‹nh quÃ¡ khá»© hoÃ n thÃ nh: had not + V3" },
-    { template: "Last night I (read) a book before I (go) to bed.",       correct: "read ... went", tense: "simple past", note: "read giá»¯ nguyÃªn cÃ¡ch viáº¿t nhÆ°ng phÃ¡t Ã¢m /red/" },
-    { template: "Tom (buy) a new car last week.",                          correct: "bought",      tense: "simple past",     note: "buy â†’ bought (irregular)" },
-    { template: "We (have) dinner when the lights (go) out.",             correct: "were having ... went", tense: "past continuous + simple past", note: "have meal dÃ¹ng was/were having" },
-    { template: "She (sing) beautifully at the concert yesterday.",        correct: "sang",        tense: "simple past",     note: "sing â†’ sang (irregular)" },
-    { template: "By the time we arrived, the movie (start).",              correct: "had started", tense: "past perfect",    note: "By the time + simple past, má»‡nh Ä‘á» chÃ­nh dÃ¹ng past perfect" },
-    { template: "I (live) in Saigon for 5 years before I moved here.",     correct: "had lived (had been living)", tense: "past perfect / past perfect continuous", note: "for + thá»i gian â†’ past perfect hoáº·c past perfect continuous Ä‘á»u OK" },
-    { template: "He (write) three letters yesterday.",                     correct: "wrote",       tense: "simple past",     note: "write â†’ wrote (irregular)" },
-    { template: "She (teach) English at our school last year.",            correct: "taught",      tense: "simple past",     note: "teach â†’ taught (irregular)" },
-    { template: "While he (drive) home, he (see) an accident.",            correct: "was driving ... saw", tense: "past continuous + simple past", note: "drive â†’ was driving, see â†’ saw" },
-    { template: "They (build) the bridge in 1995.",                        correct: "built",       tense: "simple past",     note: "build â†’ built (irregular)" },
-    { template: "When I called you, what (you / do)?",                      correct: "were you doing", tense: "past continuous (question)", note: "CÃ¢u há»i quÃ¡ khá»© tiáº¿p diá»…n: were + S + V-ing" },
-    { template: "I (take) lots of photos during our trip last summer.",   correct: "took",        tense: "simple past",     note: "take â†’ took (irregular)" },
-    { template: "She (cook) dinner for two hours when I got home.",       correct: "had been cooking", tense: "past perfect continuous", note: "Nháº¥n máº¡nh khoáº£ng thá»i gian kÃ©o dÃ i Ä‘áº¿n má»‘c quÃ¡ khá»©" },
-    { template: "We (not see) each other since 2019.",                     correct: "hadn't seen / hadn't been seeing", tense: "past perfect", note: "since + nÄƒm dÃ¹ng perfect â€” á»Ÿ vÄƒn cáº£nh quÃ¡ khá»© thÃ¬ lÃ  past perfect" },
-    { template: "The children (sleep) when I checked on them.",            correct: "were sleeping", tense: "past continuous", note: "HÃ nh Ä‘á»™ng Ä‘ang xáº£y ra táº¡i 1 thá»i Ä‘iá»ƒm quÃ¡ khá»©" },
-    { template: "I (lose) my keys yesterday and (find) them this morning.", correct: "lost ... found", tense: "simple past", note: "lose â†’ lost, find â†’ found" },
+    { template: "Yesterday I (go) to the cinema with my friends.",       correct: "went",        tense: "simple past",     note: "go → went (irregular)" },
+    { template: "She (eat) breakfast at 7 a.m. this morning.",            correct: "ate",         tense: "simple past",     note: "eat → ate (irregular)" },
+    { template: "When I arrived, they (already / leave).",                correct: "had already left", tense: "past perfect", note: "Quá khứ hoàn thành: had + V3 cho hành động trước hành động khác trong quá khứ" },
+    { template: "He (study) for three hours when his mom came home.",     correct: "had been studying", tense: "past perfect continuous", note: "had been + V-ing — diễn tả hành động kéo dài đến 1 mốc thời gian quá khứ" },
+    { template: "I (watch) TV when the phone (ring).",                    correct: "was watching ... rang", tense: "past continuous + simple past", note: "was/were V-ing cho hành động đang xảy ra, simple past cho hành động chen vào" },
+    { template: "They (play) football yesterday afternoon.",              correct: "played",      tense: "simple past",     note: "Regular verb: play → played" },
+    { template: "My family (visit) Hanoi last summer.",                   correct: "visited",     tense: "simple past",     note: "Regular verb: visit → visited" },
+    { template: "While we (walk) home, it (start) to rain.",              correct: "were walking ... started", tense: "past continuous + simple past", note: "Cấu trúc song hành: while + V-ing, simple past" },
+    { template: "She (not finish) her homework when the bell rang.",      correct: "had not finished (hadn't finished)", tense: "past perfect", note: "Phủ định quá khứ hoàn thành: had not + V3" },
+    { template: "Last night I (read) a book before I (go) to bed.",       correct: "read ... went", tense: "simple past", note: "read giữ nguyên cách viết nhưng phát âm /red/" },
+    { template: "Tom (buy) a new car last week.",                          correct: "bought",      tense: "simple past",     note: "buy → bought (irregular)" },
+    { template: "We (have) dinner when the lights (go) out.",             correct: "were having ... went", tense: "past continuous + simple past", note: "have meal dùng was/were having" },
+    { template: "She (sing) beautifully at the concert yesterday.",        correct: "sang",        tense: "simple past",     note: "sing → sang (irregular)" },
+    { template: "By the time we arrived, the movie (start).",              correct: "had started", tense: "past perfect",    note: "By the time + simple past, mệnh đề chính dùng past perfect" },
+    { template: "I (live) in Saigon for 5 years before I moved here.",     correct: "had lived (had been living)", tense: "past perfect / past perfect continuous", note: "for + thời gian → past perfect hoặc past perfect continuous đều OK" },
+    { template: "He (write) three letters yesterday.",                     correct: "wrote",       tense: "simple past",     note: "write → wrote (irregular)" },
+    { template: "She (teach) English at our school last year.",            correct: "taught",      tense: "simple past",     note: "teach → taught (irregular)" },
+    { template: "While he (drive) home, he (see) an accident.",            correct: "was driving ... saw", tense: "past continuous + simple past", note: "drive → was driving, see → saw" },
+    { template: "They (build) the bridge in 1995.",                        correct: "built",       tense: "simple past",     note: "build → built (irregular)" },
+    { template: "When I called you, what (you / do)?",                      correct: "were you doing", tense: "past continuous (question)", note: "Câu hỏi quá khứ tiếp diễn: were + S + V-ing" },
+    { template: "I (take) lots of photos during our trip last summer.",   correct: "took",        tense: "simple past",     note: "take → took (irregular)" },
+    { template: "She (cook) dinner for two hours when I got home.",       correct: "had been cooking", tense: "past perfect continuous", note: "Nhấn mạnh khoảng thời gian kéo dài đến mốc quá khứ" },
+    { template: "We (not see) each other since 2019.",                     correct: "hadn't seen / hadn't been seeing", tense: "past perfect", note: "since + năm dùng perfect — ở văn cảnh quá khứ thì là past perfect" },
+    { template: "The children (sleep) when I checked on them.",            correct: "were sleeping", tense: "past continuous", note: "Hành động đang xảy ra tại 1 thời điểm quá khứ" },
+    { template: "I (lose) my keys yesterday and (find) them this morning.", correct: "lost ... found", tense: "simple past", note: "lose → lost, find → found" },
   ];
 
   const STATE = {
@@ -81,7 +81,7 @@
     });
   }
 
-  // â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ Inject CSS once â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // ──────────── Inject CSS once ────────────
   (function css() {
     if (document.getElementById("ln-pt-css")) return;
     const s = document.createElement("style");
@@ -144,31 +144,31 @@
     mount.innerHTML = `
       <div class="pt-wrap">
         <div class="pt-card">
-          <div class="pt-bc"><a href="/">Trang chá»§</a> Â· <a href="/question-answer">Luyá»‡n theo cÃ¢u</a> Â· Luyá»‡n thÃ¬ quÃ¡ khá»©</div>
+          <div class="pt-bc"><a href="/">Trang chủ</a> · <a href="/question-answer">Luyện theo câu</a> · Luyện thì quá khứ</div>
           <div class="pt-nav">
-            <button class="pt-nav-btn" id="ptPrev" ${STATE.idx === 0 ? "disabled" : ""}>â† cÃ¢u trÆ°á»›c</button>
-            <div class="pt-counter" id="ptCounter">CÃ¢u ${STATE.idx + 1} <small>/ ${total}</small></div>
-            <button class="pt-nav-btn" id="ptNext" ${STATE.idx >= total - 1 ? "disabled" : ""}>cÃ¢u tiáº¿p â†’</button>
+            <button class="pt-nav-btn" id="ptPrev" ${STATE.idx === 0 ? "disabled" : ""}>← câu trước</button>
+            <div class="pt-counter" id="ptCounter">Câu ${STATE.idx + 1} <small>/ ${total}</small></div>
+            <button class="pt-nav-btn" id="ptNext" ${STATE.idx >= total - 1 ? "disabled" : ""}>câu tiếp →</button>
           </div>
           <div class="pt-sentence-row">
             <div class="pt-sentence">
-              <button class="pt-play" id="ptTts" title="Nghe cÃ¢u máº«u (Ä‘Ã£ chia)">â–¶</button>
+              <button class="pt-play" id="ptTts" title="Nghe câu mẫu (đã chia)">▶</button>
               <span>${renderVerbBlanks(s.template)}</span>
             </div>
           </div>
-          <div class="pt-hint">Tá»± chia Ä‘á»™ng tá»« trong ngoáº·c vá» thÃ¬ quÃ¡ khá»© phÃ¹ há»£p, rá»“i Ä‘á»c cáº£ cÃ¢u.</div>
+          <div class="pt-hint">Tự chia động từ trong ngoặc về thì quá khứ phù hợp, rồi đọc cả câu.</div>
           <div id="ptFeedbackHost"></div>
           <div class="pt-actions">
-            <button class="pt-rec-btn" id="ptRec">ðŸŽ¤ Ghi Ã¢m ngay</button>
+            <button class="pt-rec-btn" id="ptRec">🎤 Ghi âm ngay</button>
           </div>
         </div>
         <div class="pt-card pt-rules">
-          <h3>TÃ³m táº¯t cÃ¡c thÃ¬ quÃ¡ khá»©</h3>
-          <div class="pt-rule-item"><b>Simple past</b> â†’ V2 (Ä‘á»™ng tá»« chia quÃ¡ khá»©). VD: <i>I went, she ate, they played</i></div>
-          <div class="pt-rule-item"><b>Past continuous</b> â†’ was/were + V-ing. HÃ nh Ä‘á»™ng Ä‘ang xáº£y ra táº¡i 1 thá»i Ä‘iá»ƒm quÃ¡ khá»©.</div>
-          <div class="pt-rule-item"><b>Past perfect</b> â†’ had + V3. HÃ nh Ä‘á»™ng xáº£y ra trÆ°á»›c 1 hÃ nh Ä‘á»™ng khÃ¡c trong quÃ¡ khá»©.</div>
-          <div class="pt-rule-item"><b>Past perfect continuous</b> â†’ had been + V-ing. HÃ nh Ä‘á»™ng kÃ©o dÃ i Ä‘áº¿n 1 má»‘c quÃ¡ khá»©.</div>
-          <div style="font-size:.78rem;color:#6b7280;margin-top:.7rem;">Lá»‹ch sá»­ gáº§n Ä‘Ã¢y:</div>
+          <h3>Tóm tắt các thì quá khứ</h3>
+          <div class="pt-rule-item"><b>Simple past</b> → V2 (động từ chia quá khứ). VD: <i>I went, she ate, they played</i></div>
+          <div class="pt-rule-item"><b>Past continuous</b> → was/were + V-ing. Hành động đang xảy ra tại 1 thời điểm quá khứ.</div>
+          <div class="pt-rule-item"><b>Past perfect</b> → had + V3. Hành động xảy ra trước 1 hành động khác trong quá khứ.</div>
+          <div class="pt-rule-item"><b>Past perfect continuous</b> → had been + V-ing. Hành động kéo dài đến 1 mốc quá khứ.</div>
+          <div style="font-size:.78rem;color:#6b7280;margin-top:.7rem;">Lịch sử gần đây:</div>
           <div class="pt-hist" id="ptHist"></div>
         </div>
       </div>
@@ -183,7 +183,7 @@
 
   // Best-effort: extract the conjugated form from the "correct" answer string
   function extractFirstFormFromCorrect(correct, fallback) {
-    // For TTS, just use the correct answer as-is â€” it's already conjugated
+    // For TTS, just use the correct answer as-is — it's already conjugated
     return correct.split(/\s+\.\.\.\s+/)[0]?.split(/\(/)[0]?.trim() || fallback;
   }
 
@@ -191,11 +191,11 @@
     const host = mount.querySelector("#ptHist");
     if (!host) return;
     const list = STATE.history.slice(0, 12);
-    if (!list.length) { host.innerHTML = `<div style="color:#9ca3af;text-align:center;padding:.5rem;font-size:.78rem;">ChÆ°a luyá»‡n cÃ¢u nÃ o.</div>`; return; }
+    if (!list.length) { host.innerHTML = `<div style="color:#9ca3af;text-align:center;padding:.5rem;font-size:.78rem;">Chưa luyện câu nào.</div>`; return; }
     host.innerHTML = list.map(h => `
       <div class="pt-hist-row ${h.correct ? "ok" : "no"}">
-        <b>${escHtml((h.template||"").slice(0,60))}${(h.template||"").length>60?"â€¦":""}</b><br>
-        ${h.correct ? "âœ“ ÄÃºng" : "âœ— Sai"} â€” Ä‘Ã¡p Ã¡n: <b>${escHtml(h.correctAnswer || "")}</b>
+        <b>${escHtml((h.template||"").slice(0,60))}${(h.template||"").length>60?"…":""}</b><br>
+        ${h.correct ? "✓ Đúng" : "✗ Sai"} — đáp án: <b>${escHtml(h.correctAnswer || "")}</b>
       </div>`).join("");
   }
 
@@ -213,15 +213,15 @@
       STATE.recorder.start();
       STATE.recording = true;
       btn.classList.add("recording");
-      btn.textContent = "ðŸ›‘ Dá»«ng & cháº¥m";
-    } catch (e) { alert("KhÃ´ng truy cáº­p mic: " + e.message); }
+      btn.textContent = "🛑 Dừng & chấm";
+    } catch (e) { alert("Không truy cập mic: " + e.message); }
   }
 
   async function onStop() {
     STATE.stream?.getTracks().forEach(t => t.stop());
     STATE.recording = false;
     const btn = mount.querySelector("#ptRec");
-    if (btn) { btn.classList.remove("recording"); btn.textContent = "â³ Äang cháº¥mâ€¦"; btn.disabled = true; }
+    if (btn) { btn.classList.remove("recording"); btn.textContent = "⏳ Đang chấm…"; btn.disabled = true; }
     const blob = new Blob(STATE.chunks, { type: "audio/webm" });
     const b64 = await blobToBase64(blob);
     const s = SENTENCES[STATE.idx];
@@ -234,7 +234,7 @@
           sentence: targetSentence,
           audioBase64: b64.split(",")[1] || b64,
           mimeType: "audio/webm",
-          context: `PAST TENSE DRILL â€” The sentence has "(verb)" placeholders. The student must conjugate to ${s.tense}. Correct answer: "${s.correct}". Listen carefully and identify whether they used the right past form. If wrong, identify what tense they used instead.`
+          context: `PAST TENSE DRILL — The sentence has "(verb)" placeholders. The student must conjugate to ${s.tense}. Correct answer: "${s.correct}". Listen carefully and identify whether they used the right past form. If wrong, identify what tense they used instead.`
         })
       });
       const d = await r.json();
@@ -247,27 +247,27 @@
       showFeedback({ isCorrect, s, raw: d });
       saveAttempt({ template: s.template, correct: isCorrect, correctAnswer: s.correct, tense: s.tense, heard: d.phoneticHeard });
     } catch (e) {
-      if (btn) { btn.disabled = false; btn.textContent = "ðŸŽ¤ Ghi Ã¢m láº¡i"; }
-      alert("Lá»—i cháº¥m: " + e.message);
+      if (btn) { btn.disabled = false; btn.textContent = "🎤 Ghi âm lại"; }
+      alert("Lỗi chấm: " + e.message);
     }
   }
 
   function showFeedback({ isCorrect, s, raw }) {
     const host = mount.querySelector("#ptFeedbackHost");
     const btn = mount.querySelector("#ptRec");
-    if (btn) { btn.disabled = false; btn.textContent = "ðŸŽ¤ Ghi Ã¢m láº¡i"; }
+    if (btn) { btn.disabled = false; btn.textContent = "🎤 Ghi âm lại"; }
     host.innerHTML = `
       <div class="pt-feedback">
         <div class="pt-fb-head">
-          <div class="pt-fb-badge ${isCorrect ? "pt-fb-ok" : "pt-fb-no"}">${isCorrect ? "âœ“" : "âœ—"}</div>
+          <div class="pt-fb-badge ${isCorrect ? "pt-fb-ok" : "pt-fb-no"}">${isCorrect ? "✓" : "✗"}</div>
           <div>
-            <div class="pt-fb-title">${isCorrect ? "Tuyá»‡t vá»i!" : "Sá»­a lá»—i nhÃ©!"}</div>
-            <div class="pt-fb-tense">ThÃ¬: ${escHtml(s.tense)}</div>
+            <div class="pt-fb-title">${isCorrect ? "Tuyệt vời!" : "Sửa lỗi nhé!"}</div>
+            <div class="pt-fb-tense">Thì: ${escHtml(s.tense)}</div>
           </div>
         </div>
-        <div class="pt-fb-answer">ÄÃ¡p Ã¡n: <b>${escHtml(s.template.replace(/\(([^)]+)\)/g, () => s.correct.split(/\s+\.\.\.\s+/)[0]))}</b></div>
-        ${raw?.phoneticHeard ? `<div class="pt-fb-heard">Báº¡n Ä‘á»c: <i style="color:#d9381e;">${escHtml(raw.phoneticHeard)}</i></div>` : ""}
-        <div class="pt-fb-note">ðŸ“Œ ${escHtml(s.note)}</div>
+        <div class="pt-fb-answer">Đáp án: <b>${escHtml(s.template.replace(/\(([^)]+)\)/g, () => s.correct.split(/\s+\.\.\.\s+/)[0]))}</b></div>
+        ${raw?.phoneticHeard ? `<div class="pt-fb-heard">Bạn đọc: <i style="color:#d9381e;">${escHtml(raw.phoneticHeard)}</i></div>` : ""}
+        <div class="pt-fb-note">📌 ${escHtml(s.note)}</div>
       </div>
     `;
   }

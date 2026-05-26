@@ -1,5 +1,5 @@
 ﻿// =====================================================================
-//  Tá»± thÃªm cÃ¢u â€” /question-answer/user-question
+//  Tự thêm câu — /question-answer/user-question
 //  Wraps in the Luyennoi home.html shell. User adds a question + picks Part,
 //  saves to localStorage `ln.userQuestions`, and the saved list links into
 //  the per-question detail page so the full Speaking scoring flow works.
@@ -90,52 +90,52 @@
     };
     root.innerHTML = `
       <div class="uq-tabs">
-        <a href="/question-answer/part1">Luyá»‡n Part 1</a>
-        <a href="/question-answer/part2">Luyá»‡n Part 2</a>
-        <a href="/question-answer/part3">Luyá»‡n Part 3</a>
-        <a class="active" href="/question-answer/user-question">CÃ¢u báº¡n thÃªm</a>
+        <a href="/question-answer/part1">Luyện Part 1</a>
+        <a href="/question-answer/part2">Luyện Part 2</a>
+        <a href="/question-answer/part3">Luyện Part 3</a>
+        <a class="active" href="/question-answer/user-question">Câu bạn thêm</a>
       </div>
 
       <div class="uq-card">
-        <h2 style="margin:0 0 .8rem;font-size:1.05rem;font-weight:700;color:#171717;">ThÃªm cÃ¢u há»i má»›i</h2>
+        <h2 style="margin:0 0 .8rem;font-size:1.05rem;font-weight:700;color:#171717;">Thêm câu hỏi mới</h2>
         <div class="uq-input-row">
-          <input id="uqInput" type="text" placeholder="Nháº­p cÃ¢u há»i tiáº¿ng Anh cá»§a báº¡n..." autocomplete="off" />
+          <input id="uqInput" type="text" placeholder="Nhập câu hỏi tiếng Anh của bạn..." autocomplete="off" />
           <select id="uqPart">
             <option value="PART 1">Part 1</option>
             <option value="PART 2">Part 2</option>
             <option value="PART 3">Part 3</option>
           </select>
-          <button id="uqAdd">ThÃªm CÃ¢u há»i</button>
+          <button id="uqAdd">Thêm Câu hỏi</button>
         </div>
         <div style="font-size:.78rem;color:#9ca3af;margin-top:.55rem;">
-          CÃ¢u báº¡n thÃªm sáº½ vÃ o "List cÃ¢u Ä‘Ã£ thÃªm". Báº¥m <b>Luyá»‡n</b> Ä‘á»ƒ má»Ÿ trang cháº¥m Ä‘iá»ƒm nhÆ° cÃ¢u IELTS bÃ¬nh thÆ°á»ng.
+          Câu bạn thêm sẽ vào "List câu đã thêm". Bấm <b>Luyện</b> để mở trang chấm điểm như câu IELTS bình thường.
         </div>
       </div>
 
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:.6rem;flex-wrap:wrap;gap:.5rem;">
-        <h3 style="margin:0;font-size:.98rem;font-weight:700;color:#171717;">CÃ¢u Ä‘Ã£ thÃªm <span style="color:#9ca3af;font-weight:500;">(${list.length})</span></h3>
+        <h3 style="margin:0;font-size:.98rem;font-weight:700;color:#171717;">Câu đã thêm <span style="color:#9ca3af;font-weight:500;">(${list.length})</span></h3>
         <div class="uq-filter">
-          <button class="${state.filter === "all" ? "active" : ""}" data-filter="all">Táº¥t cáº£ Â· ${counts["all"]}</button>
-          <button class="${state.filter === "PART 1" ? "active" : ""}" data-filter="PART 1">Part 1 Â· ${counts["PART 1"]}</button>
-          <button class="${state.filter === "PART 2" ? "active" : ""}" data-filter="PART 2">Part 2 Â· ${counts["PART 2"]}</button>
-          <button class="${state.filter === "PART 3" ? "active" : ""}" data-filter="PART 3">Part 3 Â· ${counts["PART 3"]}</button>
+          <button class="${state.filter === "all" ? "active" : ""}" data-filter="all">Tất cả · ${counts["all"]}</button>
+          <button class="${state.filter === "PART 1" ? "active" : ""}" data-filter="PART 1">Part 1 · ${counts["PART 1"]}</button>
+          <button class="${state.filter === "PART 2" ? "active" : ""}" data-filter="PART 2">Part 2 · ${counts["PART 2"]}</button>
+          <button class="${state.filter === "PART 3" ? "active" : ""}" data-filter="PART 3">Part 3 · ${counts["PART 3"]}</button>
         </div>
       </div>
 
       <div class="uq-list">
         ${filtered.length === 0 ? `
           <div class="uq-empty">
-            ${list.length === 0 ? "ChÆ°a cÃ³ cÃ¢u há»i nÃ o. HÃ£y thÃªm cÃ¢u há»i Ä‘áº§u tiÃªn cá»§a báº¡n!" : "KhÃ´ng cÃ³ cÃ¢u nÃ o trong " + state.filter + "."}
+            ${list.length === 0 ? "Chưa có câu hỏi nào. Hãy thêm câu hỏi đầu tiên của bạn!" : "Không có câu nào trong " + state.filter + "."}
           </div>` : filtered.map((q) => `
           <div class="uq-item" data-id="${escHtml(q.id)}">
             <div class="uq-item-text">
               <span class="uq-part-badge">${escHtml(q.part)}</span>
               <span class="uq-item-q">${escHtml(q.question)}</span>
-              <div class="uq-item-meta">ThÃªm lÃºc ${fmtTime(q.addedAt)}</div>
+              <div class="uq-item-meta">Thêm lúc ${fmtTime(q.addedAt)}</div>
             </div>
             <div class="uq-item-actions">
-              <a class="uq-btn-practice" href="${detailUrl(q)}">ðŸŽ¤ Luyá»‡n</a>
-              <button class="uq-btn-del" data-del="${escHtml(q.id)}" title="XoÃ¡">âœ•</button>
+              <a class="uq-btn-practice" href="${detailUrl(q)}">🎤 Luyện</a>
+              <button class="uq-btn-del" data-del="${escHtml(q.id)}" title="Xoá">✕</button>
             </div>
           </div>
         `).join("")}
@@ -163,7 +163,7 @@
     root.querySelectorAll("[data-del]").forEach((b) => {
       b.addEventListener("click", (e) => {
         e.preventDefault(); e.stopPropagation();
-        if (confirm("XoÃ¡ cÃ¢u há»i nÃ y?")) { deleteQuestion(b.dataset.del); render(); }
+        if (confirm("Xoá câu hỏi này?")) { deleteQuestion(b.dataset.del); render(); }
       });
     });
   }

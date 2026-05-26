@@ -1,41 +1,41 @@
 ﻿// =====================================================================
-//  Luyá»‡n S/es â€” /alphafeature/boxing
-//  Student reads a sentence with "(verb1 / verb2)" choice â†’ records â†’
+//  Luyện S/es — /alphafeature/boxing
+//  Student reads a sentence with "(verb1 / verb2)" choice → records →
 //  Gemini scores ONLY the s/es correctness (did they say the right form?).
-//  Static sentence library â€” no AI generation, fast & consistent.
+//  Static sentence library — no AI generation, fast & consistent.
 // =====================================================================
 (function () {
   if (!/^\/alphafeature\/boxing\/?$/.test(location.pathname)) return;
 
-  // â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ Static sentence library â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // ──────────────── Static sentence library ────────────────
   // Each: template with "(form1 / form2)", correct form, reason in Vietnamese.
   // Verbs alternate s/es; nouns alternate singular/plural.
   const SENTENCES = [
-    { template: "Cats usually (play / plays) with yarn every day.", correct: "play", reason: "Cats lÃ  sá»‘ nhiá»u â†’ Ä‘á»™ng tá»« khÃ´ng thÃªm s." },
-    { template: "My brother (want / wants) to join the team.", correct: "wants", reason: "My brother lÃ  sá»‘ Ã­t (ngÃ´i 3) â†’ Ä‘á»™ng tá»« thÃªm s." },
-    { template: "She (study / studies) English every evening.", correct: "studies", reason: "She lÃ  ngÃ´i 3 sá»‘ Ã­t â†’ Ä‘á»™ng tá»« thÃªm es (study â†’ studies)." },
-    { template: "The boys (run / runs) to school in the morning.", correct: "run", reason: "The boys lÃ  sá»‘ nhiá»u â†’ Ä‘á»™ng tá»« khÃ´ng thÃªm s." },
-    { template: "He (watch / watches) movies on weekends.", correct: "watches", reason: "He lÃ  ngÃ´i 3 sá»‘ Ã­t â†’ watch + es (vÃ¬ káº¿t thÃºc báº±ng ch)." },
-    { template: "My parents (live / lives) in Hanoi.", correct: "live", reason: "My parents lÃ  sá»‘ nhiá»u â†’ Ä‘á»™ng tá»« khÃ´ng thÃªm s." },
-    { template: "The dog (bark / barks) at strangers.", correct: "barks", reason: "The dog lÃ  sá»‘ Ã­t â†’ Ä‘á»™ng tá»« thÃªm s." },
-    { template: "Children often (ask / asks) many questions.", correct: "ask", reason: "Children lÃ  sá»‘ nhiá»u â†’ Ä‘á»™ng tá»« khÃ´ng thÃªm s." },
-    { template: "Tom (do / does) his homework after dinner.", correct: "does", reason: "Tom lÃ  ngÃ´i 3 sá»‘ Ã­t â†’ do â†’ does (irregular)." },
-    { template: "Many students (have / has) part-time jobs.", correct: "have", reason: "Many students lÃ  sá»‘ nhiá»u â†’ have (khÃ´ng pháº£i has)." },
-    { template: "My sister (go / goes) shopping every weekend.", correct: "goes", reason: "My sister lÃ  ngÃ´i 3 sá»‘ Ã­t â†’ go + es." },
-    { template: "These books (belong / belongs) to the library.", correct: "belong", reason: "These books sá»‘ nhiá»u â†’ Ä‘á»™ng tá»« khÃ´ng thÃªm s." },
-    { template: "Linda (try / tries) hard at every exam.", correct: "tries", reason: "Linda sá»‘ Ã­t â†’ try â†’ tries (y â†’ ies)." },
-    { template: "The trains (arrive / arrives) every hour.", correct: "arrive", reason: "The trains sá»‘ nhiá»u â†’ khÃ´ng thÃªm s." },
-    { template: "It (rain / rains) a lot in this city.", correct: "rains", reason: "It lÃ  ngÃ´i 3 sá»‘ Ã­t â†’ Ä‘á»™ng tá»« thÃªm s." },
-    { template: "The teachers (give / gives) us lots of homework.", correct: "give", reason: "The teachers sá»‘ nhiá»u â†’ khÃ´ng thÃªm s." },
-    { template: "My friend (love / loves) chocolate ice cream.", correct: "loves", reason: "My friend sá»‘ Ã­t â†’ Ä‘á»™ng tá»« thÃªm s." },
-    { template: "The kids (eat / eats) breakfast at seven.", correct: "eat", reason: "The kids sá»‘ nhiá»u â†’ khÃ´ng thÃªm s." },
-    { template: "She (fix / fixes) bikes in her free time.", correct: "fixes", reason: "She ngÃ´i 3 sá»‘ Ã­t â†’ fix + es (vÃ¬ káº¿t thÃºc báº±ng x)." },
-    { template: "We (work / works) from nine to five.", correct: "work", reason: "We lÃ  sá»‘ nhiá»u â†’ Ä‘á»™ng tá»« khÃ´ng thÃªm s." },
-    { template: "Anna (catch / catches) the bus at eight.", correct: "catches", reason: "Anna sá»‘ Ã­t â†’ catch + es (vÃ¬ káº¿t thÃºc báº±ng ch)." },
-    { template: "Most people (prefer / prefers) tea in the morning.", correct: "prefer", reason: "Most people sá»‘ nhiá»u â†’ khÃ´ng thÃªm s." },
-    { template: "The baby (cry / cries) when he is hungry.", correct: "cries", reason: "The baby sá»‘ Ã­t â†’ cry â†’ cries (y â†’ ies)." },
-    { template: "My grandparents (visit / visits) us once a month.", correct: "visit", reason: "My grandparents sá»‘ nhiá»u â†’ khÃ´ng thÃªm s." },
-    { template: "John (miss / misses) his hometown a lot.", correct: "misses", reason: "John sá»‘ Ã­t â†’ miss + es (vÃ¬ káº¿t thÃºc báº±ng ss)." },
+    { template: "Cats usually (play / plays) with yarn every day.", correct: "play", reason: "Cats là số nhiều → động từ không thêm s." },
+    { template: "My brother (want / wants) to join the team.", correct: "wants", reason: "My brother là số ít (ngôi 3) → động từ thêm s." },
+    { template: "She (study / studies) English every evening.", correct: "studies", reason: "She là ngôi 3 số ít → động từ thêm es (study → studies)." },
+    { template: "The boys (run / runs) to school in the morning.", correct: "run", reason: "The boys là số nhiều → động từ không thêm s." },
+    { template: "He (watch / watches) movies on weekends.", correct: "watches", reason: "He là ngôi 3 số ít → watch + es (vì kết thúc bằng ch)." },
+    { template: "My parents (live / lives) in Hanoi.", correct: "live", reason: "My parents là số nhiều → động từ không thêm s." },
+    { template: "The dog (bark / barks) at strangers.", correct: "barks", reason: "The dog là số ít → động từ thêm s." },
+    { template: "Children often (ask / asks) many questions.", correct: "ask", reason: "Children là số nhiều → động từ không thêm s." },
+    { template: "Tom (do / does) his homework after dinner.", correct: "does", reason: "Tom là ngôi 3 số ít → do → does (irregular)." },
+    { template: "Many students (have / has) part-time jobs.", correct: "have", reason: "Many students là số nhiều → have (không phải has)." },
+    { template: "My sister (go / goes) shopping every weekend.", correct: "goes", reason: "My sister là ngôi 3 số ít → go + es." },
+    { template: "These books (belong / belongs) to the library.", correct: "belong", reason: "These books số nhiều → động từ không thêm s." },
+    { template: "Linda (try / tries) hard at every exam.", correct: "tries", reason: "Linda số ít → try → tries (y → ies)." },
+    { template: "The trains (arrive / arrives) every hour.", correct: "arrive", reason: "The trains số nhiều → không thêm s." },
+    { template: "It (rain / rains) a lot in this city.", correct: "rains", reason: "It là ngôi 3 số ít → động từ thêm s." },
+    { template: "The teachers (give / gives) us lots of homework.", correct: "give", reason: "The teachers số nhiều → không thêm s." },
+    { template: "My friend (love / loves) chocolate ice cream.", correct: "loves", reason: "My friend số ít → động từ thêm s." },
+    { template: "The kids (eat / eats) breakfast at seven.", correct: "eat", reason: "The kids số nhiều → không thêm s." },
+    { template: "She (fix / fixes) bikes in her free time.", correct: "fixes", reason: "She ngôi 3 số ít → fix + es (vì kết thúc bằng x)." },
+    { template: "We (work / works) from nine to five.", correct: "work", reason: "We là số nhiều → động từ không thêm s." },
+    { template: "Anna (catch / catches) the bus at eight.", correct: "catches", reason: "Anna số ít → catch + es (vì kết thúc bằng ch)." },
+    { template: "Most people (prefer / prefers) tea in the morning.", correct: "prefer", reason: "Most people số nhiều → không thêm s." },
+    { template: "The baby (cry / cries) when he is hungry.", correct: "cries", reason: "The baby số ít → cry → cries (y → ies)." },
+    { template: "My grandparents (visit / visits) us once a month.", correct: "visit", reason: "My grandparents số nhiều → không thêm s." },
+    { template: "John (miss / misses) his hometown a lot.", correct: "misses", reason: "John số ít → miss + es (vì kết thúc bằng ss)." },
   ];
 
   const STATE = {
@@ -83,12 +83,12 @@
     });
   }
 
-  // â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ Mount custom UI on top of scraped page â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // ──────────────── Mount custom UI on top of scraped page ────────────────
   let root = null;
   function mount() {
     const style = document.createElement("style");
     style.textContent = `
-      /* Mount inside the Luyennoi shell â€” keep sidebar visible */
+      /* Mount inside the Luyennoi shell — keep sidebar visible */
       #bx-root, #boxingRoot { font-family: Lexend, sans-serif; }
       #bx-root { padding: 1.2rem 1.2rem 2rem; }
       .bx-wrap { max-width: 1080px; margin: 0 auto; display: grid; grid-template-columns: minmax(0,1.5fr) minmax(0,1fr); gap: 1rem; }
@@ -145,31 +145,31 @@
     root.innerHTML = `
       <div class="bx-wrap">
         <div class="bx-card">
-          <div class="bx-bc"><a href="/">â† Trang chá»§</a> Â· <a href="/question-answer">Luyá»‡n tá»«ng cÃ¢u</a> Â· S/es</div>
+          <div class="bx-bc"><a href="/">← Trang chủ</a> · <a href="/question-answer">Luyện từng câu</a> · S/es</div>
           <div class="bx-nav" style="margin-bottom:.7rem;">
-            <button class="bx-nav-btn" id="bx-prev" ${STATE.idx === 0 ? "disabled style='opacity:.4;cursor:not-allowed;'" : ""}>â† cÃ¢u trÆ°á»›c</button>
+            <button class="bx-nav-btn" id="bx-prev" ${STATE.idx === 0 ? "disabled style='opacity:.4;cursor:not-allowed;'" : ""}>← câu trước</button>
             <div style="text-align:center;">
-              <div style="font-weight:600;color:#171717;">Äá»c láº¡i cÃ¢u phÃ­a dÆ°á»›i</div>
-              <div class="bx-counter">CÃ¢u ${STATE.idx + 1} / ${total}</div>
+              <div style="font-weight:600;color:#171717;">Đọc lại câu phía dưới</div>
+              <div class="bx-counter">Câu ${STATE.idx + 1} / ${total}</div>
             </div>
-            <button class="bx-nav-btn" id="bx-next" ${STATE.idx >= total - 1 ? "disabled style='opacity:.4;cursor:not-allowed;'" : ""}>cÃ¢u tiáº¿p â†’</button>
+            <button class="bx-nav-btn" id="bx-next" ${STATE.idx >= total - 1 ? "disabled style='opacity:.4;cursor:not-allowed;'" : ""}>câu tiếp →</button>
           </div>
           <div style="text-align:center;">
             <div class="bx-q">
-              <button class="bx-play" id="bx-tts" title="Nghe cÃ¢u máº«u">â–¶</button>
+              <button class="bx-play" id="bx-tts" title="Nghe câu mẫu">▶</button>
               <span>${escHtml(s.template)}</span>
             </div>
           </div>
           <div id="bx-feedback-host"></div>
           <div style="text-align:center;margin-top:1.4rem;">
-            <button class="bx-rec-btn" id="bx-rec">ðŸŽ¤ Ghi Ã¢m ngay</button>
+            <button class="bx-rec-btn" id="bx-rec">🎤 Ghi âm ngay</button>
           </div>
         </div>
         <div class="bx-card bx-rules">
-          <h3>Khi nÃ o cáº§n thÃªm -s / -es?</h3>
-          <div class="bx-rule-item"><b>Äá»˜NG Tá»ª</b> â†’ náº¿u chá»§ ngá»¯ lÃ  <b>he / she / it</b><br>ThÃ¬ pháº£i thÃªm <b>-s / -es</b></div>
-          <div class="bx-rule-item"><b>DANH Tá»ª</b> â†’ náº¿u sá»‘ lÆ°á»£ng > 1<br>ThÃ¬ pháº£i thÃªm <b>-s / -es</b></div>
-          <div style="font-size:.78rem;color:#6b7280;margin-top:.7rem;">Lá»‹ch sá»­ luyá»‡n gáº§n Ä‘Ã¢y:</div>
+          <h3>Khi nào cần thêm -s / -es?</h3>
+          <div class="bx-rule-item"><b>ĐỘNG TỪ</b> → nếu chủ ngữ là <b>he / she / it</b><br>Thì phải thêm <b>-s / -es</b></div>
+          <div class="bx-rule-item"><b>DANH TỪ</b> → nếu số lượng > 1<br>Thì phải thêm <b>-s / -es</b></div>
+          <div style="font-size:.78rem;color:#6b7280;margin-top:.7rem;">Lịch sử luyện gần đây:</div>
           <div class="bx-hist" id="bx-hist"></div>
         </div>
       </div>
@@ -189,13 +189,13 @@
     if (!host) return;
     const list = STATE.history.slice(0, 10);
     if (!list.length) {
-      host.innerHTML = `<div style="color:#9ca3af;font-size:.78rem;text-align:center;padding:.5rem;">ChÆ°a cÃ³ láº§n luyá»‡n nÃ o.</div>`;
+      host.innerHTML = `<div style="color:#9ca3af;font-size:.78rem;text-align:center;padding:.5rem;">Chưa có lần luyện nào.</div>`;
       return;
     }
     host.innerHTML = list.map(h => `
       <div class="bx-hist-row" style="border-left:3px solid ${h.correct ? "#FFD700" : "#d9381e"};">
         <div style="font-weight:600;color:#171717;font-size:.82rem;">${escHtml((h.template || "").replace(/\([^)]+\)/, "\x01")).replace("\x01", h.heard ? `<span class="${h.correct?'pick':'strike'}">${escHtml(h.heard)}</span>` : "(?)")}</div>
-        <div style="color:${h.correct ? "#FFD700" : "#d9381e"};margin-top:.15rem;">${h.correct ? "âœ“ ÄÃºng" : "âœ— Sai â€” Ä‘Ãºng lÃ  " + escHtml(h.correctForm)}</div>
+        <div style="color:${h.correct ? "#FFD700" : "#d9381e"};margin-top:.15rem;">${h.correct ? "✓ Đúng" : "✗ Sai — đúng là " + escHtml(h.correctForm)}</div>
       </div>
     `).join("");
   }
@@ -207,7 +207,7 @@
     renderSentence();
   }
 
-  // â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ Recording â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // ──────────────── Recording ────────────────
   async function toggleRecord() {
     const btn = root.querySelector("#bx-rec");
     if (STATE.recording) {
@@ -225,15 +225,15 @@
       STATE.recorder.start();
       STATE.recording = true;
       btn.classList.add("recording");
-      btn.textContent = "ðŸ›‘ Dá»«ng & cháº¥m";
-    } catch (e) { alert("KhÃ´ng truy cáº­p Ä‘Æ°á»£c mic: " + e.message); }
+      btn.textContent = "🛑 Dừng & chấm";
+    } catch (e) { alert("Không truy cập được mic: " + e.message); }
   }
 
   async function onStop() {
     STATE.stream?.getTracks().forEach(t => t.stop());
     STATE.recording = false;
     const btn = root.querySelector("#bx-rec");
-    if (btn) { btn.classList.remove("recording"); btn.textContent = "â³ Äang cháº¥m..."; btn.disabled = true; }
+    if (btn) { btn.classList.remove("recording"); btn.textContent = "⏳ Đang chấm..."; btn.disabled = true; }
     const blob = new Blob(STATE.chunks, { type: "audio/webm" });
     const b64 = await blobToBase64(blob);
     const s = STATE.sentence;
@@ -246,7 +246,7 @@
           sentence: targetSentence,
           audioBase64: b64.split(",")[1] || b64,
           mimeType: "audio/webm",
-          context: `S/ES DRILL â€” The sentence has a (form1 / form2) choice. The student must say the CORRECT form. Listen carefully and identify EXACTLY which word they said in that position. Correct form is "${s.correct}". Other option is one of: ${(s.template.match(/\(([^)]+)\)/)?.[1] || "").split("/").map(x => x.trim()).filter(x => x !== s.correct).join(", ")}.`
+          context: `S/ES DRILL — The sentence has a (form1 / form2) choice. The student must say the CORRECT form. Listen carefully and identify EXACTLY which word they said in that position. Correct form is "${s.correct}". Other option is one of: ${(s.template.match(/\(([^)]+)\)/)?.[1] || "").split("/").map(x => x.trim()).filter(x => x !== s.correct).join(", ")}.`
         })
       });
       const d = await r.json();
@@ -258,8 +258,8 @@
       showFeedback({ isCorrect, heard: heardForm, s, raw: d });
       saveAttempt({ template: s.template, correct: isCorrect, heard: heardForm, correctForm: s.correct, score: d.score });
     } catch (e) {
-      if (btn) { btn.disabled = false; btn.textContent = "ðŸŽ¤ Ghi Ã¢m ngay"; }
-      alert("Lá»—i cháº¥m: " + e.message);
+      if (btn) { btn.disabled = false; btn.textContent = "🎤 Ghi âm ngay"; }
+      alert("Lỗi chấm: " + e.message);
     }
   }
 
@@ -281,23 +281,23 @@
   function showFeedback({ isCorrect, heard, s, raw }) {
     const host = root.querySelector("#bx-feedback-host");
     const btn = root.querySelector("#bx-rec");
-    if (btn) { btn.disabled = false; btn.textContent = "ðŸŽ¤ Ghi Ã¢m láº¡i"; }
+    if (btn) { btn.disabled = false; btn.textContent = "🎤 Ghi âm lại"; }
     const rendered = s.template.replace(/\(([^)]+)\)/, () => {
       if (isCorrect) return `<span class="pick">${escHtml(s.correct)}</span>`;
       return `<span class="strike">${escHtml(heard)}</span> <span class="pick">${escHtml(s.correct)}</span>`;
     });
     host.innerHTML = `
       <div class="bx-feedback">
-        <div class="bx-x ${isCorrect ? "bx-check" : ""}">${isCorrect ? "âœ“" : "âœ—"}</div>
+        <div class="bx-x ${isCorrect ? "bx-check" : ""}">${isCorrect ? "✓" : "✗"}</div>
         <div style="font-size:.95rem;color:#171717;line-height:1.7;padding-right:3rem;">${rendered}</div>
-        <div class="bx-fb-label ${isCorrect ? "ok" : ""}">${isCorrect ? "Tuyá»‡t vá»i!" : "Sá»­a lá»—i nhÃ©!"}</div>
-        <div class="bx-reason">ðŸ“Œ ${escHtml(s.reason)}</div>
-        ${raw?.tips ? `<div class="bx-hint">ðŸ’¡ ${escHtml(raw.tips)}</div>` : ""}
+        <div class="bx-fb-label ${isCorrect ? "ok" : ""}">${isCorrect ? "Tuyệt vời!" : "Sửa lỗi nhé!"}</div>
+        <div class="bx-reason">📌 ${escHtml(s.reason)}</div>
+        ${raw?.tips ? `<div class="bx-hint">💡 ${escHtml(raw.tips)}</div>` : ""}
       </div>
     `;
   }
 
-  // â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ Boot â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // ──────────────── Boot ────────────────
   function boot() {
     mount();
     renderSentence();

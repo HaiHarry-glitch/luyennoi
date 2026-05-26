@@ -59,7 +59,7 @@
     .reader-text.with-ipa { line-height:2.9; }
     .word-token { background:transparent; border:none; padding:0 .15rem; cursor:pointer; font:inherit; color:inherit; display:inline; vertical-align:baseline; }
     .word-token:hover { background:#ffffff; border-radius:.25rem; }
-    /* Smart IPA â€” native <ruby> for clean stacking above letters */
+    /* Smart IPA — native <ruby> for clean stacking above letters */
     ruby.g-tricky { color:#0d9488; ruby-align:center; ruby-position:over; }
     ruby.g-tricky rt {
       color:#0d9488; font-size:.55em; font-weight:600; line-height:1.2;
@@ -157,7 +157,7 @@ async function transcribeWord(word) {
   if (known.ipa) return known.ipa;
   if (window.lnTranscribe) {
     const res = await window.lnTranscribe(word);
-    // window.lnTranscribe returns {ipa, perWord, source} â€” extract .ipa string
+    // window.lnTranscribe returns {ipa, perWord, source} — extract .ipa string
     return (res && typeof res === "object") ? (res.ipa || "") : String(res || "");
   }
   return "";
@@ -233,13 +233,13 @@ function renderList() {
   root.innerHTML = `
     <section class="reading-hero">
       <div>
-        <h1>Luyá»‡n Ä‘á»c</h1>
-        <p>Luyá»‡n Äá»ŒC TO TIáº¾NG ANH chuáº©n IPA. PhÃ¹ há»£p build foundation phÃ¡t Ã¢m trÆ°á»›c khi vÃ o Speaking.</p>
+        <h1>Luyện đọc</h1>
+        <p>Luyện ĐỌC TO TIẾNG ANH chuẩn IPA. Phù hợp build foundation phát âm trước khi vào Speaking.</p>
       </div>
       <div style="display:flex;gap:.5rem;align-items:center;flex-wrap:wrap;">
-        <button class="primary-pill" id="addCustomText">âž• ThÃªm vÄƒn báº£n</button>
+        <button class="primary-pill" id="addCustomText">➕ Thêm văn bản</button>
         <div class="reading-filter">
-          ${levels.map((level) => `<button class="${state.activeLevel === level ? "active" : ""}" data-level="${level}">${level === "all" ? "Táº¥t cáº£" : level === "custom" ? "Cá»§a tÃ´i" : level}</button>`).join("")}
+          ${levels.map((level) => `<button class="${state.activeLevel === level ? "active" : ""}" data-level="${level}">${level === "all" ? "Tất cả" : level === "custom" ? "Của tôi" : level}</button>`).join("")}
         </div>
       </div>
     </section>
@@ -250,11 +250,11 @@ function renderList() {
     <section class="reading-grid">
       ${visible.map((story) => `
         <a class="reading-card${story.custom ? " custom" : ""}" href="/reading/${encodeURIComponent(story.slug)}">
-          ${story.custom ? `<button class="del-custom" data-del="${esc(story.slug)}" title="XoÃ¡">âœ•</button>` : ""}
+          ${story.custom ? `<button class="del-custom" data-del="${esc(story.slug)}" title="Xoá">✕</button>` : ""}
           <div class="reading-thumb ${esc(story.thumbnail || "reading-1")}">${topicIcon(story)}</div>
           <div>
-            <h2>${esc(story.title)}${story.custom ? ' <span class="custom-badge">Cá»§a tÃ´i</span>' : ""}</h2>
-            <p>${Number(story.wordCount) || 0} tá»« Â· ${Number(story.minutes) || 0} phÃºt Â· ${esc(story.level)}</p>
+            <h2>${esc(story.title)}${story.custom ? ' <span class="custom-badge">Của tôi</span>' : ""}</h2>
+            <p>${Number(story.wordCount) || 0} từ · ${Number(story.minutes) || 0} phút · ${esc(story.level)}</p>
             <div class="tag-row">${(story.tags || []).map((tag) => `<span>${esc(tag)}</span>`).join("")}</div>
           </div>
         </a>
@@ -273,7 +273,7 @@ function renderList() {
   root.querySelectorAll(".del-custom").forEach((btn) => {
     btn.addEventListener("click", (e) => {
       e.preventDefault(); e.stopPropagation();
-      if (confirm("XoÃ¡ vÄƒn báº£n nÃ y?")) { deleteCustomStory(btn.dataset.del); renderList(); }
+      if (confirm("Xoá văn bản này?")) { deleteCustomStory(btn.dataset.del); renderList(); }
     });
   });
 }
@@ -286,17 +286,17 @@ function openAddTextModal() {
   ov.style.cssText = "position:fixed;inset:0;background:rgba(15,23,42,.55);z-index:99999;display:flex;align-items:center;justify-content:center;font-family:Lexend,sans-serif;padding:1rem;";
   ov.innerHTML = `
     <div style="background:white;border-radius:1rem;max-width:640px;width:100%;padding:1.4rem 1.6rem;box-shadow:0 12px 48px rgba(0,0,0,.25);max-height:90vh;overflow-y:auto;">
-      <div style="font-size:.72rem;color:#9ca3af;font-weight:700;letter-spacing:.05em;">THÃŠM VÄ‚N Báº¢N Tá»° Táº O</div>
-      <h2 style="font-size:1.2rem;font-weight:700;color:#171717;margin:.2rem 0 .8rem;">Táº¡o vÄƒn báº£n luyá»‡n Ä‘á»c cá»§a riÃªng báº¡n</h2>
-      <label style="display:block;font-size:.84rem;font-weight:600;color:#374151;margin-bottom:.3rem;">TiÃªu Ä‘á»</label>
-      <input id="addTitle" type="text" placeholder="VD: BÃ i Ä‘á»c Ã´n táº­p tuáº§n nÃ y"
+      <div style="font-size:.72rem;color:#9ca3af;font-weight:700;letter-spacing:.05em;">THÊM VĂN BẢN TỰ TẠO</div>
+      <h2 style="font-size:1.2rem;font-weight:700;color:#171717;margin:.2rem 0 .8rem;">Tạo văn bản luyện đọc của riêng bạn</h2>
+      <label style="display:block;font-size:.84rem;font-weight:600;color:#374151;margin-bottom:.3rem;">Tiêu đề</label>
+      <input id="addTitle" type="text" placeholder="VD: Bài đọc ôn tập tuần này"
         style="width:100%;padding:.55rem .8rem;border:1.5px solid #e5e7eb;border-radius:.5rem;font-size:.92rem;outline:none;box-sizing:border-box;font-family:inherit;margin-bottom:.7rem;" />
-      <label style="display:block;font-size:.84rem;font-weight:600;color:#374151;margin-bottom:.3rem;">VÄƒn báº£n (má»—i Ä‘oáº¡n cÃ¡ch nhau báº±ng dÃ²ng trá»‘ng)</label>
-      <textarea id="addContent" rows="10" placeholder="DÃ¡n hoáº·c nháº­p vÄƒn báº£n tiáº¿ng Anh á»Ÿ Ä‘Ã¢y.&#10;&#10;Má»—i Ä‘oáº¡n cÃ¡ch nhau báº±ng 1 dÃ²ng trá»‘ng."
+      <label style="display:block;font-size:.84rem;font-weight:600;color:#374151;margin-bottom:.3rem;">Văn bản (mỗi đoạn cách nhau bằng dòng trống)</label>
+      <textarea id="addContent" rows="10" placeholder="Dán hoặc nhập văn bản tiếng Anh ở đây.&#10;&#10;Mỗi đoạn cách nhau bằng 1 dòng trống."
         style="width:100%;padding:.6rem .8rem;border:1.5px solid #e5e7eb;border-radius:.5rem;font-size:.9rem;outline:none;box-sizing:border-box;font-family:'Lexend',sans-serif;resize:vertical;line-height:1.6;"></textarea>
       <div style="display:flex;gap:.5rem;justify-content:space-between;margin-top:1rem;">
-        <button class="outline-action" id="cancelAdd">Huá»·</button>
-        <button class="primary-pill" id="saveAdd">LÆ°u vÃ o thÆ° viá»‡n</button>
+        <button class="outline-action" id="cancelAdd">Huỷ</button>
+        <button class="primary-pill" id="saveAdd">Lưu vào thư viện</button>
       </div>
     </div>`;
   document.body.appendChild(ov);
@@ -307,9 +307,9 @@ function openAddTextModal() {
   ov.querySelector("#saveAdd").addEventListener("click", () => {
     const t = (title.value || "").trim();
     const c = (ov.querySelector("#addContent").value || "").trim();
-    if (!t || !c) { alert("Cáº§n nháº­p cáº£ tiÃªu Ä‘á» vÃ  vÄƒn báº£n."); return; }
+    if (!t || !c) { alert("Cần nhập cả tiêu đề và văn bản."); return; }
     const paragraphs = c.split(/\n\s*\n/).map((p) => p.replace(/\s+/g, " ").trim()).filter(Boolean);
-    if (!paragraphs.length) { alert("VÄƒn báº£n trá»‘ng."); return; }
+    if (!paragraphs.length) { alert("Văn bản trống."); return; }
     const slug = "custom-" + Date.now() + "-" + t.toLowerCase().replace(/[^a-z0-9]+/g, "-").slice(0, 40);
     const wordCount = paragraphs.join(" ").split(/\s+/).length;
     const minutes = Math.max(1, Math.round(wordCount / 110));
@@ -337,30 +337,30 @@ function renderHistory(story) {
   const items = history(story.slug);
   return `
     <div class="reading-history">
-      <strong>Lá»‹ch sá»­ paragraph</strong>
-      ${items.length ? items.map((x) => `<span>P${Number(x.index) + 1}: ${esc(x.band || x.score || "?")}</span>`).join("") : "<span>ChÆ°a luyá»‡n</span>"}
+      <strong>Lịch sử paragraph</strong>
+      ${items.length ? items.map((x) => `<span>P${Number(x.index) + 1}: ${esc(x.band || x.score || "?")}</span>`).join("") : "<span>Chưa luyện</span>"}
     </div>`;
 }
 
-// SMART IPA heuristic â€” show IPA above grapheme ONLY when it's tricky for
-// Vietnamese learners. Skips obvious mappings like "l"â†’/l/, "m"â†’/m/...
+// SMART IPA heuristic — show IPA above grapheme ONLY when it's tricky for
+// Vietnamese learners. Skips obvious mappings like "l"→/l/, "m"→/m/...
 function isTrickyGrapheme(grapheme, ipa) {
   if (!grapheme) return false;
   const g = grapheme.toLowerCase();
   const i = String(ipa || "");
-  // Silent letter â€” always mark (with cross or strike)
+  // Silent letter — always mark (with cross or strike)
   if (!i.trim()) return true;
-  // Multi-letter grapheme (digraph/trigraph) â€” almost always tricky for VN
+  // Multi-letter grapheme (digraph/trigraph) — almost always tricky for VN
   if (g.length >= 2) return true;
-  // Vowels â€” English has many sounds per letter, always tricky
+  // Vowels — English has many sounds per letter, always tricky
   if (/^[aeiouy]$/i.test(g)) return true;
-  // Mismatch consonants (sâ†’z, câ†’s, gâ†’dÊ’, xâ†’ks/zâ€¦)
+  // Mismatch consonants (s→z, c→s, g→dʒ, x→ks/z…)
   if (g !== i.toLowerCase() && i.length <= 3) {
-    const trickyMaps = { s: ["z"], c: ["s", "k"], g: ["dÊ’"], x: ["ks", "gz", "z"], y: ["j", "i", "Éª", "aÉª"] };
+    const trickyMaps = { s: ["z"], c: ["s", "k"], g: ["dʒ"], x: ["ks", "gz", "z"], y: ["j", "i", "ɪ", "aɪ"] };
     if (trickyMaps[g]?.includes(i)) return true;
   }
   // VN learners often miss these sounds
-  const vnHard = ["Ã°", "Î¸", "Êƒ", "Ê’", "tÊƒ", "dÊ’", "Å‹", "ÊŒ", "Ã¦", "É™", "Éœ"];
+  const vnHard = ["ð", "θ", "ʃ", "ʒ", "tʃ", "dʒ", "ŋ", "ʌ", "æ", "ə", "ɜ"];
   if (vnHard.some((t) => i.includes(t))) return true;
   return false;
 }
@@ -382,7 +382,7 @@ function renderWordSmart(originalToken, ipaOn) {
     const slice = core.slice(pos, pos + gLen);
     const tricky = ipaOn && isTrickyGrapheme(g.grapheme, g.ipa);
     if (tricky && g.ipa) {
-      // <ruby> base + <rt> annotation â€” browser places rt above the base, no overlap
+      // <ruby> base + <rt> annotation — browser places rt above the base, no overlap
       out.push(`<ruby class="g-tricky">${escapeIpa(slice)}<rt>${escapeIpa(g.ipa)}</rt></ruby>`);
     } else {
       out.push(escapeIpa(slice));
@@ -717,10 +717,10 @@ function renderDetail(story) {
   const done = new Set(history(story.slug).map((x) => x.index));
   root.innerHTML = `
     <section class="reader-header">
-      <a class="back-link" href="/reading">â† Luyá»‡n Ä‘á»c</a>
+      <a class="back-link" href="/reading">← Luyện đọc</a>
       <div>
         <h1>${esc(story.title)}</h1>
-        <p>${esc(story.level)} Â· ${Number(story.wordCount) || 0} tá»« Â· ${Number(story.minutes) || 0} phÃºt Â· ${esc(story.topic)}</p>
+        <p>${esc(story.level)} · ${Number(story.wordCount) || 0} từ · ${Number(story.minutes) || 0} phút · ${esc(story.topic)}</p>
       </div>
       <div class="reader-actions">
         <button class="outline-action" id="speakStory">Nghe cả câu chuyện</button>
@@ -736,7 +736,7 @@ function renderDetail(story) {
       <div class="reader-main">${story.paragraphs.map((p, i) => renderParagraph(story, p, i)).join("")}</div>
       <aside class="reader-side">
         ${renderHistory(story)}
-        <button class="primary-pill" id="nextParagraph">Tiáº¿p paragraph</button>
+        <button class="primary-pill" id="nextParagraph">Tiếp paragraph</button>
       </aside>
     </section>
     <div id="wordPopup" class="word-popup" hidden></div>`;
@@ -775,7 +775,7 @@ function renderDetail(story) {
   if (state.ipaOn) hydrateIpa();
 }
 
-// hydrateIpa is now a no-op â€” IPA is rendered synchronously via renderWordSmart
+// hydrateIpa is now a no-op — IPA is rendered synchronously via renderWordSmart
 // using the LuyenDoc 20K dict. Kept as stub to avoid breaking existing call sites.
 async function hydrateIpa() { /* no-op */ }
 
@@ -797,19 +797,19 @@ function showWordPopup(event, story, word) {
     <strong>${esc(data.word || word)}</strong>
     <span>${esc(data.ipa || "")}</span>
     <p>${esc(data.vi || data.definition || "")||"Chưa có nghĩa tiếng Việt."}</p>
-    <button data-practice>Ghi Ã¢m tá»« nÃ y</button>
-    <button data-save>LÆ°u vÃ o Ã´n táº­p</button>`;
+    <button data-practice>Ghi âm từ này</button>
+    <button data-save>Lưu vào ôn tập</button>`;
   popup.querySelector("[data-practice]").addEventListener("click", () => location.href = `/alphafeature/pronun?word=${encodeURIComponent(word)}`);
   popup.querySelector("[data-save]").addEventListener("click", () => {
     savePhrase({ term: data.word || word, ipa: data.ipa || "", vi: data.vi || "", source: "reading", slug: story.slug });
-    popup.querySelector("[data-save]").textContent = "ÄÃ£ lÆ°u";
+    popup.querySelector("[data-save]").textContent = "Đã lưu";
   });
 }
 
 async function toggleRecord(story, index, button) {
   if (state.recorder && state.recorder.state === "recording") {
     state.recorder.stop();
-    button.textContent = "Äang cháº¥m...";
+    button.textContent = "Đang chấm...";
     return;
   }
   const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
@@ -831,11 +831,11 @@ async function toggleRecord(story, index, button) {
     slot.innerHTML = `<strong>${esc(band)}</strong><p>${esc(data.verdict || "")}</p><small>${esc(data.tips || "")}</small>`;
     const next = [{ index, band, score: data.score, at: new Date().toISOString(), worstWords: data.worstWords || [] }, ...history(story.slug).filter((x) => x.index !== index)];
     try { localStorage.setItem(historyKey(story.slug), JSON.stringify(next)); } catch {}
-    button.textContent = "Ghi Ã¢m Ä‘á»c paragraph";
+    button.textContent = "Ghi âm đọc paragraph";
     renderDetail(story);
   };
   state.recorder.start();
-  button.textContent = "Dá»«ng vÃ  gá»­i";
+  button.textContent = "Dừng và gửi";
 }
 
 async function init() {
@@ -852,7 +852,7 @@ async function init() {
     return;
   }
   // Wait for the LuyenDoc 20K-word grapheme dictionary to be ready before
-  // rendering the story â€” so the Smart IPA overlay can render in one pass.
+  // rendering the story — so the Smart IPA overlay can render in one pass.
   if (typeof window.lnDictReady === "function") {
     try { await window.lnDictReady(); } catch {}
   }
