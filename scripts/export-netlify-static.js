@@ -125,7 +125,7 @@ const routeMap = {
 
 const shellFeatures = [
   { route: "/reading", title: "Luyện đọc", mountId: "readingRoot", script: "/reading.js" },
-  { route: "/alphafeature/pronun", title: "Khoá phát âm", mountId: "pronunRoot", script: "/pronun-tabs.js" },
+  { route: "/alphafeature/pronun", title: "Khoá phát âm", mountId: "pronunRoot", script: "/pronun-tabs.js", extraScripts: ["/pronun-course.js"] },
   { route: "/alphafeature/vocab", title: "Sổ từ vựng", mountId: "vocabRoot", script: "/vocab.js" },
   { route: "/question-answer/user-question", title: "Câu bạn thêm", mountId: "userQuestionRoot", script: "/user-question.js" },
   { route: "/alphafeature/boxing", title: "Luyện S/es", mountId: "boxingRoot", script: "/boxing.js" },
@@ -184,7 +184,9 @@ async function main() {
   const home = await readReal("home.html");
   for (const feature of shellFeatures) {
     const mount = `<div id="${feature.mountId}" class="ln-feature-mount" style="padding:1.2rem 1.4rem;min-height:calc(100vh - 64px);"></div>`;
-    const html = withTitle(wrapInLuyennoiShell(home, mount, [`<script type="module" src="${feature.script}"></script>`]), feature.title);
+    const scripts = [`<script type="module" src="${feature.script}"></script>`];
+    if (feature.extraScripts) feature.extraScripts.forEach(s => scripts.push(`<script src="${s}" defer></script>`));
+    const html = withTitle(wrapInLuyennoiShell(home, mount, scripts), feature.title);
     await writeRoute(feature.route, html);
   }
 }

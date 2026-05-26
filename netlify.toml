@@ -14,6 +14,21 @@
   status = 200
 
 [[redirects]]
+  from = "/question-answer/part*"
+  to = "/question-answer/detail.html"
+  status = 200
+
+[[redirects]]
+  from = "/alphafeature/pronun/lesson*"
+  to = "/alphafeature/pronun/index.html"
+  status = 200
+
+[[redirects]]
+  from = "/reading/*"
+  to = "/reading/index.html"
+  status = 200
+
+[[redirects]]
   from = "/*"
   to = "/index.html"
   status = 200
