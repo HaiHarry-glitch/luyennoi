@@ -1318,7 +1318,7 @@
 
   function showAssistResult(d, kind, opts = {}) {
     const contentArea = getRightPanelContent();
-    const isDetail = /\/question-answer\/PART/i.test(location.pathname);
+    const isDetail = !!parseDetailRoute();
 
     // Cache it (unless skipCache, for restore)
     if (!opts.skipCache) cacheSet(kind, d);
@@ -1523,7 +1523,8 @@
 
   // Restore cached results when entering a detail page
   function restoreCachedAssist() {
-    if (!/\/question-answer\/PART/i.test(location.pathname)) return;
+    const detail = parseDetailRoute();
+    if (!detail) return;
     setTimeout(() => {
       ["vocab","sample","note","pronun"].forEach(kind => {
         const cached = cacheGet(kind);
@@ -1531,7 +1532,7 @@
       });
       // Restore ALL stacked score results for this question
       try {
-        const q = getQuestionFromPage();
+        const q = detail.question;
         const key = getScoreHistoryCandidates(q).find((candidate) => localStorage.getItem(candidate));
         const raw = key ? localStorage.getItem(key) : "";
         if (raw) {
@@ -1547,6 +1548,11 @@
         }
       } catch {}
     }, 1200);
+  }
+
+  function clearDetailOnlyPanels() {
+    if (parseDetailRoute()) return;
+    document.querySelectorAll("#ln-assist-panel, #ln-score-panel, .ln-score-panel").forEach(el => el.remove());
   }
 
   // ---- Button rehydration ----
@@ -3617,7 +3623,7 @@
   }
 
   function parseDetailRoute() {
-    if (!/^\/question-answer\/PART/i.test(location.pathname)) return null;
+    if (!/^\/question-answer\/part\s*\d?~/i.test(decodeURIComponent(location.pathname))) return null;
     const raw = decodeURIComponent(location.pathname.split("/question-answer/")[1] || "");
     const parts = raw.split("~");
     const part = (parts.shift() || "PART 1").replace(/%20/g, " ").trim();
@@ -4001,6 +4007,7 @@
     wirePronounInputBox();
     wireButtons();
     wireTopicTabs();
+    clearDetailOnlyPanels();
     fixDetailLayout();
     patchDashboard();
     patchHistory();
@@ -4043,6 +4050,7 @@
           wirePronounInputBox();
           wireButtons();
           wireTopicTabs();
+          clearDetailOnlyPanels();
           patchDashboard();
           attachTtsTooltips();
           wireHeaderPlayButton();
