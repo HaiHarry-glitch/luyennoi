@@ -3,10 +3,10 @@ import { chromium } from "playwright";
 const BASE = process.argv[2] || process.env.LN_BASE || "https://luyennoi.netlify.app";
 
 const ROUTES = [
-  { path: "/",                                        expect: {} },
+  { path: "/",                                        expect: { landingCta: true } },
   { path: "/home",                                    expect: { brand: true, sidebar: true } },
-  { path: "/login",                                   expect: {} },
-  { path: "/landing",                                 expect: {} },
+  { path: "/login",                                   expect: { landingCta: true } },
+  { path: "/landing",                                 expect: { landingCta: true } },
   { path: "/question-answer",                         expect: { brand: true, sidebar: true } },
   { path: "/question-answer/part1",                   expect: { brand: true, sidebar: true, qaToggle: true, qaCards: true } },
   { path: "/question-answer/part2",                   expect: { brand: true, sidebar: true, qaToggle: true, qaCards: true } },
@@ -244,6 +244,13 @@ const MOJIBAKE_RE = /[\u0081\u008d\u008f\u0090\u009d]|Ã[\u00A1-\u00FF]|Ä[ƒ\u0
               if (beforeText && beforeText === afterText) record(route.path, "interaction", `${cfg.label} toggle did not change button label`);
             }
           }
+        }
+
+        if (exp.landingCta) {
+          const cta = await page.locator("a.btn, a.drill-cta, a[href='/home'], a[href='/question-answer'], a[href='/take-test/custom-strict'], a[href='/alphafeature/pronun'], a[href='/login'], a[href='/landing']").count();
+          if (cta < 1) record(route.path, "ui", `landing page CTA missing (count=${cta})`);
+          const heroH1 = await page.locator("h1").first().innerText().catch(() => "");
+          if (!heroH1 || heroH1.length < 3) record(route.path, "ui", `landing hero h1 missing/short: '${heroH1}'`);
         }
 
         if (exp.pronunLesson) {
