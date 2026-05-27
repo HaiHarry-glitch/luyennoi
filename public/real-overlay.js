@@ -4195,6 +4195,11 @@
       });
     });
     mo.observe(document.body, { childList: true, subtree: true });
+
+    // Drop the FOUC curtain after layout settles (two rAFs ensure paint completed)
+    requestAnimationFrame(() => requestAnimationFrame(() => {
+      try { window.__lnReveal && window.__lnReveal(); } catch {}
+    }));
   }
 
   if (document.readyState === "loading") {
