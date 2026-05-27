@@ -127,7 +127,7 @@
   };
 
   // ---- Recording flow (MediaRecorder → Gemini score) ----
-  const REC_STATE = { recorder: null, chunks: [], stream: null, recording: false };
+  const REC_STATE = { recorder: null, chunks: [], stream: null, recording: false, mimeType: "" };
 
   // Placeholder — actual implementation set further down with full UI overlay
   let startRecording = async (btn) => { console.warn("startRecording placeholder"); };
@@ -139,6 +139,11 @@
       r.onerror = rej;
       r.readAsDataURL(blob);
     });
+  }
+
+  function pickRecordingMimeType() {
+    if (!window.MediaRecorder || !MediaRecorder.isTypeSupported) return "";
+    return ["audio/webm;codecs=opus", "audio/webm", "audio/mp4", "audio/aac"].find((type) => MediaRecorder.isTypeSupported(type)) || "";
   }
 
   // Floor IELTS band to integer (per user spec: số nguyên + làm tròn xuống)
@@ -318,6 +323,7 @@
       if (scoreFingerprint) host.dataset.lnScoreFingerprint = scoreFingerprint;
       wireInlineTts(panel);
     }
+    if (!d.__fromCache) setTimeout(() => { try { host.scrollIntoView({ block: "start", behavior: "smooth" }); } catch {} }, 50);
 
     // Per-panel close
     host.querySelector(".ln-score-close")?.addEventListener("click", () => host.remove());
@@ -1038,6 +1044,89 @@
         font-weight: 600;
       }
       button.link-info.link:hover, a.link-info.link:hover { text-decoration: underline; }
+      .ln-score-panel,
+      #ln-score-panel {
+        max-width: 100% !important;
+        overflow-wrap: anywhere !important;
+      }
+      .ln-score-panel .ln-score-header,
+      #ln-score-panel .ln-score-header {
+        min-width: 0 !important;
+      }
+      .ln-score-panel .ln-user-transcript,
+      #ln-score-panel .ln-user-transcript {
+        min-width: 0 !important;
+        overflow-wrap: anywhere !important;
+        word-break: break-word !important;
+      }
+      .ln-score-panel .ln-score-toggle,
+      .ln-score-panel .ln-score-close,
+      #ln-score-panel .ln-score-toggle,
+      #ln-score-panel .ln-score-close {
+        min-width: 36px !important;
+        min-height: 36px !important;
+        display: inline-flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+      }
+      .ln-score-panel .ln-user-audio-btn,
+      .ln-score-panel .ln-tts-btn,
+      #ln-score-panel .ln-user-audio-btn,
+      #ln-score-panel .ln-tts-btn {
+        width: 40px !important;
+        height: 40px !important;
+        min-width: 40px !important;
+        min-height: 40px !important;
+      }
+      .ln-score-panel .ln-word-sync-btn,
+      #ln-score-panel .ln-word-sync-btn {
+        min-height: 40px !important;
+      }
+      .ln-score-panel .ln-crit-btn,
+      #ln-score-panel .ln-crit-btn {
+        min-width: 72px !important;
+        min-height: 38px !important;
+        padding: .4rem .7rem !important;
+      }
+      #ln-rec-bar {
+        flex-wrap: wrap !important;
+        gap: .75rem !important;
+        padding: .75rem .9rem calc(.75rem + env(safe-area-inset-bottom)) !important;
+      }
+      #ln-rec-submit,
+      #ln-rec-cancel {
+        min-height: 44px !important;
+      }
+      @media (max-width: 640px) {
+        #ln-score-panel {
+          left: 12px !important;
+          right: 12px !important;
+          top: calc(12px + env(safe-area-inset-top)) !important;
+          width: auto !important;
+          max-height: calc(100svh - 24px - env(safe-area-inset-top)) !important;
+        }
+        .ln-score-panel .ln-score-header,
+        #ln-score-panel .ln-score-header {
+          gap: .5rem !important;
+          padding-right: 0 !important;
+        }
+        .ln-score-panel .ln-overall-score,
+        #ln-score-panel .ln-overall-score {
+          min-width: 2.35rem !important;
+          width: 2.35rem !important;
+          height: 2.35rem !important;
+        }
+        #ln-rec-bar {
+          align-items: stretch !important;
+        }
+        #ln-rec-bar > * {
+          min-width: 0 !important;
+        }
+        #ln-rec-submit,
+        #ln-rec-cancel {
+          flex: 1 1 140px !important;
+        }
+      }
     `;
     document.head.appendChild(s);
   })();
@@ -2297,13 +2386,15 @@
       REC_STATE.stream = stream;
       REC_STATE.chunks = [];
       REC_STATE.cancelled = false;
-      const rec = new MediaRecorder(stream, { mimeType: "audio/webm" });
+      const pickedMimeType = pickRecordingMimeType();
+      const rec = pickedMimeType ? new MediaRecorder(stream, { mimeType: pickedMimeType }) : new MediaRecorder(stream);
+      REC_STATE.mimeType = rec.mimeType || pickedMimeType || "audio/webm";
       rec.ondataavailable = (e) => { if (e.data?.size) REC_STATE.chunks.push(e.data); };
       rec.onstop = async () => {
         REC_STATE.stream?.getTracks().forEach(t => t.stop());
         REC_STATE.recording = false;
         if (REC_STATE.cancelled) return;
-        const blob = new Blob(REC_STATE.chunks, { type: "audio/webm" });
+        const blob = new Blob(REC_STATE.chunks, { type: REC_STATE.mimeType || REC_STATE.chunks[0]?.type || "audio/webm" });
         if (!blob.size || blob.size < 1200) {
           alert("Bản ghi âm quá ngắn hoặc không có âm thanh. Hãy bấm Ghi âm và nói ít nhất 2 giây rồi gửi lại.");
           return;
@@ -2322,6 +2413,7 @@
   async function scoreAndSave(blob) {
     const audioUrl = URL.createObjectURL(blob);
     const audioDataUrl = await blobToBase64(blob);
+    const mimeType = blob.type || REC_STATE.mimeType || "audio/webm";
     const detail = parseDetailRoute?.();
     const question = (detail?.question || getQuestionFromPage()).trim();
     const partLabel = detail?.part || ("PART " + ((location.pathname.match(/PART%20(\d)|PART\s*(\d)|part(\d)/i) || [])[1] || (location.pathname.match(/PART%20(\d)|PART\s*(\d)|part(\d)/i) || [])[2] || (location.pathname.match(/PART%20(\d)|PART\s*(\d)|part(\d)/i) || [])[3] || "1"));
@@ -2340,7 +2432,7 @@
           apiKey: getKey(),
           question, part: partLabel,
           audioBase64: audioDataUrl.split(",")[1] || audioDataUrl,
-          mimeType: "audio/webm",
+          mimeType,
           note: localStorage.getItem("ln.userNote") || ""
         })
       });
@@ -2362,8 +2454,10 @@
         __realAttempt: true,
         question,
         part: partLabel,
+        section: String(partLabel || "").toLowerCase().replace(/\s+/g, ""),
         url: location.pathname,
         audioDataUrl,
+        mimeType,
         overall: data.overall,
         transcript: data.transcript,
         rewrittenAnswer: data.rewrittenAnswer,
@@ -2371,6 +2465,12 @@
         feedback: data.feedback,
         suggestions: data.suggestions,
         pronunciationIssues: data.pronunciationIssues,
+        grammarIssues: data.grammarIssues,
+        vocabularyIssues: data.vocabularyIssues,
+        spellingIssues: data.spellingIssues,
+        fluencyPauses: data.fluencyPauses,
+        environmentWarning: data.environmentWarning,
+        warning: data.warning,
         model: data.model || data.provider
       });
 

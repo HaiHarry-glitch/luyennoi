@@ -134,6 +134,9 @@ function injectOverlay(html) {
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Fraunces:opsz,wght@9..144,400;9..144,700;9..144,900&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="/neo-brutalism.css">
+<link rel="icon" href="/real/favicon.svg" type="image/svg+xml">
+<link rel="manifest" href="/real/manifest.webmanifest">
+<meta name="theme-color" content="#d9381e">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"><\/script>
 <script src="/auth.js" defer><\/script>
 <script src="/sidebar.js"><\/script>

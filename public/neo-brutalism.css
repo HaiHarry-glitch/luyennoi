@@ -1452,12 +1452,13 @@ body.ln-question-detail-page [class*="LogoLN"]:not(.ln-side-brand):not(.ln-side-
 }
 
 @media (max-width: 900px) {
-  .ln-sidebar-shell {
-    width: 100% !important;
-    min-width: 0 !important;
-    max-width: 100% !important;
-    height: auto !important;
-    position: static !important;
+  .ln-sidebar-shell,
+  .ln-sidebar-fixed {
+    display: none !important;
+  }
+
+  body.ln-has-fixed-sidebar {
+    padding-left: 0 !important;
   }
 
   .ln-home-analytics {
@@ -1756,4 +1757,86 @@ body.ln-question-detail-page [class*="w-2/5"] > div {
   justify-content: flex-start !important;
   gap: 20px !important;
   padding-bottom: 18px !important;
+}
+
+@media (max-width: 900px) {
+  body.ln-question-detail-page,
+  body.ln-question-detail-page.ln-sidebar-collapsed {
+    padding-left: 0 !important;
+  }
+
+  body.ln-question-detail-page .ln-sidebar-shell,
+  body.ln-question-detail-page .ln-sidebar-fixed {
+    display: none !important;
+  }
+
+  body.ln-question-detail-page [class*="md:w-3/5"],
+  body.ln-question-detail-page [class*="w-2/5"] {
+    width: 100% !important;
+    max-width: 100% !important;
+    min-width: 0 !important;
+  }
+
+  body.ln-question-detail-page [class*="items-start"] {
+    min-width: 0 !important;
+  }
+
+  body.ln-question-detail-page .breadcrumbs {
+    overflow-x: auto !important;
+    -webkit-overflow-scrolling: touch !important;
+    padding-bottom: 4px !important;
+  }
+
+  body.ln-question-detail-page .breadcrumbs ul {
+    flex-wrap: nowrap !important;
+    min-width: 0 !important;
+  }
+
+  body.ln-question-detail-page .breadcrumbs ul li {
+    flex: 0 0 auto !important;
+    white-space: nowrap !important;
+  }
+
+  body.ln-question-detail-page .breadcrumbs ul li > * {
+    min-height: 32px !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    padding: 4px 8px !important;
+  }
+
+  body.ln-question-detail-page .btn-ghost.btn-outline.btn-xs {
+    min-width: 36px !important;
+    min-height: 36px !important;
+  }
+
+  body.ln-question-detail-page .ln-detail-fixed-nav {
+    left: 12px !important;
+    right: 12px !important;
+    top: auto !important;
+    bottom: calc(8px + env(safe-area-inset-bottom)) !important;
+    width: auto !important;
+  }
+
+  body.ln-question-detail-page .ln-detail-fixed-nav button,
+  .ln-topic-nav-row button[data-ln-detail-dir],
+  a[href="/question-answer/part1"],
+  a[href="/question-answer/part2"],
+  a[href="/question-answer/part3"],
+  a[href*="/question-answer/part1"],
+  a[href*="/question-answer/part2"],
+  a[href*="/question-answer/part3"] {
+    min-height: 44px !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+  }
+
+  .ln-topic-nav-row {
+    flex-wrap: wrap !important;
+  }
+
+  .ln-topic-nav-row > *:not(button) {
+    flex-basis: 100% !important;
+    order: -1 !important;
+  }
 }

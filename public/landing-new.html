@@ -5,6 +5,11 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>HIN Luyện Nói | IELTS Speaking AI — Miễn phí 100%</title>
   <meta name="description" content="HIN Luyện Nói: luyện IELTS Speaking miễn phí với đề Forecast, AI chấm chi tiết, Smart IPA và thi thử chống gian lận.">
+  <link rel="icon" href="/real/favicon.svg" type="image/svg+xml">
+  <link rel="icon" href="/real/favicon.png" type="image/png">
+  <link rel="apple-touch-icon" href="/real/apple-touch-icon-iphone-retina-120x120.png" sizes="180x180">
+  <link rel="manifest" href="/real/manifest.webmanifest">
+  <meta name="theme-color" content="#d9381e">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,wght@0,700;0,900;1,700;1,900&family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
@@ -37,6 +42,7 @@
     .brand { display: inline-flex; align-items: center; gap: .75rem; font: 900 1.05rem/1 Inter, sans-serif; }
     .nav-logo { width: 44px; height: 44px; object-fit: cover; border: 3px solid var(--ink); background: white; box-shadow: var(--shadow-sm); }
     .nav-links { display: flex; align-items: center; gap: 1.15rem; font: 800 .78rem/1 "JetBrains Mono", monospace; text-transform: uppercase; letter-spacing: .04em; }
+    .nav-links a { display: inline-flex; align-items: center; min-height: 44px; }
     .nav-links a:hover { color: var(--red); }
 
     /* ── BUTTONS ── */
@@ -361,8 +367,12 @@
     .feature-card p { font-size: .97rem; color: var(--muted); line-height: 1.6; margin: 0; }
 
     /* ── COMPARE TABLE ── */
-    .compare-wrap { border: 3px solid var(--ink); overflow-x: auto; box-shadow: var(--shadow-lg); }
+    .compare-wrap { border: 3px solid var(--ink); overflow-x: auto; box-shadow: var(--shadow-lg); -webkit-overflow-scrolling: touch; }
     table { width: 100%; border-collapse: collapse; min-width: 680px; }
+    @media (max-width: 640px) {
+      .compare-wrap table { min-width: 540px; font-size: .85rem; }
+      .compare-wrap th, .compare-wrap td { padding: .65rem .7rem; }
+    }
     th, td { border: 2px solid var(--ink); padding: 1rem 1.1rem; text-align: left; vertical-align: middle; }
     thead th:first-child { background: var(--ink); color: white; font: 900 .85rem/1.3 "JetBrains Mono", monospace; text-transform: uppercase; }
     thead th:nth-child(2) { background: #f5f5f5; font: 900 .85rem/1.3 "JetBrains Mono", monospace; text-transform: uppercase; }
@@ -427,6 +437,10 @@
       body { font-size: 16px; }
       .nav-links { display: none; }
       .brand span { font-size: .9rem; }
+      .marquee-track { width: 100%; display: grid; grid-template-columns: 1fr; animation: none; transform: none; }
+      .marquee-track span { padding: 0 1rem; text-align: center; white-space: normal; line-height: 1.35; }
+      .marquee-track span:nth-child(n+4) { display: none; }
+      .marquee-track span::after { display: none; }
       .hero-actions { flex-direction: column; align-items: stretch; }
       .hero-actions .btn { text-align: center; justify-content: center; }
       h1 { font-size: clamp(52px, 15vw, 76px); }
