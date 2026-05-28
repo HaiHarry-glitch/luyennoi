@@ -13,7 +13,7 @@ const SUPABASE_URL = (process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.SUPABA
 const SUPABASE_PUBLISHABLE_KEY = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY || process.env.SUPABASE_PUBLISHABLE_KEY || "sb_publishable_ktG6l3TaDDppl9n6flBuZg_3THO38Dp";
 const SUPABASE_ENABLED = Boolean(SUPABASE_URL && SUPABASE_PUBLISHABLE_KEY);
 const LOCAL_AUTH_GATE = process.env.LN_LOCAL_AUTH_GATE === "1";
-const ASSET_VERSION = "score-sync-v1";
+const ASSET_VERSION = "score-async-v2";
 
 // Load per-question Vietnamese translations (pre-scraped)
 let QUESTION_VI = {};

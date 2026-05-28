@@ -605,6 +605,23 @@ async function handleScoreStart(event) {
     return json(400, { ok: false, error: "Missing Gemini API key" });
   }
   const jobId = randomUUID();
+  // Persist a "queued" placeholder so /status returns something other than 404
+  // while the background function is still booting. If Supabase isn't
+  // configured we still return 202 — client will poll once and bail to sync.
+  try {
+    const { writeScoreJobStatus, isScoreJobsConfigured } = await import("./_lib/score-jobs.mjs");
+    if (isScoreJobsConfigured()) {
+      const auth = getAuthInfo(event);
+      await writeScoreJobStatus(jobId, {
+        status: "queued",
+        progress: "queued",
+        userId: auth.userId,
+        authUserId: auth.isAuthenticated ? auth.userId : null
+      });
+    }
+  } catch (err) {
+    console.warn("[score-start] could not persist job status", err?.message || err);
+  }
   return json(202, {
     ok: true,
     jobId,
@@ -614,10 +631,14 @@ async function handleScoreStart(event) {
 }
 
 async function handleScoreStatus(event, jobId) {
-  const { readScoreJobStatus } = await import("./_lib/score-jobs.mjs");
-  const status = await readScoreJobStatus(jobId);
-  if (!status) return json(404, { ok: false, error: "Score job not found" });
-  return json(200, { ok: true, ...status });
+  try {
+    const { readScoreJobStatus } = await import("./_lib/score-jobs.mjs");
+    const status = await readScoreJobStatus(jobId);
+    if (!status) return json(404, { ok: false, error: "Score job not found" });
+    return json(200, { ok: true, ...status });
+  } catch (err) {
+    return json(503, { ok: false, error: err?.message || "Score jobs storage unavailable" });
+  }
 }
 
 async function handleSession(event, action, id = "") {

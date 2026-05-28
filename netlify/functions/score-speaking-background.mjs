@@ -27,10 +27,8 @@ export async function handler(event) {
   if (!payload.audioBase64) return json(400, { ok: false, error: "Missing audioBase64" });
 
   await writeScoreJobStatus(jobId, {
-    status: "processing",
+    status: "running",
     userId: payload.userId || "local-student",
-    createdAt: payload.createdAt,
-    startedAt: new Date().toISOString(),
     progress: "scoring"
   });
 
@@ -57,8 +55,6 @@ export async function handler(event) {
     await writeScoreJobStatus(jobId, {
       status: "done",
       userId: payload.userId || "local-student",
-      createdAt: payload.createdAt,
-      finishedAt: new Date().toISOString(),
       result
     });
     return json(200, { ok: true, jobId, status: "done" });
@@ -66,8 +62,6 @@ export async function handler(event) {
     await writeScoreJobStatus(jobId, {
       status: "error",
       userId: payload.userId || "local-student",
-      createdAt: payload.createdAt,
-      finishedAt: new Date().toISOString(),
       error: error?.message || String(error || "Scoring failed")
     });
     return json(200, { ok: true, jobId, status: "error" });

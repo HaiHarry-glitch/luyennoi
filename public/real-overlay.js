@@ -2548,9 +2548,11 @@
       // the upload payload, which is critical because Netlify Functions have a
       // hard 10 s timeout on the free tier — Part 2 (~2 min) at default 128 kbps
       // produced ~1.9 MB base64 strings that pushed Gemini past 10 s.
+      // Phase 3: 48 kbps Opus mono — payload nhỏ hơn ~62% so với mặc định 128 kbps
+      // nhưng vẫn giữ chi tiết phát âm (đủ cho Gemini chấm /θ/ vs /s/, vowel length...).
       const recOpts = pickedMimeType
-        ? { mimeType: pickedMimeType, audioBitsPerSecond: 32000 }
-        : { audioBitsPerSecond: 32000 };
+        ? { mimeType: pickedMimeType, audioBitsPerSecond: 48000 }
+        : { audioBitsPerSecond: 48000 };
       let rec;
       try { rec = new MediaRecorder(stream, recOpts); }
       catch { rec = pickedMimeType ? new MediaRecorder(stream, { mimeType: pickedMimeType }) : new MediaRecorder(stream); }
@@ -2714,10 +2716,12 @@
     toast.innerHTML = '<span style="display:inline-block;width:.85rem;height:.85rem;border:2px solid #fff;border-top-color:transparent;border-radius:50%;animation:ln-spin .9s linear infinite;"></span> Đang chấm điểm…';
     document.body.appendChild(toast);
 
-    // Phase 1: async background đang gãy trên Netlify (MissingBlobsEnvironmentError) —
-    // tắt mặc định, chỉ bật khi window.LN_ASYNC_SCORE === true để debug.
-    const asyncOptIn = typeof window !== "undefined" && window.LN_ASYNC_SCORE === true;
-    const useAsyncFirst = asyncOptIn && (/^PART\s*2/i.test(String(partLabel || "")) || (audioDataUrl || "").length > 1800000);
+    // Phase 2: async background dùng Supabase score_jobs cho Part 2 / audio dài.
+    // Có thể tắt thủ công bằng window.LN_ASYNC_SCORE === false.
+    const asyncOptOut = typeof window !== "undefined" && window.LN_ASYNC_SCORE === false;
+    const isPart2 = /^PART\s*2/i.test(String(partLabel || ""));
+    const isLongAudio = (audioDataUrl || "").length > 1800000;
+    const useAsyncFirst = !asyncOptOut && (isPart2 || isLongAudio);
     if (useAsyncFirst) {
       try {
         const ok = await startAsyncScoreJob({ apiKey, audioUrl, audioDataUrl, mimeType, question, partLabel, toast });

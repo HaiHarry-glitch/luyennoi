@@ -977,8 +977,14 @@
       try {
         if (!FT.stream) FT.stream = await navigator.mediaDevices.getUserMedia({ audio: true });
         FT.chunks = [];
-        const ftMimeOpts = typeof MediaRecorder.isTypeSupported === "function" && MediaRecorder.isTypeSupported("audio/webm") ? { mimeType: "audio/webm" } : {};
-        const rec = new MediaRecorder(FT.stream, ftMimeOpts);
+        // Phase 3: 48 kbps Opus mono — đủ chi tiết cho Gemini chấm phát âm, payload gọn.
+        const ftSupportsWebm = typeof MediaRecorder.isTypeSupported === "function" && MediaRecorder.isTypeSupported("audio/webm");
+        const ftMimeOpts = ftSupportsWebm
+          ? { mimeType: "audio/webm", audioBitsPerSecond: 48000 }
+          : { audioBitsPerSecond: 48000 };
+        let rec;
+        try { rec = new MediaRecorder(FT.stream, ftMimeOpts); }
+        catch { rec = ftSupportsWebm ? new MediaRecorder(FT.stream, { mimeType: "audio/webm" }) : new MediaRecorder(FT.stream); }
         rec.ondataavailable = (e) => FT.chunks.push(e.data);
         rec.onstop = async () => {
           const blob = new Blob(FT.chunks, { type: "audio/webm" });
@@ -1084,14 +1090,17 @@
         clearTimeout(timer);
       }
     };
-    // Phase 1: async background đang gãy trên Netlify — tắt mặc định, chỉ bật khi
-    // window.LN_ASYNC_SCORE === true. Mọi audio đi sync; client-timeout 26s đủ cho
-    // Part 1/3 và Full Test thông thường.
-    const asyncOptIn = typeof window !== "undefined" && window.LN_ASYNC_SCORE === true;
-    const useAsyncFirst = asyncOptIn && (partLabel === "PART 2" || b64.length > 1800000);
+    // Phase 2: async background dùng Supabase score_jobs cho Part 2 / audio dài.
+    // Phần còn lại (Part 1/3) đi sync 25s. Có thể opt-out bằng window.LN_ASYNC_SCORE === false.
+    const asyncOptOut = typeof window !== "undefined" && window.LN_ASYNC_SCORE === false;
+    const useAsyncFirst = !asyncOptOut && (partLabel === "PART 2" || b64.length > 1800000);
     if (!useAsyncFirst) {
-      const data = await trySyncScore();
-      if (data) return data;
+      try {
+        const data = await trySyncScore();
+        if (data) return data;
+      } catch (e) {
+        if (!(e?.name === "AbortError" || /timeout/i.test(String(e?.message || "")))) throw e;
+      }
       throw new Error("Sync score returned fallback");
     }
 
