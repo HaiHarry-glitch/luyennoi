@@ -901,6 +901,39 @@
     });
   }
 
+  // ── Double-click guard helpers (used by every async button action) ──
+  function lnLoadingLabel(kind) {
+    if (kind === "vocab")  return "Đang lấy từ vựng…";
+    if (kind === "sample") return "Đang viết câu mẫu…";
+    if (kind === "note")   return "Đang viết từ ghi chú…";
+    if (kind === "pronun") return "Đang chuẩn bị phát âm…";
+    return "Đang xử lý…";
+  }
+  function markBusy(btn, kind) {
+    if (!btn) return null;
+    if (btn.__lnBusy) return false; // already running — caller must bail
+    btn.__lnBusy = true;
+    btn.__lnOrigInner = btn.innerHTML;
+    btn.__lnOrigPointer = btn.style.pointerEvents;
+    btn.setAttribute("aria-busy", "true");
+    btn.setAttribute("disabled", "1");
+    btn.style.pointerEvents = "none";
+    btn.style.opacity = ".7";
+    btn.style.cursor = "wait";
+    btn.innerHTML = `<span style="display:inline-flex;align-items:center;gap:.35rem;justify-content:center;"><span style="display:inline-block;width:.85rem;height:.85rem;border:2px solid currentColor;border-top-color:transparent;border-radius:50%;animation:ln-spin .9s linear infinite;flex-shrink:0;"></span><span>${lnLoadingLabel(kind)}</span></span>`;
+    return true;
+  }
+  function unmarkBusy(btn) {
+    if (!btn) return;
+    btn.__lnBusy = false;
+    btn.removeAttribute("aria-busy");
+    btn.removeAttribute("disabled");
+    btn.style.pointerEvents = btn.__lnOrigPointer || "";
+    btn.style.opacity = "";
+    btn.style.cursor = "";
+    if (btn.__lnOrigInner != null) btn.innerHTML = btn.__lnOrigInner;
+  }
+
   async function assistGemini(kind, btn) {
     // API key check
     const key = getKey();
@@ -912,24 +945,23 @@
         return;
       }
     }
+    if (btn && markBusy(btn, kind) === false) return; // guard: already running
     try {
       const question = getQuestionFromPage();
       const note = getNoteFromPage();
-      if (btn) { btn.__lnOrigText = btn.__lnOrigText || (btn.innerText || btn.textContent || "").trim(); btn.setAttribute("disabled","1"); btn.style.opacity = ".6"; }
-      const origInner = btn ? (btn.innerHTML) : "";
-      if (btn) btn.innerHTML = `<span style="display:inline-flex;align-items:center;gap:.3rem;"><span style="display:inline-block;width:.8rem;height:.8rem;border:2px solid #d9381e;border-top-color:transparent;border-radius:50%;animation:ln-spin 1s linear infinite;"></span> Đang tải...</span>`;
 
       const r = await realFetch("/api/gemini/assist", {
         method: "POST",
         headers: {"Content-Type": "application/json"},
         body: JSON.stringify({ apiKey: key, model: getModel(), kind, topic: question, note, part: (location.pathname.match(/PART%20(\d)|PART\s*(\d)/i)||[])[1] || (location.pathname.match(/PART%20(\d)|PART\s*(\d)/i)||[])[2] || "" })
       });
+      if (!r.ok) throw new Error("HTTP " + r.status);
       const data = await r.json();
       showAssistResult(data, kind);
-      if (btn) { btn.removeAttribute("disabled"); btn.style.opacity = ""; btn.innerHTML = origInner; }
     } catch (e) {
-      if (btn) { btn.removeAttribute("disabled"); btn.style.opacity = ""; }
       alert("Lỗi Gemini: " + e.message);
+    } finally {
+      unmarkBusy(btn);
     }
   }
 
@@ -2380,14 +2412,26 @@
 
   // Override startRecording placeholder with full UI implementation
   startRecording = async function (btn) {
-    if (REC_STATE.recording) return;
+    if (REC_STATE.recording || REC_STATE.starting) return;
+    REC_STATE.starting = true;
+    // Guard the trigger button from double-click during getUserMedia → MediaRecorder.start
+    if (btn) markBusy(btn, "record");
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
       REC_STATE.stream = stream;
       REC_STATE.chunks = [];
       REC_STATE.cancelled = false;
       const pickedMimeType = pickRecordingMimeType();
-      const rec = pickedMimeType ? new MediaRecorder(stream, { mimeType: pickedMimeType }) : new MediaRecorder(stream);
+      // 32 kbps mono is more than enough for speech and dramatically shrinks
+      // the upload payload, which is critical because Netlify Functions have a
+      // hard 10 s timeout on the free tier — Part 2 (~2 min) at default 128 kbps
+      // produced ~1.9 MB base64 strings that pushed Gemini past 10 s.
+      const recOpts = pickedMimeType
+        ? { mimeType: pickedMimeType, audioBitsPerSecond: 32000 }
+        : { audioBitsPerSecond: 32000 };
+      let rec;
+      try { rec = new MediaRecorder(stream, recOpts); }
+      catch { rec = pickedMimeType ? new MediaRecorder(stream, { mimeType: pickedMimeType }) : new MediaRecorder(stream); }
       REC_STATE.mimeType = rec.mimeType || pickedMimeType || "audio/webm";
       rec.ondataavailable = (e) => { if (e.data?.size) REC_STATE.chunks.push(e.data); };
       rec.onstop = async () => {
@@ -2407,27 +2451,57 @@
       showRecordingUI();
     } catch (e) {
       alert("Không truy cập được microphone: " + e.message);
+    } finally {
+      REC_STATE.starting = false;
+      if (btn) unmarkBusy(btn);
     }
   };
 
-  async function scoreAndSave(blob) {
-    const audioUrl = URL.createObjectURL(blob);
-    const audioDataUrl = await blobToBase64(blob);
-    const mimeType = blob.type || REC_STATE.mimeType || "audio/webm";
-    const detail = parseDetailRoute?.();
-    const question = (detail?.question || getQuestionFromPage()).trim();
-    const partLabel = detail?.part || ("PART " + ((location.pathname.match(/PART%20(\d)|PART\s*(\d)|part(\d)/i) || [])[1] || (location.pathname.match(/PART%20(\d)|PART\s*(\d)|part(\d)/i) || [])[2] || (location.pathname.match(/PART%20(\d)|PART\s*(\d)|part(\d)/i) || [])[3] || "1"));
+  // Render a sticky retry banner so the user can re-score the SAME blob without re-recording.
+  function showScoreRetry(audioUrl, audioDataUrl, mimeType, question, partLabel, message) {
+    document.getElementById("ln-score-retry")?.remove();
+    const banner = document.createElement("div");
+    banner.id = "ln-score-retry";
+    banner.style.cssText = "position:fixed;left:50%;bottom:18px;transform:translateX(-50%);background:#fff;border:2px solid #d9381e;color:#171717;padding:.7rem .9rem;border-radius:.6rem;box-shadow:0 6px 24px rgba(0,0,0,.18);z-index:100000;font-family:Lexend,sans-serif;display:flex;align-items:center;gap:.6rem;flex-wrap:wrap;max-width:min(94vw,520px);font-size:.85rem;";
+    banner.innerHTML = `
+      <span style="flex:1;min-width:200px;">⚠ ${message || "Không chấm được"} — bản thu vẫn còn, bạn có thể thử lại.</span>
+      <audio controls preload="metadata" src="${audioUrl}" style="height:30px;flex:0 0 220px;max-width:100%;"></audio>
+      <button type="button" data-act="retry" style="background:#d9381e;color:#fff;border:none;border-radius:.35rem;padding:.45rem .9rem;font-weight:700;cursor:pointer;">Thử lại</button>
+      <button type="button" data-act="close" style="background:transparent;border:1px solid #d1d5db;border-radius:.35rem;padding:.45rem .7rem;cursor:pointer;color:#6b7280;">Đóng</button>`;
+    document.body.appendChild(banner);
+    banner.querySelector('[data-act="close"]').onclick = () => {
+      try { URL.revokeObjectURL(audioUrl); } catch {}
+      banner.remove();
+    };
+    banner.querySelector('[data-act="retry"]').onclick = async (ev) => {
+      const btn = ev.currentTarget;
+      if (btn.__lnBusy) return;
+      markBusy(btn, "record");
+      const ok = await submitScoreRequest({ audioUrl, audioDataUrl, mimeType, question, partLabel });
+      unmarkBusy(btn);
+      if (ok) banner.remove();
+    };
+  }
 
-    // Show "scoring" toast
+  // Single source of truth for posting audio → /api/gemini/score-speaking.
+  // Returns true on a real result, false otherwise (so the caller can keep the retry banner).
+  async function submitScoreRequest({ audioUrl, audioDataUrl, mimeType, question, partLabel }) {
+    document.getElementById("ln-score-retry")?.remove();
     const toast = document.createElement("div");
-    toast.style.cssText = "position:fixed;top:1rem;right:1rem;background:#d9381e;color:white;padding:.8rem 1.2rem;border-radius:.5rem;z-index:10000;font-family:Lexend,sans-serif;";
-    toast.textContent = "⏳ Đang chấm điểm...";
+    toast.style.cssText = "position:fixed;top:1rem;right:1rem;background:#d9381e;color:white;padding:.8rem 1.2rem;border-radius:.5rem;z-index:10000;font-family:Lexend,sans-serif;display:inline-flex;align-items:center;gap:.5rem;";
+    toast.innerHTML = '<span style="display:inline-block;width:.85rem;height:.85rem;border:2px solid #fff;border-top-color:transparent;border-radius:50%;animation:ln-spin .9s linear infinite;"></span> Đang chấm điểm…';
     document.body.appendChild(toast);
+
+    // Client-side abort just before Netlify's hard ceiling so we surface a useful error.
+    const controller = new AbortController();
+    const abortMs = 26000;
+    const abortTimer = setTimeout(() => controller.abort(new Error("client-timeout")), abortMs);
 
     try {
       const r = await fetch("/api/gemini/score-speaking", {
         method: "POST",
         headers: { "Content-Type": "application/json", "X-LN-Client-Sync": "1" },
+        signal: controller.signal,
         body: JSON.stringify({
           apiKey: getKey(),
           question, part: partLabel,
@@ -2436,19 +2510,26 @@
           note: localStorage.getItem("ln.userNote") || ""
         })
       });
-      if (!r.ok) throw new Error("Không gọi được API chấm điểm: HTTP " + r.status);
+      clearTimeout(abortTimer);
+      if (!r.ok) {
+        const code = r.status;
+        const hint = code === 504 || code === 408
+          ? "Server quá hạn (Part 2 audio dài) — hãy nói ngắn hơn hoặc thử lại."
+          : "Không gọi được API chấm điểm (HTTP " + code + ").";
+        toast.remove();
+        showScoreRetry(audioUrl, audioDataUrl, mimeType, question, partLabel, hint);
+        return false;
+      }
       const data = await r.json();
       const modelName = String(data.model || data.provider || "");
       const isFallback = data.provider === "mock" || /local-fallback|mock/i.test(modelName) || !data.transcript || !data.criteria;
       if (isFallback) {
-        toast.textContent = "⚠ Chưa có kết quả thật từ audio nên không lưu. Kiểm tra API key/Gemini rồi ghi âm lại.";
-        setTimeout(() => toast.remove(), 5000);
-        try { URL.revokeObjectURL(audioUrl); } catch {}
-        return;
+        toast.remove();
+        showScoreRetry(audioUrl, audioDataUrl, mimeType, question, partLabel, "Audio chưa được chấm thật (kiểm tra API key/Gemini)");
+        return false;
       }
       toast.remove();
 
-      // Save to history
       LN.addAnswer({
         ts: Date.now(),
         __realAttempt: true,
@@ -2474,24 +2555,39 @@
         model: data.model || data.provider
       });
 
-      // Pipe the user's recording into renderScoreResult so the ▶ buttons can replay it
       data.__realAttempt = true;
       data.question = question;
       data.part = partLabel;
       data.audioDataUrl = audioDataUrl;
       data.audioUrl = audioUrl;
       renderScoreResult(data);
-      // Notify user: data saved to cloud
       const cloudToast = Object.assign(document.createElement("div"), {
         textContent: "☁️ Đã lưu kết quả lên cloud",
         style: "position:fixed;bottom:20px;right:20px;background:#1a7f37;color:#fff;padding:8px 16px;border-radius:8px;font-size:13px;z-index:99999;opacity:0.95;transition:opacity .5s;"
       });
       document.body.appendChild(cloudToast);
       setTimeout(() => { cloudToast.style.opacity = "0"; setTimeout(() => cloudToast.remove(), 600); }, 3000);
+      return true;
     } catch (e) {
-      toast.textContent = "❌ " + e.message;
-      setTimeout(() => toast.remove(), 4000);
+      clearTimeout(abortTimer);
+      toast.remove();
+      const isAbort = e?.name === "AbortError" || /timeout/i.test(String(e?.message || ""));
+      const msg = isAbort
+        ? "Mạng/Server quá hạn — hãy thử lại (audio đã giữ)."
+        : ("Lỗi chấm điểm: " + (e?.message || e));
+      showScoreRetry(audioUrl, audioDataUrl, mimeType, question, partLabel, msg);
+      return false;
     }
+  }
+
+  async function scoreAndSave(blob) {
+    const audioUrl = URL.createObjectURL(blob);
+    const audioDataUrl = await blobToBase64(blob);
+    const mimeType = blob.type || REC_STATE.mimeType || "audio/webm";
+    const detail = parseDetailRoute?.();
+    const question = (detail?.question || getQuestionFromPage()).trim();
+    const partLabel = detail?.part || ("PART " + ((location.pathname.match(/PART%20(\d)|PART\s*(\d)|part(\d)/i) || [])[1] || (location.pathname.match(/PART%20(\d)|PART\s*(\d)|part(\d)/i) || [])[2] || (location.pathname.match(/PART%20(\d)|PART\s*(\d)|part(\d)/i) || [])[3] || "1"));
+    await submitScoreRequest({ audioUrl, audioDataUrl, mimeType, question, partLabel });
   }
 
   // ──────────────── History playback panel ────────────────
@@ -2894,12 +2990,15 @@
     overlay.querySelector("#ln-note-x").onclick = () => overlay.remove();
     overlay.querySelector("#ln-note-cancel").onclick = () => overlay.remove();
     overlay.addEventListener("click", (e) => { if (e.target === overlay) overlay.remove(); });
-    overlay.querySelector("#ln-note-gen").onclick = async () => {
-      const btn = overlay.querySelector("#ln-note-gen");
-      btn.textContent = "Đang tạo...";
-      btn.disabled = true;
-      await assistGemini("note", btn);
-      overlay.remove();
+    overlay.querySelector("#ln-note-gen").onclick = async (ev) => {
+      const btn = ev.currentTarget;
+      if (btn.__lnBusy) return;
+      try {
+        await assistGemini("note", btn);
+      } finally {
+        // Modal closes after assist completes (success or failure); guard cleanup is handled by assistGemini's finally block.
+        overlay.remove();
+      }
     };
   }
 
@@ -3988,6 +4087,34 @@
     });
   }
 
+  function syncDetailPartBadge(detail) {
+    const partNum = (() => {
+      const m = String(detail?.part || "").match(/(\d)/);
+      if (m) return m[1];
+      const m2 = decodeURIComponent(location.pathname).match(/PART\s*(\d)/i) || decodeURIComponent(location.pathname).match(/part(\d)/i);
+      return m2 ? m2[1] : "1";
+    })();
+    const targetHref = "/question-answer/part" + partNum;
+    const targetText = "PART " + partNum;
+    document.querySelectorAll('.breadcrumbs a[href*="/question-answer/part"]').forEach((a) => {
+      const href = a.getAttribute("href") || "";
+      if (!/\/question-answer\/part\d/i.test(href)) return;
+      a.setAttribute("href", targetHref);
+      // Replace just the trailing text node so the leading <svg> badge icon survives.
+      let replaced = false;
+      a.childNodes.forEach((n) => {
+        if (n.nodeType === Node.TEXT_NODE && /PART\s*\d/i.test(n.textContent || "")) {
+          n.textContent = n.textContent.replace(/PART\s*\d/i, targetText);
+          replaced = true;
+        }
+      });
+      if (!replaced) {
+        // Fallback: append a fresh label if no part text node exists yet.
+        a.appendChild(document.createTextNode(" " + targetText));
+      }
+    });
+  }
+
   function patchQuestionDetailChrome() {
     const detail = parseDetailRoute();
     if (!detail) return;
@@ -3998,6 +4125,11 @@
     document.getElementById("lnDetailFooterNav")?.remove();
     document.querySelectorAll(".ln-hide-breadcrumb").forEach(el => el.classList.remove("ln-hide-breadcrumb"));
     document.getElementById("lnInlineQuestion")?.remove();
+
+    // The scraped HTML hard-codes "PART 1" in the breadcrumb badge regardless of
+    // which Part is actually open. Realign it with the current route so users
+    // on Part 2 / 3 don't see a misleading "PART 1" link.
+    syncDetailPartBadge(detail);
 
     // Phương án 1: dùng header/footer gốc của Svelte, không inject thêm header/footer clone.
     wireDetailQuestionNav(detail);

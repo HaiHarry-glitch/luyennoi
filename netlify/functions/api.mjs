@@ -91,29 +91,48 @@ async function supabaseRest(path, { method = "GET", body, token = "" } = {}) {
   return data;
 }
 
-async function callGemini({ apiKey, model, prompt, responseJson = false, audioBase64 = "", mimeType = "audio/webm", fallbackModels }) {
+async function callGemini({ apiKey, model, prompt, responseJson = false, audioBase64 = "", mimeType = "audio/webm", fallbackModels, perCallTimeoutMs }) {
   const keyPool = [...new Set([apiKey, ...(process.env.GEMINI_API_KEYS || "").split(",")].map((k) => k.trim()).filter(Boolean))];
   if (!keyPool.length) throw new Error("Missing Gemini API key");
   const base = fallbackModels || GEMINI_MODELS;
-  const modelList = model ? [model, ...base.filter((m) => m !== model)] : base;
+  let modelList = model ? [model, ...base.filter((m) => m !== model)] : base;
+  // Audio scoring (Part 2 etc.) can take 15-20 s per Gemini call. With Netlify's
+  // 26 s ceiling, iterating multiple fallbacks always blows past the timeout
+  // and surfaces a useless 504. Limit audio calls to a single attempt per key.
+  if (audioBase64) modelList = modelList.slice(0, 1);
+  const callTimeoutMs = Number(perCallTimeoutMs) || (audioBase64 ? 22000 : 15000);
   let lastError = "";
   for (const m of modelList) {
     for (const key of keyPool) {
       const url = `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(m)}:generateContent?key=${encodeURIComponent(key)}`;
-      const response = await fetch(url, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          contents: [{
-            role: "user",
-            parts: [
-              { text: prompt },
-              ...(audioBase64 ? [{ inline_data: { mime_type: mimeType, data: audioBase64 } }] : [])
-            ]
-          }],
-          generationConfig: responseJson ? { responseMimeType: "application/json" } : {}
-        })
-      });
+      const controller = new AbortController();
+      const timer = setTimeout(() => controller.abort(), callTimeoutMs);
+      let response;
+      try {
+        response = await fetch(url, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          signal: controller.signal,
+          body: JSON.stringify({
+            contents: [{
+              role: "user",
+              parts: [
+                { text: prompt },
+                ...(audioBase64 ? [{ inline_data: { mime_type: mimeType, data: audioBase64 } }] : [])
+              ]
+            }],
+            generationConfig: responseJson ? { responseMimeType: "application/json" } : {}
+          })
+        });
+      } catch (err) {
+        clearTimeout(timer);
+        lastError = err?.name === "AbortError" ? `Gemini timed out after ${callTimeoutMs}ms` : (err?.message || "Gemini network error");
+        // Audio calls only get one shot anyway — bail immediately so the
+        // function returns with time to spare for the JSON response.
+        if (audioBase64) break;
+        continue;
+      }
+      clearTimeout(timer);
       const data = await response.json().catch(() => ({}));
       if (response.ok) {
         return {
