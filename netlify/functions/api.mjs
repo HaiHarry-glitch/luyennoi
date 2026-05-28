@@ -1,3 +1,7 @@
+import { randomUUID } from "node:crypto";
+import { buildScorePrompt, applyOverallFloor } from "./_lib/score.mjs";
+import { readScoreJobStatus, writeScoreJobStatus } from "./_lib/score-jobs.mjs";
+
 const SUPABASE_URL = (process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.SUPABASE_URL || "https://gxjgkwebrxzcawqkxmbt.supabase.co").replace(/\/+$/, "");
 const SUPABASE_PUBLISHABLE_KEY = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY || process.env.SUPABASE_PUBLISHABLE_KEY || "sb_publishable_ktG6l3TaDDppl9n6flBuZg_3THO38Dp";
 const GEMINI_MODELS = [
@@ -91,18 +95,24 @@ async function supabaseRest(path, { method = "GET", body, token = "" } = {}) {
   return data;
 }
 
-async function callGemini({ apiKey, model, prompt, responseJson = false, audioBase64 = "", mimeType = "audio/webm", fallbackModels, perCallTimeoutMs }) {
+export async function callGemini({ apiKey, model, prompt, responseJson = false, audioBase64 = "", mimeType = "audio/webm", fallbackModels, perCallTimeoutMs, totalBudgetMs }) {
   const keyPool = [...new Set([apiKey, ...(process.env.GEMINI_API_KEYS || "").split(",")].map((k) => k.trim()).filter(Boolean))];
   if (!keyPool.length) throw new Error("Missing Gemini API key");
   const base = fallbackModels || GEMINI_MODELS;
   let modelList = model ? [model, ...base.filter((m) => m !== model)] : base;
-  // Audio scoring is the slow path. Budget total time under Netlify's 26 s
-  // ceiling and allow one fast fallback if the primary model returns a quick
-  // error (auth / 404 / rate limit) — but never if it times out.
-  const audioTotalBudgetMs = 24000;
+  // Audio scoring is the slow path. Caller can pass `totalBudgetMs` to extend
+  // the time window — Background Functions on Netlify can run up to 15 min,
+  // so the Background Function path passes a much larger budget. The default
+  // 25 s budget keeps the synchronous /api/gemini/score-speaking endpoint
+  // under Netlify's 26 s function ceiling.
+  const audioTotalBudgetMs = Number(totalBudgetMs) || 25000;
   const audioStart = Date.now();
   if (audioBase64) modelList = modelList.slice(0, 3);
-  const defaultCallMs = audioBase64 ? 20000 : 15000;
+  // Per-call timeout scales with the total budget so a Background Function
+  // with a 10 min budget can wait far longer for any single Gemini call.
+  const defaultCallMs = audioBase64
+    ? Math.min(audioTotalBudgetMs - 1000, 180000) // never wait longer than 3 min on a single call
+    : 15000;
   let lastError = "";
   for (let mi = 0; mi < modelList.length; mi++) {
     const m = modelList[mi];
@@ -110,8 +120,10 @@ async function callGemini({ apiKey, model, prompt, responseJson = false, audioBa
       let callTimeoutMs = Number(perCallTimeoutMs) || defaultCallMs;
       if (audioBase64) {
         const remaining = audioTotalBudgetMs - (Date.now() - audioStart);
-        if (remaining <= 4000) { lastError = lastError || "Audio time budget exhausted"; break; }
-        callTimeoutMs = Math.min(callTimeoutMs, remaining - 1500);
+        if (remaining <= 3000) { lastError = lastError || "Audio time budget exhausted"; break; }
+        // Only cap the per-call timeout when remaining time is tight.
+        // Otherwise keep the full 22 s window the primary attempt used to have.
+        callTimeoutMs = Math.min(callTimeoutMs, remaining - 500);
       }
       const url = `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(m)}:generateContent?key=${encodeURIComponent(key)}`;
       const controller = new AbortController();
@@ -154,10 +166,11 @@ async function callGemini({ apiKey, model, prompt, responseJson = false, audioBa
       lastError = data?.error?.message || `Gemini HTTP ${response.status} (model ${m})`;
       // For audio: if the call returned a real HTTP error fast (no timeout),
       // try the next model — that's exactly when the primary model is
-      // unavailable / 404 / 401 / rate-limited.
+      // unavailable / 404 / 401 / rate-limited. We bail out only when the
+      // call itself ate more than half the total budget.
       if (audioBase64) {
         const spent = Date.now() - callStart;
-        if (spent > 15000) throw new Error(lastError);
+        if (spent > audioTotalBudgetMs / 2) throw new Error(lastError);
         continue;
       }
       if (![429, 500, 502, 503, 504].includes(response.status)) break;
@@ -413,7 +426,7 @@ Return ONLY this JSON:
 
 // Purpose-based model routing — assigns first-try model by task type.
 // callGemini still falls back to the full GEMINI_MODELS list on errors.
-const MODELS_BY_PURPOSE = {
+export const MODELS_BY_PURPOSE = {
   // 🎤 Chấm phát âm (audio scoring) — Part 1/2/3 + Full Test
   pronunciation: ["gemini-3.5-flash", "gemini-3-flash-preview", "gemini-3.1-pro-preview"],
   // 💡 Sinh ý / câu mẫu (sample, note, expand, cuecards)
@@ -427,7 +440,7 @@ function purposeForKind(kind) {
   if (kind === "vocab" || kind === "extract" || kind === "translate" || kind === "pronun") return "dictionary";
   return "ideas"; // sample, note, expand, cuecards, ...
 }
-function pickModelForKind(kind) {
+export function pickModelForKind(kind) {
   const group = MODELS_BY_PURPOSE[purposeForKind(kind)] || GEMINI_MODELS;
   return group[0];
 }
@@ -579,6 +592,34 @@ Return ONLY this JSON (criterion scores integer 1-9 or "?" if not assessable; ov
   } catch (error) {
     return json(200, { ...fallbackScore(body.question || "", body.transcript || ""), warning: error.message });
   }
+}
+
+async function handleScoreStart(event) {
+  const body = parseBody(event);
+  if (!body.clientHasApiKey && !(process.env.GEMINI_API_KEYS || "").trim()) {
+    return json(400, { ok: false, error: "Missing Gemini API key" });
+  }
+  const jobId = randomUUID();
+  const now = new Date().toISOString();
+  const auth = getAuthInfo(event);
+  await writeScoreJobStatus(jobId, {
+    status: "queued",
+    userId: auth.userId,
+    createdAt: now,
+    progress: "queued"
+  });
+  return json(202, {
+    ok: true,
+    jobId,
+    status: "queued",
+    backgroundUrl: "/api/gemini/score-speaking/background"
+  });
+}
+
+async function handleScoreStatus(event, jobId) {
+  const status = await readScoreJobStatus(jobId);
+  if (!status) return json(404, { ok: false, error: "Score job not found" });
+  return json(200, { ok: true, ...status });
 }
 
 async function handleSession(event, action, id = "") {
@@ -904,6 +945,9 @@ export async function handler(event) {
     }
     if (method === "GET" && path === "/auth/user") return handleAuthUser(event);
     if (method === "POST" && path === "/gemini/assist") return handleAssist(event);
+    if (method === "POST" && path === "/gemini/score-speaking/start") return handleScoreStart(event);
+    const scoreStatus = path.match(/^\/gemini\/score-speaking\/status\/([^/]+)$/);
+    if (method === "GET" && scoreStatus) return handleScoreStatus(event, scoreStatus[1]);
     if (method === "POST" && path === "/gemini/score-speaking") return handleScore(event);
     if (method === "POST" && path === "/gemini/score-word") return handleScoreWord(event);
     if (method === "POST" && path === "/gemini/word-timings") return handleWordTimings(event);

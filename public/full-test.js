@@ -1057,6 +1057,78 @@
     return { band, criteria: avgCrit, count: scoredArr.length };
   }
 
+  async function scoreSpeakingAnswer(ans, partLabel, b64) {
+    const audioBase64 = b64.split(",")[1] || b64;
+    const payload = {
+      apiKey: getKey(), model: getModel(),
+      question: ans.question, part: partLabel,
+      audioBase64,
+      mimeType: "audio/webm",
+      note: "FULL TEST. Give GENERAL (not personal) feedback in Vietnamese — avoid phrasing like 'I think', 'mình thấy bạn...'. Be objective and concise.",
+    };
+    const trySyncScore = async () => {
+      const controller = new AbortController();
+      const timer = setTimeout(() => controller.abort(new Error("client-timeout")), 26000);
+      try {
+        const r = await fetch("/api/gemini/score-speaking", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          signal: controller.signal,
+          body: JSON.stringify(payload),
+        });
+        clearTimeout(timer);
+        const data = await r.json();
+        const isFallback = data.provider === "mock" || !data.transcript || !data.criteria;
+        return isFallback ? null : data;
+      } finally {
+        clearTimeout(timer);
+      }
+    };
+    const useAsyncFirst = partLabel === "PART 2" || b64.length > 1800000;
+    if (!useAsyncFirst) {
+      try {
+        const data = await trySyncScore();
+        if (data) return data;
+      } catch (e) {
+        if (!(e?.name === "AbortError" || /timeout/i.test(String(e?.message || "")))) throw e;
+      }
+    }
+
+    const started = await fetch("/api/gemini/score-speaking/start", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ clientHasApiKey: !!payload.apiKey })
+    });
+    if (!started.ok) {
+      const data = await trySyncScore();
+      if (data) return data;
+      throw new Error("Không tạo được job chấm điểm (HTTP " + started.status + ")");
+    }
+    const job = await started.json();
+    if (!job?.jobId) throw new Error("Server không trả jobId chấm điểm");
+    const kicked = await fetch(job.backgroundUrl || "/api/gemini/score-speaking/background", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ jobId: job.jobId, payload })
+    });
+    if (!kicked.ok) {
+      const data = await trySyncScore();
+      if (data) return data;
+      throw new Error("Không chạy được job nền (HTTP " + kicked.status + ")");
+    }
+
+    const startedAt = Date.now();
+    while (Date.now() - startedAt < 660000) {
+      await new Promise((resolve) => setTimeout(resolve, 3000));
+      const r = await fetch("/api/gemini/score-speaking/status/" + encodeURIComponent(job.jobId), { cache: "no-store" });
+      if (!r.ok) continue;
+      const status = await r.json();
+      if (status.status === "done" && status.result) return status.result;
+      if (status.status === "error") throw new Error(status.error || "Gemini chấm nền thất bại");
+    }
+    throw new Error("Chấm nền quá lâu");
+  }
+
   // Apply strict caps per IELTS rules.
   function applyCaps(part2Agg, part2Duration, part3Agg, part3Combined) {
     // Part 2 cap: under 2 minutes (120s) → cap band at 5
@@ -1155,18 +1227,7 @@
       root.querySelector("#ft-score-bar").style.width = Math.round((i / total) * 100) + "%";
       try {
         const b64 = await blobToBase64(ans.blob);
-        const r = await fetch("/api/gemini/score-speaking", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            apiKey: getKey(), model: getModel(),
-            question: ans.question, part: partLabel,
-            audioBase64: b64.split(",")[1] || b64,
-            mimeType: "audio/webm",
-            note: "FULL TEST. Give GENERAL (not personal) feedback in Vietnamese — avoid phrasing like 'I think', 'mình thấy bạn...'. Be objective and concise.",
-          }),
-        });
-        const data = await r.json();
+        const data = await scoreSpeakingAnswer(ans, partLabel, b64);
         scored.push({ ...ans, score: data });
         // Save into per-question history so it appears in that question's detail
         if (data?.criteria) saveToPerQuestionHistory(ans, data);

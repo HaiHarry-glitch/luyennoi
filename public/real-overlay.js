@@ -2605,6 +2605,92 @@
     };
   }
 
+  function showScoreDoneToast() {
+    const cloudToast = Object.assign(document.createElement("div"), {
+      textContent: "☁️ Đã lưu kết quả lên cloud",
+      style: "position:fixed;bottom:20px;right:20px;background:#1a7f37;color:#fff;padding:8px 16px;border-radius:8px;font-size:13px;z-index:99999;opacity:0.95;transition:opacity .5s;"
+    });
+    document.body.appendChild(cloudToast);
+    setTimeout(() => { cloudToast.style.opacity = "0"; setTimeout(() => cloudToast.remove(), 600); }, 3000);
+  }
+
+  function applyScoreResult(data, audioUrl, audioDataUrl, mimeType, question, partLabel) {
+    try {
+      LN.addAnswer({
+        ts: Date.now(),
+        __realAttempt: true,
+        question,
+        part: partLabel,
+        section: String(partLabel || "").toLowerCase().replace(/\s+/g, ""),
+        url: location.pathname,
+        mimeType,
+        overall: data.overall,
+        transcript: data.transcript,
+        rewrittenAnswer: data.rewrittenAnswer,
+        criteria: data.criteria,
+        feedback: data.feedback,
+        suggestions: data.suggestions,
+        pronunciationIssues: data.pronunciationIssues,
+        grammarIssues: data.grammarIssues,
+        vocabularyIssues: data.vocabularyIssues,
+        spellingIssues: data.spellingIssues,
+        fluencyPauses: data.fluencyPauses,
+        environmentWarning: data.environmentWarning,
+        warning: data.warning,
+        model: data.model || data.provider
+      });
+    } catch (stateErr) {
+      console.warn("[ln-state] skipped local userState save", stateErr?.message || stateErr);
+    }
+
+    data.__realAttempt = true;
+    data.question = question;
+    data.part = partLabel;
+    data.audioDataUrl = audioDataUrl;
+    data.audioUrl = audioUrl;
+    renderScoreResult(data);
+    showScoreDoneToast();
+  }
+
+  async function startAsyncScoreJob({ apiKey, audioUrl, audioDataUrl, mimeType, question, partLabel, toast }) {
+    const payload = {
+      apiKey,
+      question, part: partLabel,
+      audioBase64: audioDataUrl.split(",")[1] || audioDataUrl,
+      mimeType,
+      note: localStorage.getItem("ln.userNote") || ""
+    };
+    const started = await fetch("/api/gemini/score-speaking/start", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ clientHasApiKey: !!apiKey })
+    });
+    if (!started.ok) throw new Error("Không tạo được job chấm điểm (HTTP " + started.status + ")");
+    const job = await started.json();
+    if (!job?.jobId) throw new Error("Server không trả jobId chấm điểm");
+    toast.innerHTML = '<span style="display:inline-block;width:.85rem;height:.85rem;border:2px solid #fff;border-top-color:transparent;border-radius:50%;animation:ln-spin .9s linear infinite;"></span> Audio dài — đang chấm nền…';
+    const kicked = await fetch(job.backgroundUrl || "/api/gemini/score-speaking/background", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ jobId: job.jobId, payload })
+    });
+    if (!kicked.ok) throw new Error("Không chạy được job nền (HTTP " + kicked.status + ")");
+
+    const startedAt = Date.now();
+    while (Date.now() - startedAt < 660000) {
+      await new Promise((resolve) => setTimeout(resolve, 3000));
+      const r = await fetch("/api/gemini/score-speaking/status/" + encodeURIComponent(job.jobId), { cache: "no-store" });
+      if (!r.ok) continue;
+      const status = await r.json();
+      if (status.status === "done" && status.result) {
+        applyScoreResult(status.result, audioUrl, audioDataUrl, mimeType, question, partLabel);
+        return true;
+      }
+      if (status.status === "error") throw new Error(status.error || "Gemini chấm nền thất bại");
+    }
+    throw new Error("Chấm nền quá lâu — audio vẫn còn, bạn có thể thử lại.");
+  }
+
   // Single source of truth for posting audio → /api/gemini/score-speaking.
   // Returns true on a real result, false otherwise (so the caller can keep the retry banner).
   async function submitScoreRequest({ audioUrl, audioDataUrl, mimeType, question, partLabel }) {
@@ -2619,6 +2705,24 @@
     toast.style.cssText = "position:fixed;top:1rem;right:1rem;background:#d9381e;color:white;padding:.8rem 1.2rem;border-radius:.5rem;z-index:10000;font-family:Lexend,sans-serif;display:inline-flex;align-items:center;gap:.5rem;";
     toast.innerHTML = '<span style="display:inline-block;width:.85rem;height:.85rem;border:2px solid #fff;border-top-color:transparent;border-radius:50%;animation:ln-spin .9s linear infinite;"></span> Đang chấm điểm…';
     document.body.appendChild(toast);
+
+    const useAsyncFirst = /^PART\s*2/i.test(String(partLabel || "")) || (audioDataUrl || "").length > 1800000;
+    if (useAsyncFirst) {
+      try {
+        const ok = await startAsyncScoreJob({ apiKey, audioUrl, audioDataUrl, mimeType, question, partLabel, toast });
+        toast.remove();
+        return ok;
+      } catch (e) {
+        if (/Không tạo được job|Server không trả jobId|Không chạy được job nền/i.test(String(e?.message || e))) {
+          console.warn("[ln-score] async start failed, falling back to sync", e?.message || e);
+          toast.innerHTML = '<span style="display:inline-block;width:.85rem;height:.85rem;border:2px solid #fff;border-top-color:transparent;border-radius:50%;animation:ln-spin .9s linear infinite;"></span> Đang chấm điểm…';
+        } else {
+          toast.remove();
+          showScoreRetry(audioUrl, audioDataUrl, mimeType, question, partLabel, "Lỗi chấm nền: " + (e?.message || e));
+          return false;
+        }
+      }
+    }
 
     // Client-side abort just before Netlify's hard ceiling so we surface a useful error.
     const controller = new AbortController();
@@ -2641,6 +2745,11 @@
       clearTimeout(abortTimer);
       if (!r.ok) {
         const code = r.status;
+        if (code === 504 || code === 408) {
+          const ok = await startAsyncScoreJob({ apiKey, audioUrl, audioDataUrl, mimeType, question, partLabel, toast });
+          toast.remove();
+          return ok;
+        }
         const hint = code === 504 || code === 408
           ? "Server quá hạn (Part 2 audio dài) — hãy nói ngắn hơn hoặc thử lại."
           : "Không gọi được API chấm điểm (HTTP " + code + ").";
@@ -2652,7 +2761,6 @@
       const modelName = String(data.model || data.provider || "");
       const isFallback = data.provider === "mock" || /local-fallback|mock/i.test(modelName) || !data.transcript || !data.criteria;
       if (isFallback) {
-        toast.remove();
         const warn = String(data?.warning || "").trim();
         let hint = "Gemini chưa trả kết quả thật cho audio này — thử lại nhé.";
         if (/timed?\s*out|timeout|aborted/i.test(warn)) hint = "Gemini quá hạn (audio dài) — thử lại hoặc nói ngắn gọn hơn.";
@@ -2660,56 +2768,38 @@
         else if (/429|quota|rate/i.test(warn)) hint = "Gemini đang giới hạn (rate-limit) — đợi ít phút rồi thử lại.";
         else if (/safety|blocked/i.test(warn)) hint = "Audio bị Gemini chặn vì safety — thử nói lại nội dung khác.";
         else if (warn) hint = "Gemini lỗi: " + warn.slice(0, 160);
+        if (/timed?\s*out|timeout|aborted/i.test(warn)) {
+          const ok = await startAsyncScoreJob({ apiKey, audioUrl, audioDataUrl, mimeType, question, partLabel, toast });
+          toast.remove();
+          return ok;
+        }
+        toast.remove();
         showScoreRetry(audioUrl, audioDataUrl, mimeType, question, partLabel, hint);
         return false;
       }
       toast.remove();
 
-      try {
-        LN.addAnswer({
-          ts: Date.now(),
-          __realAttempt: true,
-          question,
-          part: partLabel,
-          section: String(partLabel || "").toLowerCase().replace(/\s+/g, ""),
-          url: location.pathname,
-          mimeType,
-          overall: data.overall,
-          transcript: data.transcript,
-          rewrittenAnswer: data.rewrittenAnswer,
-          criteria: data.criteria,
-          feedback: data.feedback,
-          suggestions: data.suggestions,
-          pronunciationIssues: data.pronunciationIssues,
-          grammarIssues: data.grammarIssues,
-          vocabularyIssues: data.vocabularyIssues,
-          spellingIssues: data.spellingIssues,
-          fluencyPauses: data.fluencyPauses,
-          environmentWarning: data.environmentWarning,
-          warning: data.warning,
-          model: data.model || data.provider
-        });
-      } catch (stateErr) {
-        console.warn("[ln-state] skipped local userState save", stateErr?.message || stateErr);
-      }
-
-      data.__realAttempt = true;
-      data.question = question;
-      data.part = partLabel;
-      data.audioDataUrl = audioDataUrl;
-      data.audioUrl = audioUrl;
-      renderScoreResult(data);
-      const cloudToast = Object.assign(document.createElement("div"), {
-        textContent: "☁️ Đã lưu kết quả lên cloud",
-        style: "position:fixed;bottom:20px;right:20px;background:#1a7f37;color:#fff;padding:8px 16px;border-radius:8px;font-size:13px;z-index:99999;opacity:0.95;transition:opacity .5s;"
-      });
-      document.body.appendChild(cloudToast);
-      setTimeout(() => { cloudToast.style.opacity = "0"; setTimeout(() => cloudToast.remove(), 600); }, 3000);
+      applyScoreResult(data, audioUrl, audioDataUrl, mimeType, question, partLabel);
       return true;
     } catch (e) {
       clearTimeout(abortTimer);
       toast.remove();
       const isAbort = e?.name === "AbortError" || /timeout/i.test(String(e?.message || ""));
+      if (isAbort) {
+        const bgToast = document.body.appendChild(Object.assign(document.createElement("div"), {
+          style: "position:fixed;top:1rem;right:1rem;background:#d9381e;color:white;padding:.8rem 1.2rem;border-radius:.5rem;z-index:10000;font-family:Lexend,sans-serif;display:inline-flex;align-items:center;gap:.5rem;",
+          innerHTML: '<span style="display:inline-block;width:.85rem;height:.85rem;border:2px solid #fff;border-top-color:transparent;border-radius:50%;animation:ln-spin .9s linear infinite;"></span> Chuyển sang chấm nền…'
+        }));
+        try {
+          const ok = await startAsyncScoreJob({ apiKey, audioUrl, audioDataUrl, mimeType, question, partLabel, toast: bgToast });
+          bgToast.remove();
+          return ok;
+        } catch (bgErr) {
+          bgToast.remove();
+          showScoreRetry(audioUrl, audioDataUrl, mimeType, question, partLabel, "Lỗi chấm nền: " + (bgErr?.message || bgErr));
+          return false;
+        }
+      }
       const msg = isAbort
         ? "Mạng/Server quá hạn — hãy thử lại (audio đã giữ)."
         : ("Lỗi chấm điểm: " + (e?.message || e));

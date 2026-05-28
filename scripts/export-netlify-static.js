@@ -4,7 +4,7 @@ import { dirname, join } from "node:path";
 const root = process.cwd();
 const publicDir = join(root, "public");
 const realDir = join(publicDir, "real");
-const ASSET_VERSION = "storage-cache-v3";
+const ASSET_VERSION = "async-score-v1";
 
 // ── Mojibake fix map (same as real-overlay.js fixMojibakeText) ──
 const MOJIBAKE = [
@@ -164,7 +164,8 @@ function versionAssets(html) {
   return html
     .replace(/(["'])\/auth\.js(?:\?[^"']*)?\1/g, `$1/auth.js?v=${ASSET_VERSION}$1`)
     .replace(/(["'])\/real-overlay\.js(?:\?[^"']*)?\1/g, `$1/real-overlay.js?v=${ASSET_VERSION}$1`)
-    .replace(/(["'])\/sidebar\.js(?:\?[^"']*)?\1/g, `$1/sidebar.js?v=${ASSET_VERSION}$1`);
+    .replace(/(["'])\/sidebar\.js(?:\?[^"']*)?\1/g, `$1/sidebar.js?v=${ASSET_VERSION}$1`)
+    .replace(/(["'])\/full-test\.js(?:\?[^"']*)?\1/g, `$1/full-test.js?v=${ASSET_VERSION}$1`);
 }
 
 function wrapInLuyennoiShell(homeHtml, mountHtml, extraScripts = []) {
@@ -236,7 +237,7 @@ async function main() {
   for (const [route, file] of Object.entries(routeMap)) {
     let html = await readReal(file);
     if (file === "take-test-full.html" && !html.includes("/full-test.js")) {
-      html = html.replace("</body>", '<script src="/full-test.js" defer></script></body>');
+      html = html.replace("</body>", `<script src="/full-test.js?v=${ASSET_VERSION}" defer></script></body>`);
     }
     await writeRoute(route, html, { skipOverlay: NO_OVERLAY.has(file) });
   }

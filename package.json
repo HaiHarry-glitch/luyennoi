@@ -9,6 +9,9 @@
     "crawl:firecrawl": "node scripts/crawl-firecrawl.js",
     "crawl:playwright": "node scripts/crawl-playwright.js"
   },
+  "dependencies": {
+    "@netlify/blobs": "^9.1.2"
+  },
   "devDependencies": {
     "playwright": "^1.52.0"
   }
