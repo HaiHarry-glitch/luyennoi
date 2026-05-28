@@ -12,6 +12,16 @@
   timeout = 26
 
 [[redirects]]
+  from = "/favicon.ico"
+  to = "/real/favicon.svg"
+  status = 200
+
+[[redirects]]
+  from = "/favicon.svg"
+  to = "/real/favicon.svg"
+  status = 200
+
+[[redirects]]
   from = "/api/*"
   to = "/.netlify/functions/api/:splat"
   status = 200

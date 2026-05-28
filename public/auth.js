@@ -4,6 +4,10 @@
 
   const ACCESS_COOKIE = "ln_sb_access";
   const MAX_AGE = 60 * 60 * 24 * 30;
+  const SCORE_HISTORY_PREFIX = "ln.scoreHistory:";
+  const SCORE_HISTORY_INDEX_KEY = "ln.scoreHistoryIndex";
+  const MAX_LOCAL_SCORE_QUESTIONS = 30;
+  const MAX_LOCAL_SCORE_ATTEMPTS_PER_Q = 3;
 
   function setCookie(name, value, maxAge = MAX_AGE) {
     document.cookie = `${name}=${encodeURIComponent(value || "")}; Path=/; Max-Age=${maxAge}; SameSite=Lax`;
@@ -35,54 +39,137 @@
     return window.__lnSupabase;
   }
 
+  // localStorage caps at ~5MB per origin in most browsers. Spreading raw_score_json
+  // (transcript + grammar/vocab/pronun issues) for 500 questions explodes well past
+  // that, especially when local entries already store base64 audio. Whittle down each
+  // entry to just what the score panel needs and cap entries per question.
+  const MAX_SUPA_ENTRIES_PER_Q = 8;
+  function trimSupabaseAttempt(row) {
+    const raw = row.raw_score_json || {};
+    return {
+      ts: new Date(row.created_at).getTime(),
+      overall: row.score_overall,
+      transcript: row.transcript || raw.transcript || "",
+      audioPath: row.audio_path || "",
+      criteria: {
+        fluency: row.score_fluency,
+        vocabulary: row.score_vocab,
+        grammar: row.score_grammar,
+        pronunciation: row.score_pronunciation,
+      },
+      rewrittenAnswer: raw.rewrittenAnswer || "",
+      feedback: raw.feedback || "",
+      pronunciationIssues: Array.isArray(raw.pronunciationIssues) ? raw.pronunciationIssues.slice(0, 12) : [],
+      grammarIssues: Array.isArray(raw.grammarIssues) ? raw.grammarIssues.slice(0, 12) : [],
+      vocabularyIssues: Array.isArray(raw.vocabularyIssues) ? raw.vocabularyIssues.slice(0, 12) : [],
+      spellingIssues: Array.isArray(raw.spellingIssues) ? raw.spellingIssues.slice(0, 8) : [],
+      fluencyPauses: Array.isArray(raw.fluencyPauses) ? raw.fluencyPauses.slice(0, 8) : [],
+      part: row.part || raw.part || "",
+      model: raw.model || "",
+      environmentWarning: raw.environmentWarning || "",
+      warning: raw.warning || "",
+      __fromSupabase: true,
+    };
+  }
+
+  function safeSetItem(key, value) {
+    try { localStorage.setItem(key, value); return true; }
+    catch (e) {
+      if (e?.name !== "QuotaExceededError" && e?.code !== 22) throw e;
+      return false;
+    }
+  }
+
+  function trimLocalScoreEntry(entry = {}) {
+    const {
+      audioDataUrl, audioUrl, raw,
+      pronunciationIssues, grammarIssues, vocabularyIssues, spellingIssues, fluencyPauses,
+      ...rest
+    } = entry || {};
+    return {
+      ...rest,
+      transcript: String(rest.transcript || "").slice(0, 700),
+      rewrittenAnswer: String(rest.rewrittenAnswer || "").slice(0, 900),
+      feedback: String(rest.feedback || "").slice(0, 900),
+      suggestions: Array.isArray(rest.suggestions) ? rest.suggestions.slice(0, 4) : rest.suggestions,
+      pronunciationIssues: Array.isArray(pronunciationIssues) ? pronunciationIssues.slice(0, 5) : [],
+      grammarIssues: Array.isArray(grammarIssues) ? grammarIssues.slice(0, 5) : [],
+      vocabularyIssues: Array.isArray(vocabularyIssues) ? vocabularyIssues.slice(0, 5) : [],
+      spellingIssues: Array.isArray(spellingIssues) ? spellingIssues.slice(0, 4) : [],
+      fluencyPauses: Array.isArray(fluencyPauses) ? fluencyPauses.slice(0, 4) : [],
+    };
+  }
+
+  function cleanupLocalScoreCache() {
+    try {
+      const entries = [];
+      for (let i = localStorage.length - 1; i >= 0; i--) {
+        const key = localStorage.key(i);
+        if (!key || !key.startsWith(SCORE_HISTORY_PREFIX)) continue;
+        let arr = [];
+        try { arr = JSON.parse(localStorage.getItem(key) || "[]"); } catch {}
+        const slim = (Array.isArray(arr) ? arr : [])
+          .filter((item) => item?.__realAttempt && item?.transcript && item?.criteria)
+          .slice(0, MAX_LOCAL_SCORE_ATTEMPTS_PER_Q)
+          .map(trimLocalScoreEntry);
+        if (!slim.length) {
+          try { localStorage.removeItem(key); } catch {}
+          continue;
+        }
+        safeSetItem(key, JSON.stringify(slim));
+        entries.push([key, Number(slim[0]?.ts || slim[0]?.created_at || 0) || 0]);
+      }
+      entries.sort((a, b) => b[1] - a[1]);
+      const keep = new Set(entries.slice(0, MAX_LOCAL_SCORE_QUESTIONS).map(([key]) => key));
+      const idx = {};
+      for (const [key, ts] of entries) {
+        if (keep.has(key)) idx[key] = ts || Date.now();
+        else {
+          try { localStorage.removeItem(key); } catch {}
+        }
+      }
+      safeSetItem(SCORE_HISTORY_INDEX_KEY, JSON.stringify(idx));
+    } catch {}
+  }
+
+  // When the storage quota is hit, evict the oldest scoreHistory keys until
+  // setItem succeeds. As a final safety, drop heavy fields from the payload.
+  function setScoreHistoryWithEviction(key, arr) {
+    const tryWrite = (entries) => safeSetItem(key, JSON.stringify(entries));
+    if (tryWrite(arr)) return true;
+    // 1. Evict oldest other ln.scoreHistory: keys (keep the active key).
+    const candidates = [];
+    for (let i = 0; i < localStorage.length; i++) {
+      const k = localStorage.key(i);
+      if (k && k.startsWith("ln.scoreHistory:") && k !== key) candidates.push(k);
+    }
+    candidates.sort((a, b) => {
+      const aTs = (() => { try { return JSON.parse(localStorage.getItem(a) || "[]")[0]?.ts || 0; } catch { return 0; } })();
+      const bTs = (() => { try { return JSON.parse(localStorage.getItem(b) || "[]")[0]?.ts || 0; } catch { return 0; } })();
+      return aTs - bTs;
+    });
+    for (const k of candidates) {
+      localStorage.removeItem(k);
+      if (tryWrite(arr)) return true;
+    }
+    // 2. Last resort: drop heavy fields and retry.
+    const slim = arr.slice(0, MAX_SUPA_ENTRIES_PER_Q).map((entry) => ({
+      ts: entry.ts,
+      overall: entry.overall,
+      criteria: entry.criteria,
+      part: entry.part,
+      transcript: (entry.transcript || "").slice(0, 600),
+      __fromSupabase: !!entry.__fromSupabase,
+    }));
+    return tryWrite(slim);
+  }
+
   async function syncPracticeAttemptsFromSupabase(client, userId) {
     if (!client || !userId) return 0;
     try {
-      const { data, error } = await client
-        .from("practice_attempts")
-        .select("prompt_text,part,transcript,score_overall,score_fluency,score_vocab,score_grammar,score_pronunciation,raw_score_json,created_at,audio_path")
-        .eq("user_id", userId)
-        .order("created_at", { ascending: false })
-        .limit(500);
-      if (error) { console.warn("[sync attempts]", error.message); return 0; }
-      if (!Array.isArray(data) || !data.length) return 0;
-      // Group by question (prompt_text)
-      const byQuestion = {};
-      for (const row of data) {
-        const q = (row.prompt_text || "").trim();
-        if (!q) continue;
-        const item = {
-          ts: new Date(row.created_at).getTime(),
-          overall: row.score_overall,
-          transcript: row.transcript || "",
-          audioPath: row.audio_path || "",
-          criteria: {
-            fluency: row.score_fluency,
-            vocabulary: row.score_vocab,
-            grammar: row.score_grammar,
-            pronunciation: row.score_pronunciation,
-          },
-          part: row.part || "",
-          __fromSupabase: true,
-          ...(row.raw_score_json || {}),
-        };
-        (byQuestion[q] = byQuestion[q] || []).push(item);
-      }
-      let count = 0;
-      for (const [q, arr] of Object.entries(byQuestion)) {
-        const key = "ln.scoreHistory:" + encodeURIComponent(q);
-        // Merge with existing local entries (keep both, dedupe by ts)
-        let existing = [];
-        try { existing = JSON.parse(localStorage.getItem(key) || "[]"); } catch {}
-        const seen = new Set(arr.map(x => x.ts));
-        const merged = [...arr, ...existing.filter(x => !seen.has(x.ts))]
-          .sort((a, b) => (b.ts || 0) - (a.ts || 0));
-        localStorage.setItem(key, JSON.stringify(merged));
-        count += arr.length;
-      }
-      console.log(`[ln-sync] Restored ${count} practice attempts from Supabase`);
-      window.dispatchEvent(new CustomEvent("ln-data-synced", { detail: { count } }));
-      return count;
+      cleanupLocalScoreCache();
+      window.dispatchEvent(new CustomEvent("ln-data-synced", { detail: { count: 0, dropped: 0, cloudOnly: true } }));
+      return 0;
     } catch (e) {
       console.warn("[ln-sync] failed:", e);
       return 0;
@@ -100,10 +187,10 @@
       if (error) { console.warn("[profile settings]", error.message); return null; }
       const keys = Array.isArray(data?.gemini_api_keys) ? data.gemini_api_keys.filter(Boolean) : [];
       if (keys.length) {
-        localStorage.setItem("luyennoi.geminiKeys", JSON.stringify(keys));
-        localStorage.setItem("luyennoi.geminiKey", keys[0]);
+        safeSetItem("luyennoi.geminiKeys", JSON.stringify(keys));
+        safeSetItem("luyennoi.geminiKey", keys[0]);
       }
-      if (data?.gemini_model) localStorage.setItem("luyennoi.geminiModel", data.gemini_model);
+      if (data?.gemini_model) safeSetItem("luyennoi.geminiModel", data.gemini_model);
       window.dispatchEvent(new CustomEvent("ln-profile-settings-synced", { detail: { keys: keys.length, model: data?.gemini_model || "" } }));
       return data;
     } catch (e) {
@@ -134,15 +221,14 @@
       try {
         const user = session.user || {};
         const meta = user.user_metadata || {};
-        localStorage.setItem("ln.user", JSON.stringify({
+        safeSetItem("ln.user", JSON.stringify({
           id: user.id,
           email: user.email,
           name: meta.full_name || meta.name || user.email || "Học viên",
           avatar_url: meta.avatar_url || meta.picture || "",
           authenticated: true,
         }));
-        localStorage.setItem("ln.authenticated", "1");
-        // Background fetch user history from Supabase (don't block UI)
+        safeSetItem("ln.authenticated", "1");
         if (window.__lnSupabase && user.id) {
           syncPracticeAttemptsFromSupabase(window.__lnSupabase, user.id);
           syncProfileSettingsFromSupabase(window.__lnSupabase, user.id);
@@ -199,6 +285,8 @@
   window.LNAuth = { getClient, initAuth, loginWithGoogle, logout, syncProfileSettingsFromSupabase, saveProfileSettings };
   window.loginWithGoogle = loginWithGoogle;
   window.logout = logout;
+
+  cleanupLocalScoreCache();
 
   if (document.readyState === "loading") {
     document.addEventListener("DOMContentLoaded", initAuth);

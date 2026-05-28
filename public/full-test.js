@@ -407,11 +407,28 @@
       return;
     }
 
-    // ── PART 1 — pick 3 random topics × N questions ──
-    const p1Topics = pickRandom(data.part1?.topics || [], 3);
+    // Read overlay-driven custom selection from the query string. The chooser
+    // modal on /take-test/home posts here e.g.
+    //   /take-test/part1?mode=custom&picked=Watch|Cars&perTopic=1
+    //   /take-test/part2?mode=custom&card=Person::Describe%20a%20person…
+    const url = new URL(location.href);
+    const customMode = url.searchParams.get("mode") === "custom";
+    const customPicked = (url.searchParams.get("picked") || "").split("|").map((s) => s.trim()).filter(Boolean);
+    const customPerTopic = Math.max(1, Math.min(5, Number(url.searchParams.get("perTopic") || 1)));
+    const customCardKey = url.searchParams.get("card") || "";
+
+    // ── PART 1 — custom or 3 random topics × N questions ──
+    let p1Topics;
+    if (customMode && customPicked.length && (PART_FILTER === "part1" || !PART_FILTER)) {
+      const pickedSet = new Set(customPicked);
+      p1Topics = (data.part1?.topics || []).filter((t) => pickedSet.has(t.title));
+    } else {
+      p1Topics = pickRandom(data.part1?.topics || [], 3);
+    }
+    const p1PerTopic = (customMode && PART_FILTER === "part1") ? customPerTopic : FT.questionCount;
     FT.questions.part1 = [];
     p1Topics.forEach(t => {
-      const qs = pickRandom(t.questions || [], FT.questionCount);
+      const qs = pickRandom(t.questions || [], p1PerTopic);
       qs.forEach((q, i) => {
         FT.questions.part1.push({
           section: "part1",
@@ -425,6 +442,7 @@
     // ── PART 2 & 3 — pull from rich forecast-map chunk if available ──
     let p2Card = null;
     let p3Questions = [];
+    const wantsCustomCard = customMode && customCardKey && (PART_FILTER === "part2" || PART_FILTER === "part3" || !PART_FILTER);
     if (Array.isArray(FT.part23Detailed) && FT.part23Detailed.length) {
       // Flatten all cards across topic groups (Person/Object/Activity/Place)
       const allCards = [];
@@ -432,7 +450,11 @@
         if (card.cueCards && card.questions) allCards.push({ ...card, group: g.topic });
       }));
       if (allCards.length) {
-        p2Card = allCards[Math.floor(Math.random() * allCards.length)];
+        if (wantsCustomCard) {
+          p2Card = allCards.find((c) => `${c.group}::${c.title}` === customCardKey) || allCards[0];
+        } else {
+          p2Card = allCards[Math.floor(Math.random() * allCards.length)];
+        }
         // Part 3 questions are EMBEDDED in the same card
         p3Questions = (p2Card.questions || []).slice(0, 5);
       }
@@ -443,7 +465,9 @@
       const flat = [];
       (data.part2?.topics || []).forEach(g => (g.questions || []).forEach(title => flat.push({ title, group: g.title })));
       if (flat.length) {
-        const pick = flat[Math.floor(Math.random() * flat.length)];
+        const pick = wantsCustomCard
+          ? (flat.find((f) => `${f.group}::${f.title}` === customCardKey) || flat[0])
+          : flat[Math.floor(Math.random() * flat.length)];
         p2Card = {
           title: pick.title,
           group: pick.group,

@@ -37,7 +37,110 @@
 
   const US_KEY = "ln.userState";
   function getUS() { try { return JSON.parse(localStorage.getItem(US_KEY)) || {}; } catch { return {}; } }
-  function saveUS(s) { try { localStorage.setItem(US_KEY, JSON.stringify(s)); } catch {} }
+  const SCORE_HISTORY_PREFIX = "ln.scoreHistory:";
+  const SCORE_HISTORY_INDEX_KEY = "ln.scoreHistoryIndex";
+  const MAX_LOCAL_SCORE_QUESTIONS = 30;
+  const MAX_LOCAL_SCORE_ATTEMPTS_PER_Q = 3;
+  function isStorageQuotaError(e) { return e?.name === "QuotaExceededError" || e?.code === 22 || /quota/i.test(String(e?.message || "")); }
+  function getLocalScoreIndex() {
+    try {
+      const idx = JSON.parse(localStorage.getItem(SCORE_HISTORY_INDEX_KEY) || "{}");
+      return idx && typeof idx === "object" && !Array.isArray(idx) ? idx : {};
+    } catch { return {}; }
+  }
+  function saveLocalScoreIndex(idx) {
+    try { localStorage.setItem(SCORE_HISTORY_INDEX_KEY, JSON.stringify(idx || {})); } catch {}
+  }
+  function readLocalScoreTs(key, idx = getLocalScoreIndex()) {
+    const fromIndex = Number(idx[key]);
+    if (Number.isFinite(fromIndex) && fromIndex > 0) return fromIndex;
+    try {
+      const arr = JSON.parse(localStorage.getItem(key) || "[]");
+      const first = Array.isArray(arr) ? arr[0] : null;
+      return Number(first?.ts || first?.created_at || 0) || 0;
+    } catch { return 0; }
+  }
+  function trimLocalScoreEntry(item = {}) {
+    const {
+      audioDataUrl, audioUrl, raw,
+      pronunciationIssues, grammarIssues, vocabularyIssues, spellingIssues, fluencyPauses,
+      ...rest
+    } = item || {};
+    return {
+      ...rest,
+      transcript: String(rest.transcript || "").slice(0, 700),
+      rewrittenAnswer: String(rest.rewrittenAnswer || "").slice(0, 900),
+      feedback: String(rest.feedback || "").slice(0, 900),
+      suggestions: Array.isArray(rest.suggestions) ? rest.suggestions.slice(0, 4) : rest.suggestions,
+      pronunciationIssues: Array.isArray(pronunciationIssues) ? pronunciationIssues.slice(0, 5) : [],
+      grammarIssues: Array.isArray(grammarIssues) ? grammarIssues.slice(0, 5) : [],
+      vocabularyIssues: Array.isArray(vocabularyIssues) ? vocabularyIssues.slice(0, 5) : [],
+      spellingIssues: Array.isArray(spellingIssues) ? spellingIssues.slice(0, 4) : [],
+      fluencyPauses: Array.isArray(fluencyPauses) ? fluencyPauses.slice(0, 4) : [],
+    };
+  }
+  function enforceLocalScoreLimit(keepKey = "") {
+    try {
+      const idx = getLocalScoreIndex();
+      const entries = [];
+      for (let i = localStorage.length - 1; i >= 0; i--) {
+        const k = localStorage.key(i);
+        if (!k || !k.startsWith(SCORE_HISTORY_PREFIX)) continue;
+        const ts = k === keepKey ? Date.now() : readLocalScoreTs(k, idx);
+        entries.push([k, ts]);
+        idx[k] = ts;
+      }
+      entries.sort((a, b) => b[1] - a[1]);
+      const keep = new Set(entries.slice(0, MAX_LOCAL_SCORE_QUESTIONS).map(([k]) => k));
+      if (keepKey) keep.add(keepKey);
+      for (const [k] of entries) {
+        if (keep.has(k)) continue;
+        try { localStorage.removeItem(k); } catch {}
+        delete idx[k];
+      }
+      Object.keys(idx).forEach((k) => { if (!k.startsWith(SCORE_HISTORY_PREFIX) || !localStorage.getItem(k)) delete idx[k]; });
+      saveLocalScoreIndex(idx);
+    } catch {}
+  }
+  function freeLocalScoreStorage(keepKey = "") {
+    try {
+      enforceLocalScoreLimit(keepKey);
+      const idx = getLocalScoreIndex();
+      const keys = [];
+      for (let i = localStorage.length - 1; i >= 0; i--) {
+        const k = localStorage.key(i);
+        if (k && k.startsWith(SCORE_HISTORY_PREFIX) && k !== keepKey) keys.push([k, readLocalScoreTs(k, idx)]);
+      }
+      keys.sort((a, b) => a[1] - b[1]).slice(0, Math.max(1, Math.ceil(keys.length / 3))).forEach(([k]) => { try { localStorage.removeItem(k); } catch {} });
+      if (keepKey && keepKey.startsWith(SCORE_HISTORY_PREFIX)) {
+        try {
+          const arr = JSON.parse(localStorage.getItem(keepKey) || "[]");
+          const slim = (Array.isArray(arr) ? arr : []).slice(0, MAX_LOCAL_SCORE_ATTEMPTS_PER_Q).map(trimLocalScoreEntry);
+          localStorage.setItem(keepKey, JSON.stringify(slim));
+        } catch {}
+      }
+      try {
+        const ft = JSON.parse(localStorage.getItem("ln.fullTestHistory") || "[]");
+        if (Array.isArray(ft) && ft.length > 8) {
+          localStorage.setItem("ln.fullTestHistory", JSON.stringify(ft.slice(0, 8).map((x) => ({ ...x, answers: [] }))));
+        }
+      } catch {}
+    } catch {}
+  }
+  function safeLocalSet(key, value) {
+    try { localStorage.setItem(key, value); if (key.startsWith(SCORE_HISTORY_PREFIX)) enforceLocalScoreLimit(key); return true; }
+    catch (e) {
+      if (!isStorageQuotaError(e)) return false;
+      freeLocalScoreStorage(key);
+      try { localStorage.setItem(key, value); if (key.startsWith(SCORE_HISTORY_PREFIX)) enforceLocalScoreLimit(key); return true; } catch {}
+      return false;
+    }
+  }
+  function saveBoundedScoreHistory(key, entries) {
+    const slim = (Array.isArray(entries) ? entries : []).slice(0, MAX_LOCAL_SCORE_ATTEMPTS_PER_Q).map(trimLocalScoreEntry);
+    return safeLocalSet(key, JSON.stringify(slim));
+  }
+  function saveUS(s) { safeLocalSet(US_KEY, JSON.stringify(s)); }
   function getKey() {
     try {
       const keys = JSON.parse(localStorage.getItem("luyennoi.geminiKeys") || "[]");
@@ -181,42 +284,43 @@
     try {
       const q = (d.question || getQuestionFromPage()).trim();
       const key = "ln.scoreHistory:" + encodeURIComponent(q);
-      const arr = JSON.parse(localStorage.getItem(key) || "[]");
       // Don't double-save when restoring from cache
       if (!d.__fromCache && d.__realAttempt) {
-        const { audioUrl, ...persistable } = d;
-        arr.unshift({ ts: Date.now(), question: q, ...persistable });
-        // Keep max 5 entries, only 3 newest retain audioDataUrl (saves ~1MB per question)
-        const trimmed = arr.slice(0, 5).map((item, idx) => idx < 3 ? item : ({ ...item, audioDataUrl: "" }));
+        const { audioUrl, audioDataUrl, ...persistable } = d;
+        let arr = [];
+        try { arr = JSON.parse(localStorage.getItem(key) || "[]"); } catch {}
+        const localAttempt = trimLocalScoreEntry({
+          ts: Date.now(),
+          question: q,
+          __realAttempt: true,
+          part: d.part || "",
+          ...persistable,
+          overall: d.overall ?? overall,
+          transcript: d.transcript || "",
+          criteria: d.criteria || {},
+          model: d.model || d.provider || "",
+        });
+        saveBoundedScoreHistory(key, [localAttempt, ...(Array.isArray(arr) ? arr : [])]);
         try {
-          localStorage.setItem(key, JSON.stringify(trimmed));
-        } catch (qe) {
-          // Quota: strip all audio except newest
-          const slim = trimmed.slice(0, 3).map((item, idx) => idx === 0 ? item : ({ ...item, audioDataUrl: "" }));
-          try { localStorage.setItem(key, JSON.stringify(slim)); } catch {}
-        }
-        // Push to Supabase so data persists across devices/browsers
-        try {
-          if (/(?:^|;\s*)ln_sb_access=/.test(document.cookie || "")) {
-            const crit = d.criteria || {};
-            fetch("/api/practice-attempts", {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({ attempts: [{
-                prompt_text: q,
-                part: d.part || "",
-                transcript: d.transcript || "",
-                score_overall: d.overall ?? computeOverallFloor(crit),
-                score_fluency: crit.fluency?.score ?? null,
-                score_vocab: crit.vocabulary?.score ?? null,
-                score_grammar: crit.grammar?.score ?? null,
-                score_pronunciation: crit.pronunciation?.score ?? null,
-                raw_score_json: persistable,
-                mode: "practice",
-                created_at: new Date().toISOString()
-              }]})
-            }).catch(function(){});
-          }
+          const crit = d.criteria || {};
+          realFetch("/api/practice-attempts", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ attempts: [{
+              prompt_text: q,
+              part: d.part || "",
+              transcript: d.transcript || "",
+              score_overall: d.overall ?? computeOverallFloor(crit),
+              score_fluency: crit.fluency?.score ?? null,
+              score_vocab: crit.vocabulary?.score ?? null,
+              score_grammar: crit.grammar?.score ?? null,
+              score_pronunciation: crit.pronunciation?.score ?? null,
+              raw_score_json: persistable,
+              gemini_model: persistable.model || "",
+              mode: "practice",
+              created_at: new Date().toISOString()
+            }]})
+          }).catch(function(){});
         } catch(pushErr){}
       }
     } catch {}
@@ -1004,9 +1108,9 @@
         try { arr = JSON.parse(localStorage.getItem(key) || "[]"); } catch { arr = []; }
         const real = arr.filter(item => {
           const modelName = String(item?.model || item?.provider || "");
-          return item?.__realAttempt && item?.audioDataUrl && item?.transcript && !/local-fallback|mock/i.test(modelName);
+          return item?.__realAttempt && item?.transcript && item?.criteria && !/local-fallback|mock/i.test(modelName);
         });
-        if (real.length) localStorage.setItem(key, JSON.stringify(real));
+        if (real.length) saveBoundedScoreHistory(key, real);
         else localStorage.removeItem(key);
       }
     } catch {}
@@ -1015,7 +1119,7 @@
       const hist = Array.isArray(s.history) ? s.history : [];
       s.history = hist.filter(item => {
         const modelName = String(item?.model || item?.provider || "");
-        return item?.__realAttempt && item?.audioDataUrl && item?.transcript && !/local-fallback|mock/i.test(modelName);
+        return item?.__realAttempt && item?.transcript && item?.criteria && !/local-fallback|mock/i.test(modelName);
       });
       s.answered = s.history.length;
       s.todayAnswered = Math.min(s.todayAnswered || 0, s.history.length);
@@ -1659,7 +1763,7 @@
         if (raw) {
           const arr = JSON.parse(raw).filter(item => {
             const modelName = String(item?.model || item?.provider || "");
-            return item?.__realAttempt && item?.audioDataUrl && item?.transcript && !/local-fallback|mock/i.test(modelName);
+            return item?.__realAttempt && item?.transcript && item?.criteria && !/local-fallback|mock/i.test(modelName);
           });
           if (!arr.length) return;
           // Render oldest first so unshift order matches (newest stays on top)
@@ -1754,13 +1858,26 @@
       try { return JSON.parse(localStorage.getItem("ln.userState") || "{}"); }
       catch { return {}; }
     },
-    set state(v) { localStorage.setItem("ln.userState", JSON.stringify(v)); },
+    set state(v) {
+      const json = JSON.stringify(v);
+      if (!safeLocalSet("ln.userState", json)) {
+        try {
+          const slim = { ...v, history: (v.history || []).slice(0, 20).map((h) => {
+            const { audioDataUrl, audioUrl, raw, pronunciationIssues, grammarIssues, vocabularyIssues, spellingIssues, fluencyPauses, ...rest } = h || {};
+            return { ...rest, transcript: String(rest.transcript || "").slice(0, 500) };
+          }) };
+          safeLocalSet("ln.userState", JSON.stringify(slim));
+        } catch {}
+      }
+    },
     get history() { return this.state.history || []; },
     addAnswer(rec) {
       const s = this.state;
       s.history = (s.history || []);
-      s.history.unshift(rec);
-      s.history = s.history.slice(0, 200);
+      const { audioDataUrl, audioUrl, raw, pronunciationIssues, grammarIssues, vocabularyIssues, spellingIssues, fluencyPauses, ...slimRec } = rec || {};
+      if (slimRec.transcript) slimRec.transcript = String(slimRec.transcript).slice(0, 500);
+      s.history.unshift(slimRec);
+      s.history = s.history.slice(0, 20);
       s.answered = (s.answered || 0) + 1;
       s.todayAnswered = (s.todayAnswered || 0) + 1;
       s.band = computePredictedBand();
@@ -1801,7 +1918,7 @@
       try { arr = JSON.parse(localStorage.getItem(k) || "[]"); } catch {}
       arr.forEach(a => {
         const modelName = String(a?.model || a?.provider || "");
-        if (a?.__realAttempt && a.audioDataUrl && typeof a.overall === "number" && !/local-fallback|mock/i.test(modelName)) allAttempts.push(a);
+        if (a?.__realAttempt && a.transcript && typeof a.overall === "number" && !/local-fallback|mock/i.test(modelName)) allAttempts.push(a);
       });
     }
     allAttempts.sort((a, b) => (b.ts || 0) - (a.ts || 0));
@@ -1849,7 +1966,7 @@
     try {
       (LN.history || []).forEach((a) => {
         const modelName = String(a?.model || a?.provider || "");
-        if (!a?.__realAttempt || !a.audioDataUrl || /local-fallback|mock/i.test(modelName)) return;
+        if (!a?.__realAttempt || !a.transcript || /local-fallback|mock/i.test(modelName)) return;
         attempts.push({
           ts: a.ts || a.createdAt || Date.now(),
           question: a.question || "Cau luyen tap",
@@ -1880,7 +1997,7 @@
         const arr = JSON.parse(localStorage.getItem(k) || "[]");
         arr.forEach((a) => {
           const modelName = String(a?.model || a?.provider || "");
-          if (!a?.__realAttempt || !a.audioDataUrl || /local-fallback|mock/i.test(modelName)) return;
+          if (!a?.__realAttempt || !a.transcript || /local-fallback|mock/i.test(modelName)) return;
           attempts.push({
             ...a,
             ts: a.ts || Date.now(),
@@ -2487,6 +2604,12 @@
   // Returns true on a real result, false otherwise (so the caller can keep the retry banner).
   async function submitScoreRequest({ audioUrl, audioDataUrl, mimeType, question, partLabel }) {
     document.getElementById("ln-score-retry")?.remove();
+    const apiKey = getKey();
+    if (!apiKey) {
+      showScoreRetry(audioUrl, audioDataUrl, mimeType, question, partLabel,
+        "Chưa cài API key Gemini — vào /settings để thêm key, audio đã được giữ.");
+      return false;
+    }
     const toast = document.createElement("div");
     toast.style.cssText = "position:fixed;top:1rem;right:1rem;background:#d9381e;color:white;padding:.8rem 1.2rem;border-radius:.5rem;z-index:10000;font-family:Lexend,sans-serif;display:inline-flex;align-items:center;gap:.5rem;";
     toast.innerHTML = '<span style="display:inline-block;width:.85rem;height:.85rem;border:2px solid #fff;border-top-color:transparent;border-radius:50%;animation:ln-spin .9s linear infinite;"></span> Đang chấm điểm…';
@@ -2503,7 +2626,7 @@
         headers: { "Content-Type": "application/json", "X-LN-Client-Sync": "1" },
         signal: controller.signal,
         body: JSON.stringify({
-          apiKey: getKey(),
+          apiKey,
           question, part: partLabel,
           audioBase64: audioDataUrl.split(",")[1] || audioDataUrl,
           mimeType,
@@ -2525,35 +2648,45 @@
       const isFallback = data.provider === "mock" || /local-fallback|mock/i.test(modelName) || !data.transcript || !data.criteria;
       if (isFallback) {
         toast.remove();
-        showScoreRetry(audioUrl, audioDataUrl, mimeType, question, partLabel, "Audio chưa được chấm thật (kiểm tra API key/Gemini)");
+        const warn = String(data?.warning || "").trim();
+        let hint = "Gemini chưa trả kết quả thật cho audio này — thử lại nhé.";
+        if (/timed?\s*out|timeout|aborted/i.test(warn)) hint = "Gemini quá hạn (audio dài) — thử lại hoặc nói ngắn gọn hơn.";
+        else if (/401|invalid|api[_ ]?key|API_KEY/i.test(warn)) hint = "API key Gemini không hợp lệ — kiểm tra lại trong /settings.";
+        else if (/429|quota|rate/i.test(warn)) hint = "Gemini đang giới hạn (rate-limit) — đợi ít phút rồi thử lại.";
+        else if (/safety|blocked/i.test(warn)) hint = "Audio bị Gemini chặn vì safety — thử nói lại nội dung khác.";
+        else if (warn) hint = "Gemini lỗi: " + warn.slice(0, 160);
+        showScoreRetry(audioUrl, audioDataUrl, mimeType, question, partLabel, hint);
         return false;
       }
       toast.remove();
 
-      LN.addAnswer({
-        ts: Date.now(),
-        __realAttempt: true,
-        question,
-        part: partLabel,
-        section: String(partLabel || "").toLowerCase().replace(/\s+/g, ""),
-        url: location.pathname,
-        audioDataUrl,
-        mimeType,
-        overall: data.overall,
-        transcript: data.transcript,
-        rewrittenAnswer: data.rewrittenAnswer,
-        criteria: data.criteria,
-        feedback: data.feedback,
-        suggestions: data.suggestions,
-        pronunciationIssues: data.pronunciationIssues,
-        grammarIssues: data.grammarIssues,
-        vocabularyIssues: data.vocabularyIssues,
-        spellingIssues: data.spellingIssues,
-        fluencyPauses: data.fluencyPauses,
-        environmentWarning: data.environmentWarning,
-        warning: data.warning,
-        model: data.model || data.provider
-      });
+      try {
+        LN.addAnswer({
+          ts: Date.now(),
+          __realAttempt: true,
+          question,
+          part: partLabel,
+          section: String(partLabel || "").toLowerCase().replace(/\s+/g, ""),
+          url: location.pathname,
+          mimeType,
+          overall: data.overall,
+          transcript: data.transcript,
+          rewrittenAnswer: data.rewrittenAnswer,
+          criteria: data.criteria,
+          feedback: data.feedback,
+          suggestions: data.suggestions,
+          pronunciationIssues: data.pronunciationIssues,
+          grammarIssues: data.grammarIssues,
+          vocabularyIssues: data.vocabularyIssues,
+          spellingIssues: data.spellingIssues,
+          fluencyPauses: data.fluencyPauses,
+          environmentWarning: data.environmentWarning,
+          warning: data.warning,
+          model: data.model || data.provider
+        });
+      } catch (stateErr) {
+        console.warn("[ln-state] skipped local userState save", stateErr?.message || stateErr);
+      }
 
       data.__realAttempt = true;
       data.question = question;
@@ -3444,7 +3577,7 @@
       try { arr = JSON.parse(localStorage.getItem(k) || "[]"); } catch {}
       arr.forEach(a => {
         const modelName = String(a?.model || a?.provider || "");
-        if (!a || !a.__realAttempt || !a.audioDataUrl || !a.transcript || /local-fallback|mock/i.test(modelName)) return;
+        if (!a || !a.__realAttempt || !a.transcript || /local-fallback|mock/i.test(modelName)) return;
         attempts.push({ ...a, question: q });
       });
     }
@@ -3617,6 +3750,241 @@
       });
     });
   }
+
+  // ──────────────── Append lesson 40-46 cards on pronun lesson pages ────────────────
+  // The static SvelteKit pronun.html (served on /alphafeature/pronun/lessonN/sectionM)
+  // ships a sidebar of lesson1-39 cards, but lessons_data now has 46 entries.
+  // Inject the missing 7 cards after lesson 39 so users can navigate to them.
+  function patchPronunIndexLessons() {
+    if (!/^\/alphafeature\/pronun(\/lesson\d+\/section\d+)?\/?$/i.test(location.pathname)) return;
+    if (document.__lnPronunCardsAppended) return;
+    const last = [...document.querySelectorAll(".collapse-title")].find((el) => /Bài\s*39\s*:/i.test(el.textContent || ""));
+    let lastCard = last?.closest(".collapse");
+    if (!lastCard) return; // index DOM hasn't hydrated yet
+    document.__lnPronunCardsAppended = true;
+    const NEW_LESSONS = [
+      { n: 40, phoneme: "ɔɪ", note: "Diphthong 'oy' (boy, toy)" },
+      { n: 41, phoneme: "ɑː", note: "Long 'ah' (father, calm)" },
+      { n: 42, phoneme: "ɪə", note: "Centring 'ear' (near, here)" },
+      { n: 43, phoneme: "eə", note: "Centring 'air' (where, hair)" },
+      { n: 44, phoneme: "ʊə", note: "Centring 'oor' (tour, sure)" },
+      { n: 45, phoneme: "aɪə", note: "Triphthong (fire, tired)" },
+      { n: 46, phoneme: "aʊə", note: "Triphthong (hour, power)" },
+    ];
+    for (const L of NEW_LESSONS) {
+      const card = document.createElement("div");
+      card.className = "collapse-arrow collapse mb-3 rounded-lg border border-base-300";
+      card.innerHTML = `
+        <input type="checkbox" id="lesson-${L.n - 1}">
+        <div class="collapse-title text-lg font-medium">Bài ${L.n}: Luyện âm /${L.phoneme}/ <span style="font-size:.7rem;color:#9ca3af;font-weight:400;margin-left:.5rem;">${L.note}</span></div>
+        <div class="collapse-content space-y-2">
+          <a href="/alphafeature/pronun/lesson${L.n}/section1" class="link-secondary block underline hover:text-primary">${L.n}.1 Hướng dẫn luyện âm /${L.phoneme}/</a>
+          <a href="/alphafeature/pronun/lesson${L.n}/section2" class="link-secondary block underline hover:text-primary">${L.n}.2 Luyện phát âm từ</a>
+          <a href="/alphafeature/pronun/lesson${L.n}/section3" class="link-secondary block underline hover:text-primary">${L.n}.3 Luyện phát âm câu</a>
+        </div>`;
+      lastCard.parentNode.insertBefore(card, lastCard.nextSibling);
+      lastCard = card; // chain — next iteration appends after this one
+    }
+  }
+
+  // ──────────────── Test summary card on /take-test/home (mini dashboard) ────────────────
+  function patchTakeTestSummary() {
+    if (!/^\/take-test(\/(home)?)?\/?$/.test(location.pathname)) return;
+    if (document.getElementById("ln-test-summary")) return;
+    let list = [];
+    try { list = JSON.parse(localStorage.getItem("ln.fullTestHistory") || "[]"); } catch {}
+    // Aggregate per-question attempts too (for users who only practiced individual questions).
+    let perQAttempts = 0, perQOverallSum = 0, perQCountWithBand = 0;
+    try {
+      for (let i = 0; i < localStorage.length; i++) {
+        const k = localStorage.key(i);
+        if (!k || !k.startsWith("ln.scoreHistory:")) continue;
+        let arr = [];
+        try { arr = JSON.parse(localStorage.getItem(k) || "[]"); } catch {}
+        for (const a of arr) {
+          if (a?.__realAttempt && typeof a.overall === "number") {
+            perQAttempts++;
+            perQOverallSum += a.overall;
+            perQCountWithBand++;
+          }
+        }
+      }
+    } catch {}
+    const ftCount = list.length;
+    const ftAvg = ftCount ? (list.reduce((s, t) => s + (t.overall || 0), 0) / ftCount) : 0;
+    const ftBest = ftCount ? Math.max(...list.map(t => t.overall || 0)) : 0;
+    const perQAvg = perQCountWithBand ? (perQOverallSum / perQCountWithBand) : 0;
+    if (!ftCount && !perQAttempts) return; // nothing to summarise — keep "Chưa có bài thi nào"
+    const target = [...document.querySelectorAll("h1,h2,h3")].find(h => /thi thử/i.test(h.textContent || ""));
+    if (!target) return;
+    const card = document.createElement("div");
+    card.id = "ln-test-summary";
+    card.style.cssText = "max-width:42rem;margin:1rem 0 1.4rem;padding:1rem 1.1rem;background:linear-gradient(135deg,#fff8e1,#ffffff);border:2px solid #171717;border-radius:.7rem;box-shadow:4px 4px 0 #171717;font-family:Lexend,sans-serif;";
+    const block = (label, value, subtitle) => `
+      <div style="text-align:center;flex:1;min-width:90px;">
+        <div style="font:900 1.6rem/1 Inter,sans-serif;color:#d9381e;">${value}</div>
+        <div style="font-size:.7rem;color:#6b7280;text-transform:uppercase;letter-spacing:.06em;margin-top:.15rem;">${label}</div>
+        ${subtitle ? `<div style="font-size:.65rem;color:#9ca3af;margin-top:.1rem;">${subtitle}</div>` : ""}
+      </div>`;
+    card.innerHTML = `
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:.7rem;flex-wrap:wrap;gap:.5rem;">
+        <div>
+          <div style="font:900 .85rem/1 'JetBrains Mono',monospace;color:#171717;text-transform:uppercase;letter-spacing:.08em;">📊 Mini dashboard thi thử</div>
+          <div style="font-size:.78rem;color:#6b7280;margin-top:.15rem;">Tổng kết các lần luyện và thi gần đây.</div>
+        </div>
+        <a href="/question-answer" style="font-size:.78rem;color:#d9381e;font-weight:700;text-decoration:none;">Lịch sử chi tiết →</a>
+      </div>
+      <div style="display:flex;gap:.6rem;flex-wrap:wrap;background:#fff;border:1.5px solid #e5e7eb;border-radius:.5rem;padding:.7rem .5rem;">
+        ${block("Full Test", ftCount || "—", ftCount ? "Đã làm" : "Chưa thi")}
+        ${block("Band TB", ftCount ? ftAvg.toFixed(1) : "—", ftCount ? "Full Test" : "")}
+        ${block("Band cao nhất", ftCount ? ftBest.toFixed(1) : "—", ftCount ? "Full Test" : "")}
+        ${block("Câu đã chấm", perQAttempts || "—", perQAttempts ? `TB ${perQAvg.toFixed(1)}` : "")}
+      </div>
+    `;
+    target.closest("div, section")?.insertBefore(card, target.nextSibling);
+  }
+
+  // ──────────────── Custom selection modal for Thi PART X ────────────────
+  let __lnQuestionsCache = null;
+  async function loadQuestionsJsonOnce() {
+    if (__lnQuestionsCache) return __lnQuestionsCache;
+    try {
+      const r = await fetch("/data/questions.json");
+      __lnQuestionsCache = await r.json();
+    } catch { __lnQuestionsCache = { part1: { topics: [] }, part2: { topics: [] }, part3: { topics: [] } }; }
+    return __lnQuestionsCache;
+  }
+
+  function openTestPartChooser(part /* 1 | 2 | 3 */) {
+    document.getElementById("ln-test-chooser")?.remove();
+    const overlay = document.createElement("div");
+    overlay.id = "ln-test-chooser";
+    overlay.style.cssText = "position:fixed;inset:0;background:rgba(15,15,15,.45);z-index:99999;display:flex;align-items:center;justify-content:center;padding:1rem;";
+    const partUrl = `/take-test/part${part}`;
+    overlay.innerHTML = `
+      <div style="background:#fff;border:2px solid #171717;border-radius:.7rem;box-shadow:6px 6px 0 #171717;max-width:540px;width:100%;max-height:90vh;overflow:auto;padding:1.1rem;font-family:Lexend,sans-serif;">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:.8rem;">
+          <div>
+            <h3 style="margin:0;font:900 1.1rem/1.2 Fraunces,serif;color:#171717;">Thi PART ${part}</h3>
+            <p style="margin:.25rem 0 0;font-size:.78rem;color:#6b7280;">Chọn chế độ thi cho phần này.</p>
+          </div>
+          <button data-act="close" style="background:none;border:none;font-size:1.4rem;line-height:1;color:#9ca3af;cursor:pointer;">×</button>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:.6rem;margin-bottom:.6rem;">
+          <button data-act="standard" style="background:#fffbe6;border:2px solid #171717;border-radius:.45rem;padding:.85rem .7rem;text-align:left;cursor:pointer;">
+            <div style="font-weight:800;font-size:.92rem;color:#171717;">🎯 Thi thông thường</div>
+            <div style="font-size:.72rem;color:#6b7280;margin-top:.2rem;">Đề tự chọn ngẫu nhiên (3 topic × 3 câu).</div>
+          </button>
+          <button data-act="custom" style="background:#ffffff;border:2px solid #d9381e;border-radius:.45rem;padding:.85rem .7rem;text-align:left;cursor:pointer;">
+            <div style="font-weight:800;font-size:.92rem;color:#d9381e;">📋 Chọn đề & số câu</div>
+            <div style="font-size:.72rem;color:#6b7280;margin-top:.2rem;">Chọn topic + đặt số câu (vd 1 P1, 2 P2).</div>
+          </button>
+        </div>
+        <div id="ln-test-chooser-body" style="display:none;border-top:1.5px dashed #e5e7eb;padding-top:.7rem;"></div>
+        <div id="ln-test-chooser-foot" style="display:none;justify-content:flex-end;gap:.5rem;margin-top:.7rem;">
+          <button data-act="close" style="background:transparent;border:1.5px solid #d1d5db;border-radius:.4rem;padding:.45rem 1rem;cursor:pointer;color:#374151;">Huỷ</button>
+          <button data-act="start" style="background:#d9381e;color:#fff;border:none;border-radius:.4rem;padding:.45rem 1.1rem;font-weight:700;cursor:pointer;">Bắt đầu thi →</button>
+        </div>
+      </div>`;
+    document.body.appendChild(overlay);
+    overlay.addEventListener("click", (e) => { if (e.target === overlay) overlay.remove(); });
+    overlay.querySelectorAll('[data-act="close"]').forEach((b) => b.addEventListener("click", () => overlay.remove()));
+    overlay.querySelector('[data-act="standard"]').addEventListener("click", () => {
+      overlay.remove();
+      location.href = partUrl;
+    });
+    overlay.querySelector('[data-act="custom"]').addEventListener("click", async () => {
+      const body = overlay.querySelector("#ln-test-chooser-body");
+      const foot = overlay.querySelector("#ln-test-chooser-foot");
+      body.innerHTML = `<div style="text-align:center;color:#9ca3af;font-size:.85rem;padding:1rem;">⏳ Đang tải danh sách đề…</div>`;
+      body.style.display = "block";
+      foot.style.display = "flex";
+      const data = await loadQuestionsJsonOnce();
+      renderCustomSelection(body, foot, overlay, partUrl, part, data);
+    });
+  }
+
+  function renderCustomSelection(body, foot, overlay, partUrl, part, data) {
+    const sel = { picked: new Set(), perTopic: 1, cardKey: "" };
+    if (part === 1) {
+      const topics = (data.part1?.topics || []);
+      body.innerHTML = `
+        <div style="font-size:.85rem;font-weight:700;margin-bottom:.4rem;color:#171717;">Chọn topic Part 1 (đa lựa chọn):</div>
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:.35rem;max-height:240px;overflow:auto;padding:.4rem;border:1.5px solid #e5e7eb;border-radius:.4rem;background:#f9fafb;margin-bottom:.6rem;">
+          ${topics.map(t => `
+            <label style="display:flex;align-items:center;gap:.35rem;font-size:.78rem;padding:.25rem .35rem;background:#fff;border-radius:.3rem;cursor:pointer;">
+              <input type="checkbox" value="${escapeAttr(t.title)}" style="accent-color:#d9381e;">
+              <span style="flex:1;">${escapeHtml(t.title)} <small style="color:#9ca3af;">${(t.questions||[]).length}</small></span>
+            </label>`).join("")}
+        </div>
+        <div style="font-size:.85rem;font-weight:700;margin-bottom:.3rem;color:#171717;">Số câu mỗi topic:</div>
+        <div style="display:flex;gap:.4rem;flex-wrap:wrap;margin-bottom:.5rem;">
+          ${[1,2,3,4].map(n => `<button data-perq="${n}" style="background:${n===1?'#d9381e':'#fff'};color:${n===1?'#fff':'#171717'};border:1.5px solid #171717;border-radius:.35rem;padding:.3rem .8rem;font-weight:700;cursor:pointer;">${n} câu</button>`).join("")}
+        </div>
+        <div id="ln-pick-sum" style="font-size:.78rem;color:#6b7280;">Đã chọn 0 topic × 1 câu = 0 câu.</div>`;
+      body.querySelectorAll("input[type=checkbox]").forEach((c) => c.addEventListener("change", () => {
+        if (c.checked) sel.picked.add(c.value);
+        else sel.picked.delete(c.value);
+        body.querySelector("#ln-pick-sum").textContent = `Đã chọn ${sel.picked.size} topic × ${sel.perTopic} câu = ${sel.picked.size * sel.perTopic} câu.`;
+      }));
+      body.querySelectorAll("[data-perq]").forEach((b) => b.addEventListener("click", () => {
+        sel.perTopic = Number(b.dataset.perq) || 1;
+        body.querySelectorAll("[data-perq]").forEach((x) => {
+          const on = Number(x.dataset.perq) === sel.perTopic;
+          x.style.background = on ? "#d9381e" : "#fff";
+          x.style.color = on ? "#fff" : "#171717";
+        });
+        body.querySelector("#ln-pick-sum").textContent = `Đã chọn ${sel.picked.size} topic × ${sel.perTopic} câu = ${sel.picked.size * sel.perTopic} câu.`;
+      }));
+    } else {
+      // PART 2 / PART 3 — flat list of cue cards from questions.json (and forecast-map enriches at runtime).
+      const cards = (data.part2?.topics || []).flatMap(g => (g.questions || []).map(title => ({ group: g.title, title })));
+      body.innerHTML = `
+        <div style="font-size:.85rem;font-weight:700;margin-bottom:.4rem;color:#171717;">Chọn cue card${part === 3 ? " (P3 sẽ chạy 3 câu theo cue card này)" : ""}:</div>
+        <div style="max-height:280px;overflow:auto;padding:.3rem;border:1.5px solid #e5e7eb;border-radius:.4rem;background:#f9fafb;margin-bottom:.6rem;">
+          ${cards.map((c) => `
+            <label style="display:flex;align-items:center;gap:.4rem;font-size:.78rem;padding:.3rem .4rem;background:#fff;border-radius:.3rem;margin-bottom:.2rem;cursor:pointer;">
+              <input type="radio" name="ln-cue" value="${escapeAttr(c.group + '::' + c.title)}" style="accent-color:#d9381e;">
+              <span style="flex:1;"><b style="color:#d9381e;">${escapeHtml(c.group)}</b> · ${escapeHtml(c.title)}</span>
+            </label>`).join("")}
+        </div>
+        <div style="font-size:.78rem;color:#6b7280;">Chế độ chọn đề chỉ chạy đúng 1 cue card bạn đã chọn.</div>`;
+      body.querySelectorAll("input[name='ln-cue']").forEach((r) => r.addEventListener("change", () => { if (r.checked) sel.cardKey = r.value; }));
+    }
+    foot.querySelector('[data-act="start"]').addEventListener("click", () => {
+      if (part === 1) {
+        if (!sel.picked.size) { alert("Chọn ít nhất 1 topic."); return; }
+        const params = new URLSearchParams({
+          mode: "custom",
+          picked: [...sel.picked].join("|"),
+          perTopic: String(sel.perTopic)
+        });
+        location.href = `${partUrl}?${params.toString()}`;
+      } else {
+        if (!sel.cardKey) { alert("Chọn 1 cue card."); return; }
+        const params = new URLSearchParams({ mode: "custom", card: sel.cardKey });
+        location.href = `${partUrl}?${params.toString()}`;
+      }
+    });
+  }
+
+  function wireTakeTestPartLinks() {
+    if (!/^\/take-test(\/(home)?)?\/?$/.test(location.pathname)) return;
+    document.querySelectorAll('a[href^="/take-test/part"]').forEach((a) => {
+      if (a.__lnPartChooser) return;
+      a.__lnPartChooser = true;
+      a.addEventListener("click", (e) => {
+        const m = (a.getAttribute("href") || "").match(/\/take-test\/part(\d)/);
+        if (!m) return;
+        e.preventDefault();
+        e.stopPropagation();
+        openTestPartChooser(Number(m[1]));
+      }, true);
+    });
+  }
+
+  function escapeAttr(s) { return String(s || "").replace(/"/g, "&quot;").replace(/&/g, "&amp;"); }
+  function escapeHtml(s) { return String(s || "").replace(/[&<>"']/g, (c) => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c])); }
 
   function patchPracticeChrome() {
     if (!/^\/question-answer(\/|$)/.test(location.pathname)) return;
@@ -4373,6 +4741,8 @@
     hideBangVangTab();
     patchStrictTestEntry();
     patchFullTestHistory();
+    patchTakeTestSummary();
+    wireTakeTestPartLinks();
     stripMockHistory();
     wireBandTooltip();
     injectLuyenDocNav();
@@ -4414,6 +4784,9 @@
           hideBangVangTab();
           patchStrictTestEntry();
           patchFullTestHistory();
+          patchTakeTestSummary();
+          wireTakeTestPartLinks();
+          patchPronunIndexLessons();
           stripMockHistory();
           wireBandTooltip();
           injectLuyenDocNav();

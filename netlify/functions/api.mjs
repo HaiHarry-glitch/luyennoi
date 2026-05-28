@@ -96,17 +96,27 @@ async function callGemini({ apiKey, model, prompt, responseJson = false, audioBa
   if (!keyPool.length) throw new Error("Missing Gemini API key");
   const base = fallbackModels || GEMINI_MODELS;
   let modelList = model ? [model, ...base.filter((m) => m !== model)] : base;
-  // Audio scoring (Part 2 etc.) can take 15-20 s per Gemini call. With Netlify's
-  // 26 s ceiling, iterating multiple fallbacks always blows past the timeout
-  // and surfaces a useless 504. Limit audio calls to a single attempt per key.
-  if (audioBase64) modelList = modelList.slice(0, 1);
-  const callTimeoutMs = Number(perCallTimeoutMs) || (audioBase64 ? 22000 : 15000);
+  // Audio scoring is the slow path. Budget total time under Netlify's 26 s
+  // ceiling and allow one fast fallback if the primary model returns a quick
+  // error (auth / 404 / rate limit) — but never if it times out.
+  const audioTotalBudgetMs = 24000;
+  const audioStart = Date.now();
+  if (audioBase64) modelList = modelList.slice(0, 3);
+  const defaultCallMs = audioBase64 ? 20000 : 15000;
   let lastError = "";
-  for (const m of modelList) {
+  for (let mi = 0; mi < modelList.length; mi++) {
+    const m = modelList[mi];
     for (const key of keyPool) {
+      let callTimeoutMs = Number(perCallTimeoutMs) || defaultCallMs;
+      if (audioBase64) {
+        const remaining = audioTotalBudgetMs - (Date.now() - audioStart);
+        if (remaining <= 4000) { lastError = lastError || "Audio time budget exhausted"; break; }
+        callTimeoutMs = Math.min(callTimeoutMs, remaining - 1500);
+      }
       const url = `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(m)}:generateContent?key=${encodeURIComponent(key)}`;
       const controller = new AbortController();
       const timer = setTimeout(() => controller.abort(), callTimeoutMs);
+      const callStart = Date.now();
       let response;
       try {
         response = await fetch(url, {
@@ -126,10 +136,11 @@ async function callGemini({ apiKey, model, prompt, responseJson = false, audioBa
         });
       } catch (err) {
         clearTimeout(timer);
-        lastError = err?.name === "AbortError" ? `Gemini timed out after ${callTimeoutMs}ms` : (err?.message || "Gemini network error");
-        // Audio calls only get one shot anyway — bail immediately so the
-        // function returns with time to spare for the JSON response.
-        if (audioBase64) break;
+        const isAbort = err?.name === "AbortError";
+        lastError = isAbort ? `Gemini timed out after ${callTimeoutMs}ms (model ${m})` : (err?.message || "Gemini network error");
+        // For audio, a timeout means we've burnt the budget — bail out.
+        // A non-timeout network error happened fast, so try the next model.
+        if (audioBase64 && isAbort) throw new Error(lastError);
         continue;
       }
       clearTimeout(timer);
@@ -140,7 +151,15 @@ async function callGemini({ apiKey, model, prompt, responseJson = false, audioBa
           text: (data?.candidates?.[0]?.content?.parts || []).map((p) => p.text || "").join("\n").replace(/^```json\s*/i, "").replace(/^```\s*/i, "").replace(/```$/i, "").trim()
         };
       }
-      lastError = data?.error?.message || `Gemini HTTP ${response.status}`;
+      lastError = data?.error?.message || `Gemini HTTP ${response.status} (model ${m})`;
+      // For audio: if the call returned a real HTTP error fast (no timeout),
+      // try the next model — that's exactly when the primary model is
+      // unavailable / 404 / 401 / rate-limited.
+      if (audioBase64) {
+        const spent = Date.now() - callStart;
+        if (spent > 15000) throw new Error(lastError);
+        continue;
+      }
       if (![429, 500, 502, 503, 504].includes(response.status)) break;
     }
   }
@@ -702,11 +721,16 @@ async function handleSyncAttempts(event) {
 
 async function handleScoreWord(event) {
   const body = parseBody(event);
-  const { apiKey, word = "", targetPhonetic = "", audioBase64 = "", mimeType = "audio/webm" } = body;
+  const { apiKey, word = "", targetPhonetic = "", targetPhoneme = "", focusOnly = false, audioBase64 = "", mimeType = "audio/webm" } = body;
   if (!audioBase64) return json(200, { score: "?", verdict: "Chưa có audio.", phoneticHeard: "", tips: "" });
+  // When the caller is a pronun-course lesson, focus the grader on ONE target
+  // phoneme (e.g. /p/) so other accent issues don't drown out the signal.
+  const focusBlock = focusOnly && targetPhoneme
+    ? `\n\nFOCUS-ONLY MODE — IMPORTANT:\n- The learner is drilling the SINGLE sound /${targetPhoneme}/ in this lesson.\n- Score how accurately they produced /${targetPhoneme}/ ONLY. Ignore other accent / vowel-length issues unless they completely block intelligibility.\n- The 'tips' field MUST address /${targetPhoneme}/ articulation (mouth/tongue position, voicing, common Vietnamese L1 substitution).\n- Set the score relative to /${targetPhoneme}/ accuracy, not overall accent.`
+    : "";
   const prompt = `You are a STRICT IELTS pronunciation coach scoring ONE word or short phrase.
 Target word/phrase: "${word}"
-Target IPA: ${targetPhonetic || "(unknown — infer standard pronunciation)"}
+Target IPA: ${targetPhonetic || "(unknown — infer standard pronunciation)"}${targetPhoneme ? `\nTarget phoneme being drilled: /${targetPhoneme}/` : ""}
 
 Listen to the audio. Score how accurately the speaker pronounced the target word/phrase on a 0-100 scale where:
 - 90-100 = native-like, perfect IPA match
@@ -714,14 +738,14 @@ Listen to the audio. Score how accurately the speaker pronounced the target word
 - 60-74  = understandable but noticeable errors on key phonemes
 - 40-59  = mispronounced, hard to recognise without context
 - 0-39   = wrong sound / unintelligible
-Be strict. Do NOT inflate. Penalise vowel length, stress, and consonant cluster errors.
+Be strict. Do NOT inflate. Penalise vowel length, stress, and consonant cluster errors.${focusBlock}
 
 Return ONLY JSON:
 {
   "score": number (0-100, integer),
   "phoneticHeard": string (IPA of what you heard),
   "verdict": string (1 short Vietnamese sentence),
-  "tips": string (1 short Vietnamese tip on the most off phoneme)
+  "tips": string (1 short Vietnamese tip on the most off phoneme${targetPhoneme ? ` — focus on /${targetPhoneme}/` : ""})
 }`;
   try {
     const { text, model } = await callGemini({ apiKey, model: pickModelForKind("score-word"), prompt, responseJson: true, audioBase64, mimeType, fallbackModels: MODELS_BY_PURPOSE.dictionary });
@@ -786,12 +810,15 @@ Return ONLY this JSON, no markdown:
 
 async function handleScoreSentence(event) {
   const body = parseBody(event);
-  const { apiKey, sentence = "", audioBase64 = "", mimeType = "audio/webm", context = "" } = body;
+  const { apiKey, sentence = "", audioBase64 = "", mimeType = "audio/webm", context = "", targetPhoneme = "", focusOnly = false } = body;
   if (!audioBase64) return json(200, { score: "?", verdict: "Chưa có audio.", phoneticHeard: "", tips: "" });
+  const focusBlock = focusOnly && targetPhoneme
+    ? `\n\nFOCUS-ONLY MODE — IMPORTANT:\n- The learner is drilling the SINGLE sound /${targetPhoneme}/ in this lesson.\n- Score how accurately they produced /${targetPhoneme}/ in EVERY word that contains it. Ignore other accent issues unless they break meaning.\n- 'worstWords' must be the words where /${targetPhoneme}/ was off the most.\n- 'tips' must address /${targetPhoneme}/ articulation (mouth/tongue, voicing, Vietnamese L1 substitution).`
+    : "";
   const prompt = context
     ? `You are an English speaking coach. Target sentence: "${sentence}"\n\n${context}\n\nListen to the audio carefully. Return ONLY valid JSON.`
     : `You are a STRICT IELTS pronunciation coach scoring a reading passage or short phrase.
-Target text: "${sentence}"
+Target text: "${sentence}"${targetPhoneme ? `\nTarget phoneme being drilled: /${targetPhoneme}/` : ""}
 
 Listen to the audio. Score how accurately the speaker pronounced the target text on a 0-100 scale where:
 - 90-100 = native-like, fluent, every word clear
@@ -799,14 +826,14 @@ Listen to the audio. Score how accurately the speaker pronounced the target text
 - 60-74  = understandable but multiple noticeable errors
 - 40-59  = hard to follow, mispronounced words
 - 0-39   = unintelligible / wrong
-Penalise connected speech failures, vowel length errors, stress errors, dropped consonants.
+Penalise connected speech failures, vowel length errors, stress errors, dropped consonants.${focusBlock}
 
 Return ONLY JSON:
 {
   "score": number (0-100, integer),
   "phoneticHeard": string (rough IPA of what you heard),
   "verdict": string (1 short Vietnamese sentence),
-  "tips": string (1 short Vietnamese tip on the biggest issue),
+  "tips": string (1 short Vietnamese tip on the biggest issue${targetPhoneme ? ` — focus on /${targetPhoneme}/` : ""}),
   "worstWords": [string] (up to 3 words that were pronounced worst, can be empty)
 }`;
   try {

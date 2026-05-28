@@ -4,6 +4,7 @@ import { dirname, join } from "node:path";
 const root = process.cwd();
 const publicDir = join(root, "public");
 const realDir = join(publicDir, "real");
+const ASSET_VERSION = "storage-cache-v3";
 
 // ── Mojibake fix map (same as real-overlay.js fixMojibakeText) ──
 const MOJIBAKE = [
@@ -126,6 +127,16 @@ function stripSvelteScripts(html) {
 }
 
 function injectOverlay(html) {
+  html = html
+    .replace(/<link[^>]+rel=["'](?:shortcut icon|icon|apple-touch-icon|mask-icon)["'][^>]*>/gi, "")
+    .replace(/<link[^>]+rel=["']manifest["'][^>]*>/gi, "")
+    .replace(/<meta[^>]+name=["']theme-color["'][^>]*>/gi, "");
+  const iconTag = `
+<link rel="icon" href="/real/favicon.svg?v=ln" type="image/svg+xml" sizes="any">
+<link rel="shortcut icon" href="/real/favicon.svg?v=ln" type="image/svg+xml">
+<link rel="apple-touch-icon" href="/real/favicon.png">
+<link rel="manifest" href="/real/manifest.webmanifest">
+<meta name="theme-color" content="#d9381e">`;
   const tag = `
 <meta charset="utf-8">
 <style id="ln-curtain-css">html.ln-loading body{opacity:0!important}html.ln-rdy body{opacity:1;transition:opacity .18s ease-out}html.ln-loading::before{content:"";position:fixed;inset:0;background:#fff;z-index:2147483647;pointer-events:none}html.ln-rdy::before{display:none}</style>
@@ -134,17 +145,26 @@ function injectOverlay(html) {
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Fraunces:opsz,wght@9..144,400;9..144,700;9..144,900&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="/neo-brutalism.css">
-<link rel="icon" href="/real/favicon.svg" type="image/svg+xml">
-<link rel="manifest" href="/real/manifest.webmanifest">
-<meta name="theme-color" content="#d9381e">
+${iconTag}
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"><\/script>
-<script src="/auth.js" defer><\/script>
-<script src="/sidebar.js"><\/script>
-<script src="/real-overlay.js"><\/script>`;
-  if (html.includes("/real-overlay.js")) return html;
+<script src="/auth.js?v=${ASSET_VERSION}" defer><\/script>
+<script src="/sidebar.js?v=${ASSET_VERSION}"><\/script>
+<script src="/real-overlay.js?v=${ASSET_VERSION}"><\/script>`;
+  if (html.includes("/real-overlay.js")) {
+    if (html.includes("<head>")) return html.replace("<head>", "<head>" + iconTag);
+    if (html.includes("<head ")) return html.replace(/(<head[^>]*>)/, "$1" + iconTag);
+    return iconTag + html;
+  }
   if (html.includes("<head>")) return html.replace("<head>", "<head>" + tag);
   if (html.includes("<head ")) return html.replace(/(<head[^>]*>)/, "$1" + tag);
   return tag + html;
+}
+
+function versionAssets(html) {
+  return html
+    .replace(/(["'])\/auth\.js(?:\?[^"']*)?\1/g, `$1/auth.js?v=${ASSET_VERSION}$1`)
+    .replace(/(["'])\/real-overlay\.js(?:\?[^"']*)?\1/g, `$1/real-overlay.js?v=${ASSET_VERSION}$1`)
+    .replace(/(["'])\/sidebar\.js(?:\?[^"']*)?\1/g, `$1/sidebar.js?v=${ASSET_VERSION}$1`);
 }
 
 function wrapInLuyennoiShell(homeHtml, mountHtml, extraScripts = []) {
@@ -173,7 +193,7 @@ const NO_OVERLAY = new Set(["../landing-new.html", "landing.html"]);
 async function writeRoute(route, html, { skipOverlay = false } = {}) {
   const outPath = route === "/" ? join(publicDir, "index.html") : join(publicDir, route.replace(/^\/+/, ""), "index.html");
   await mkdir(dirname(outPath), { recursive: true });
-  const final = skipOverlay ? html : stripSvelteScripts(injectOverlay(fixMojibake(html)));
+  const final = versionAssets(skipOverlay ? html : stripSvelteScripts(injectOverlay(fixMojibake(html))));
   await writeFile(outPath, final, "utf8");
   console.log(`[export] ${route} -> ${outPath}${skipOverlay ? " (no overlay)" : ""}`);
 }
@@ -256,7 +276,7 @@ async function main() {
   await mkdir(dirname(detailOut), { recursive: true });
   let detailFinal = stripSvelteScripts(injectOverlay(fixMojibake(detailHtml)));
   detailFinal = detailFinal.replace("</head>", substScript + "</head>");
-  await writeFile(detailOut, detailFinal, "utf8");
+  await writeFile(detailOut, versionAssets(detailFinal), "utf8");
   console.log(`[export] /question-answer/detail.html -> ${detailOut}`);
 
   const home = await readReal("home.html");

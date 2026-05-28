@@ -13,6 +13,7 @@ const SUPABASE_URL = (process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.SUPABA
 const SUPABASE_PUBLISHABLE_KEY = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY || process.env.SUPABASE_PUBLISHABLE_KEY || "sb_publishable_ktG6l3TaDDppl9n6flBuZg_3THO38Dp";
 const SUPABASE_ENABLED = Boolean(SUPABASE_URL && SUPABASE_PUBLISHABLE_KEY);
 const LOCAL_AUTH_GATE = process.env.LN_LOCAL_AUTH_GATE === "1";
+const ASSET_VERSION = "storage-cache-v3";
 
 // Load per-question Vietnamese translations (pre-scraped)
 let QUESTION_VI = {};
@@ -959,14 +960,17 @@ Return ONLY this JSON (criterion scores integer 1-9 or "?" if not assessable; ov
 // Single-word pronunciation scoring — standalone, no history persistence on client.
 async function handleGeminiScoreWord(req, res) {
   try {
-    const { apiKey, model, word = "", targetPhonetic = "", audioBase64 = "", mimeType = "audio/webm" } = await readJson(req);
+    const { apiKey, model, word = "", targetPhonetic = "", targetPhoneme = "", focusOnly = false, audioBase64 = "", mimeType = "audio/webm" } = await readJson(req);
     const hasKey = apiKey || SERVER_KEYS.length > 0;
     if (!hasKey) return sendJson(res, 200, { score: "?", verdict: "Chưa có API key.", phoneticHeard: "", tips: "" });
     if (!audioBase64) return sendJson(res, 200, { score: "?", verdict: "Chưa có audio.", phoneticHeard: "", tips: "" });
 
+    const focusBlock = focusOnly && targetPhoneme
+      ? `\n\nFOCUS-ONLY MODE — IMPORTANT:\n- The learner is drilling the SINGLE sound /${targetPhoneme}/ in this lesson.\n- Score how accurately they produced /${targetPhoneme}/ ONLY. Ignore other accent / vowel-length issues unless they completely block intelligibility.\n- The 'tips' field MUST address /${targetPhoneme}/ articulation (mouth/tongue position, voicing, common Vietnamese L1 substitution).\n- Set the score relative to /${targetPhoneme}/ accuracy, not overall accent.`
+      : "";
     const prompt = `You are a STRICT IELTS pronunciation coach scoring ONE word or short phrase.
 Target word/phrase: "${word}"
-Target IPA: ${targetPhonetic || "(unknown — infer standard pronunciation)"}
+Target IPA: ${targetPhonetic || "(unknown — infer standard pronunciation)"}${targetPhoneme ? `\nTarget phoneme being drilled: /${targetPhoneme}/` : ""}
 
 Listen to the audio. Score how accurately the speaker pronounced the target word/phrase on a 0-100 scale where:
 - 90-100 = native-like, perfect IPA match
@@ -974,14 +978,14 @@ Listen to the audio. Score how accurately the speaker pronounced the target word
 - 60-74  = understandable but noticeable errors on key phonemes
 - 40-59  = mispronounced, hard to recognise without context
 - 0-39   = wrong sound / unintelligible
-Be strict. Do NOT inflate. Penalise vowel length, stress, and consonant cluster errors.
+Be strict. Do NOT inflate. Penalise vowel length, stress, and consonant cluster errors.${focusBlock}
 
 Return ONLY JSON:
 {
   "score": number (0-100, integer),
   "phoneticHeard": string (IPA of what you heard),
   "verdict": string (1 short Vietnamese sentence),
-  "tips": string (1 short Vietnamese tip on the most off phoneme)
+  "tips": string (1 short Vietnamese tip on the most off phoneme${targetPhoneme ? ` — focus on /${targetPhoneme}/` : ""})
 }`;
     // Use LITE tier (gemini-2.5-flash-lite first) — single-word scoring is small + needs to be FAST.
     const chosenModel = pickModelForKind("score-word", model);
@@ -1064,17 +1068,20 @@ Return ONLY this JSON, no markdown:
 
 async function handleGeminiScoreSentence(req, res) {
   try {
-    const { apiKey, model, sentence = "", audioBase64 = "", mimeType = "audio/webm", context = "" } = await readJson(req);
+    const { apiKey, model, sentence = "", audioBase64 = "", mimeType = "audio/webm", context = "", targetPhoneme = "", focusOnly = false } = await readJson(req);
     const hasKey = apiKey || SERVER_KEYS.length > 0;
     if (!hasKey) return sendJson(res, 200, { score: "?", verdict: "Chưa có API key.", phoneticHeard: "", tips: "" });
     if (!audioBase64) return sendJson(res, 200, { score: "?", verdict: "Chưa có audio.", phoneticHeard: "", tips: "" });
 
+    const focusBlock = focusOnly && targetPhoneme
+      ? `\n\nFOCUS-ONLY MODE — IMPORTANT:\n- The learner is drilling the SINGLE sound /${targetPhoneme}/ in this lesson.\n- Score how accurately they produced /${targetPhoneme}/ in EVERY word that contains it. Ignore other accent issues unless they break meaning.\n- 'worstWords' must be the words where /${targetPhoneme}/ was off the most.\n- 'tips' must address /${targetPhoneme}/ articulation (mouth/tongue, voicing, Vietnamese L1 substitution).`
+      : "";
     // If caller sends a custom context (intonation, rhythm, past-tense drills),
     // use that as the full prompt. Otherwise default to pronunciation scoring.
     const prompt = context
       ? `You are an English speaking coach. Target sentence: "${sentence}"\n\n${context}\n\nListen to the audio carefully. Return ONLY valid JSON.`
       : `You are a STRICT IELTS pronunciation coach scoring a reading passage or short phrase.
-Target text: "${sentence}"
+Target text: "${sentence}"${targetPhoneme ? `\nTarget phoneme being drilled: /${targetPhoneme}/` : ""}
 
 Listen to the audio. Score how accurately the speaker pronounced the target text on a 0-100 scale where:
 - 90-100 = native-like, fluent, every word clear
@@ -1082,14 +1089,14 @@ Listen to the audio. Score how accurately the speaker pronounced the target text
 - 60-74  = understandable but multiple noticeable errors
 - 40-59  = hard to follow, mispronounced words
 - 0-39   = unintelligible / wrong
-Penalise connected speech failures, vowel length errors, stress errors, dropped consonants.
+Penalise connected speech failures, vowel length errors, stress errors, dropped consonants.${focusBlock}
 
 Return ONLY JSON:
 {
   "score": number (0-100, integer),
   "phoneticHeard": string (rough IPA of what you heard),
   "verdict": string (1 short Vietnamese sentence),
-  "tips": string (1 short Vietnamese tip on the biggest issue),
+  "tips": string (1 short Vietnamese tip on the biggest issue${targetPhoneme ? ` — focus on /${targetPhoneme}/` : ""}),
   "worstWords": [string] (up to 3 words that were pronounced worst, can be empty)
 }`;
     const chosenModel = pickModelForKind("score-word", model);
@@ -1395,6 +1402,10 @@ const ROUTE_MAP = {
 };
 
 function injectOverlay(html) {
+  html = html
+    .replace(/<link[^>]+rel=["'](?:shortcut icon|icon|apple-touch-icon|mask-icon)["'][^>]*>/gi, "")
+    .replace(/<link[^>]+rel=["']manifest["'][^>]*>/gi, "")
+    .replace(/<meta[^>]+name=["']theme-color["'][^>]*>/gi, "");
   const tag = `
 <meta charset="utf-8">
 <style id="ln-curtain-css">html.ln-loading body{opacity:0!important}html.ln-rdy body{opacity:1;transition:opacity .18s ease-out}html.ln-loading::before{content:"";position:fixed;inset:0;background:#fff;z-index:2147483647;pointer-events:none}html.ln-rdy::before{display:none}</style>
@@ -1403,13 +1414,15 @@ function injectOverlay(html) {
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Fraunces:opsz,wght@9..144,400;9..144,700;9..144,900&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="/neo-brutalism.css">
-<link rel="icon" href="/real/favicon.svg" type="image/svg+xml">
+<link rel="icon" href="/real/favicon.svg?v=ln" type="image/svg+xml" sizes="any">
+<link rel="shortcut icon" href="/real/favicon.svg?v=ln" type="image/svg+xml">
+<link rel="apple-touch-icon" href="/real/favicon.png">
 <link rel="manifest" href="/real/manifest.webmanifest">
 <meta name="theme-color" content="#d9381e">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
-<script src="/auth.js" defer></script>
-<script src="/sidebar.js"></script>
-<script src="/real-overlay.js"></script>`;
+<script src="/auth.js?v=${ASSET_VERSION}" defer></script>
+<script src="/sidebar.js?v=${ASSET_VERSION}"></script>
+<script src="/real-overlay.js?v=${ASSET_VERSION}"></script>`;
   // Inject as early as possible — right after <head> opens so it runs before SvelteKit
   if (html.includes("<head>")) return html.replace("<head>", "<head>" + tag);
   if (html.includes("<head ")) return html.replace(/(<head[^>]*>)/, "$1" + tag);
@@ -1479,6 +1492,15 @@ const server = createServer(async (req, res) => {
   try {
   const url = new URL(req.url || "/", `http://${req.headers.host || "127.0.0.1"}`);
   const pathname = url.pathname;
+
+  if (req.method === "GET" && (pathname === "/favicon.ico" || pathname === "/favicon.svg")) {
+    const icon = await readFile(join(root, "public", "real", "favicon.svg"));
+    res.writeHead(200, {
+      "Content-Type": "image/svg+xml; charset=utf-8",
+      "Cache-Control": "public, max-age=86400"
+    });
+    return res.end(icon);
+  }
 
   // /settings đã gộp vào modal user — redirect về trang chủ kèm flag mở modal
   if (req.method === "GET" && (pathname === "/settings" || pathname === "/settings/")) {

@@ -400,7 +400,14 @@
     try {
       const r = await fetch("/api/gemini/score-word", {
         method: "POST", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ apiKey: getKey(), model: getModel(), word, audioBase64: b64.split(",")[1] || b64, mimeType: "audio/webm" })
+        body: JSON.stringify({
+          apiKey: getKey(), model: getModel(),
+          word,
+          targetPhoneme: phoneme || "",
+          focusOnly: !!phoneme,
+          audioBase64: b64.split(",")[1] || b64,
+          mimeType: "audio/webm"
+        })
       });
       const d = await r.json();
       const sc = typeof d.score === "number" ? d.score : "?";
@@ -524,7 +531,14 @@
     try {
       const r = await fetch("/api/gemini/score-sentence", {
         method: "POST", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ apiKey: getKey(), model: getModel(), sentence, audioBase64: b64.split(",")[1] || b64, mimeType: "audio/webm" })
+        body: JSON.stringify({
+          apiKey: getKey(), model: getModel(),
+          sentence,
+          targetPhoneme: phoneme || "",
+          focusOnly: !!phoneme,
+          audioBase64: b64.split(",")[1] || b64,
+          mimeType: "audio/webm"
+        })
       });
       const d = await r.json();
       const sc = typeof d.score === "number" ? d.score : "?";
