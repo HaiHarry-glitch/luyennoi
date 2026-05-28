@@ -1,3 +1,4 @@
+/api/gemini/score-speaking/background /.netlify/functions/score-speaking-background 200
 /api/* /.netlify/functions/api/:splat 200
 /question-answer/PART* /question-answer/detail.html 200
 /question-answer/part* /question-answer/detail.html 200

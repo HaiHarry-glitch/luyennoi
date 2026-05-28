@@ -111,3 +111,69 @@ export function applyOverallFloor(scored) {
   } catch {}
   return scored;
 }
+
+function stripJsonEnvelope(text) {
+  return String(text || "")
+    .trim()
+    .replace(/^```(?:json)?\s*/i, "")
+    .replace(/```$/i, "")
+    .trim();
+}
+
+function extractJsonValue(text) {
+  const s = stripJsonEnvelope(text);
+  const start = Math.min(
+    ...["{", "["].map((ch) => {
+      const i = s.indexOf(ch);
+      return i < 0 ? Infinity : i;
+    })
+  );
+  if (!Number.isFinite(start)) return s;
+  let depth = 0;
+  let quote = "";
+  let escaped = false;
+  for (let i = start; i < s.length; i++) {
+    const ch = s[i];
+    if (quote) {
+      if (escaped) escaped = false;
+      else if (ch === "\\") escaped = true;
+      else if (ch === quote) quote = "";
+      continue;
+    }
+    if (ch === '"' || ch === "'") {
+      quote = ch;
+      continue;
+    }
+    if (ch === "{" || ch === "[") depth++;
+    if (ch === "}" || ch === "]") depth--;
+    if (depth === 0) return s.slice(start, i + 1);
+  }
+  return s.slice(start);
+}
+
+function repairJsonText(text) {
+  return stripJsonEnvelope(text)
+    .replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F]/g, " ")
+    .replace(/,\s*([}\]])/g, "$1")
+    .replace(/}\s*\n\s*{/g, "},{")
+    .replace(/]\s*\n\s*\[/g, "],[")
+    .replace(/([}\]"0-9])\s*\n\s*("[^"\n]+"\s*:)/g, "$1,$2");
+}
+
+export function parseGeminiJson(text) {
+  const candidates = [
+    stripJsonEnvelope(text),
+    extractJsonValue(text),
+    repairJsonText(extractJsonValue(text)),
+    repairJsonText(text)
+  ].filter(Boolean);
+  let lastError;
+  for (const candidate of candidates) {
+    try {
+      return JSON.parse(candidate);
+    } catch (error) {
+      lastError = error;
+    }
+  }
+  throw lastError || new Error("Invalid Gemini JSON");
+}

@@ -1,5 +1,5 @@
 import { randomUUID } from "node:crypto";
-import { buildScorePrompt, applyOverallFloor } from "./_lib/score.mjs";
+import { buildScorePrompt, applyOverallFloor, parseGeminiJson } from "./_lib/score.mjs";
 
 const SUPABASE_URL = (process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.SUPABASE_URL || "https://gxjgkwebrxzcawqkxmbt.supabase.co").replace(/\/+$/, "");
 const SUPABASE_PUBLISHABLE_KEY = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY || process.env.SUPABASE_PUBLISHABLE_KEY || "sb_publishable_ktG6l3TaDDppl9n6flBuZg_3THO38Dp";
@@ -573,7 +573,7 @@ Return ONLY this JSON (criterion scores integer 1-9 or "?" if not assessable; ov
       mimeType,
       fallbackModels: MODELS_BY_PURPOSE.pronunciation
     });
-    const scored = JSON.parse(text);
+    const scored = parseGeminiJson(text);
     // Safety net: enforce overall = floor(avg-of-4-criteria * 2) / 2
     try {
       const c = scored.criteria || {};
@@ -587,7 +587,7 @@ Return ONLY this JSON (criterion scores integer 1-9 or "?" if not assessable; ov
         scored.overall = Math.floor(scored.overall * 2) / 2;
       }
     } catch {}
-    return json(200, { provider: "gemini", model, ...scored });
+    return json(200, { provider: "gemini", model, ...applyOverallFloor(scored) });
   } catch (error) {
     return json(200, { ...fallbackScore(body.question || "", body.transcript || ""), warning: error.message });
   }

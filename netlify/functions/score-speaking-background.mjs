@@ -1,4 +1,4 @@
-import { buildScorePrompt, applyOverallFloor } from "./_lib/score.mjs";
+import { buildScorePrompt, applyOverallFloor, parseGeminiJson } from "./_lib/score.mjs";
 import { writeScoreJobStatus } from "./_lib/score-jobs.mjs";
 import { callGemini, MODELS_BY_PURPOSE, pickModelForKind } from "./api.mjs";
 
@@ -52,7 +52,7 @@ export async function handler(event) {
       fallbackModels: MODELS_BY_PURPOSE.pronunciation,
       totalBudgetMs: 600000
     });
-    const scored = applyOverallFloor(JSON.parse(text));
+    const scored = applyOverallFloor(parseGeminiJson(text));
     const result = { provider: "gemini", model, ...scored };
     await writeScoreJobStatus(jobId, {
       status: "done",
