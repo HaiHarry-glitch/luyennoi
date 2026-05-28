@@ -249,12 +249,15 @@
     return ["audio/webm;codecs=opus", "audio/webm", "audio/mp4", "audio/aac"].find((type) => MediaRecorder.isTypeSupported(type)) || "";
   }
 
-  // Floor IELTS band to integer (per user spec: số nguyên + làm tròn xuống)
+  // Floor IELTS band to integer for individual criteria (1-9 whole bands)
   function floorBand(n) { const v = Number(n); return Number.isFinite(v) ? Math.floor(v) : "?"; }
+  // Overall band uses 0.5 step rounded DOWN per IELTS spec.
+  // Example: avg 7.5 → 7.5, avg 7.4 → 7.0, avg 7.9 → 7.5
   function computeOverallFloor(c) {
     const vals = ["fluency","vocabulary","grammar","pronunciation"].map(k => Number(c?.[k]?.score)).filter(Number.isFinite);
     if (!vals.length) return "?";
-    return Math.floor(vals.reduce((a,b)=>a+b,0) / vals.length);
+    const avg = vals.reduce((a,b)=>a+b,0) / vals.length;
+    return Math.floor(avg * 2) / 2;
   }
   function normScoreText(v) { return String(v || "").trim().toLowerCase().replace(/\s+/g, " "); }
   function scoreResultFingerprint(d) {
@@ -273,12 +276,14 @@
       (attemptKey && p.dataset.lnAttemptKey === attemptKey) ||
       (scoreFingerprint && p.dataset.lnScoreFingerprint === scoreFingerprint)
     )) return;
-    // Force integer-floor bands per spec
+    // Individual criteria use integer floor (whole IELTS bands).
     const flu = floorBand(c.fluency?.score);
     const voc = floorBand(c.vocabulary?.score);
     const gra = floorBand(c.grammar?.score);
     const pro = floorBand(c.pronunciation?.score);
-    const overall = computeOverallFloor(c);
+    // Overall uses 0.5 step. Prefer the backend-computed value when present.
+    const overallRaw = (typeof d.overall === "number") ? d.overall : computeOverallFloor(c);
+    const overall = (typeof overallRaw === "number") ? Math.floor(overallRaw * 2) / 2 : overallRaw;
 
     // Persist into history ARRAY (stack) per question
     try {
