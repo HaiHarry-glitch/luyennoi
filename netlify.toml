@@ -3,12 +3,9 @@
   command = "npm run export:netlify"
   functions = "netlify/functions"
 
-[functions]
+[functions."api"]
   # Allow long-running audio scoring calls to Gemini (Part 2 ~ 2 min audio).
   # Pro plans honour up to 26 s; free tier is capped at 10 s.
-  timeout = 26
-
-[functions."api"]
   timeout = 26
 
 [[redirects]]
