@@ -109,13 +109,11 @@ export async function callGemini({ apiKey, model, prompt, responseJson = false, 
   if (audioBase64) modelList = modelList.slice(0, 3);
   // Per-call timeout scales with the total budget so a Background Function
   // with a 10 min budget can wait far longer for any single Gemini call.
-  // Phase 1: chia budget 2 call cho audio (≤14s/call trong sync 25s) để kịp thử model
-  // dự phòng nếu model 1 timeout/HTTP 5xx; background path (totalBudgetMs > 60s) vẫn
-  // được phép gọi 1 call rất dài.
+  // Audio sync: dành gần như toàn bộ budget cho 1 call (Gemini đôi khi mất 15-22s
+  // vì cold start + audio 20-30s). Chia budget 2 call gây timeout client thường xuyên.
+  // Background path (totalBudgetMs > 60s) cho phép call rất dài.
   const defaultCallMs = audioBase64
-    ? (audioTotalBudgetMs > 60000
-        ? Math.min(audioTotalBudgetMs - 1000, 180000)
-        : Math.min(Math.floor(audioTotalBudgetMs * 0.55), 14000))
+    ? Math.min(audioTotalBudgetMs - 2000, 180000)
     : 15000;
   let lastError = "";
   for (let mi = 0; mi < modelList.length; mi++) {

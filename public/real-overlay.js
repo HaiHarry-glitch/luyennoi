@@ -2721,7 +2721,8 @@
     const asyncOptOut = typeof window !== "undefined" && window.LN_ASYNC_SCORE === false;
     const isPart2 = /^PART\s*2/i.test(String(partLabel || ""));
     const isLongAudio = (audioDataUrl || "").length > 1800000;
-    const useAsyncFirst = !asyncOptOut && (isPart2 || isLongAudio);
+    const allowAsync = !asyncOptOut && (isPart2 || isLongAudio);
+    const useAsyncFirst = allowAsync;
     if (useAsyncFirst) {
       try {
         const ok = await startAsyncScoreJob({ apiKey, audioUrl, audioDataUrl, mimeType, question, partLabel, toast });
@@ -2760,13 +2761,13 @@
       clearTimeout(abortTimer);
       if (!r.ok) {
         const code = r.status;
-        if (code === 504 || code === 408) {
+        if ((code === 504 || code === 408) && allowAsync) {
           const ok = await startAsyncScoreJob({ apiKey, audioUrl, audioDataUrl, mimeType, question, partLabel, toast });
           toast.remove();
           return ok;
         }
         const hint = code === 504 || code === 408
-          ? "Server quá hạn (Part 2 audio dài) — hãy nói ngắn hơn hoặc thử lại."
+          ? "Server quá hạn — thử lại hoặc nói ngắn gọn hơn."
           : "Không gọi được API chấm điểm (HTTP " + code + ").";
         toast.remove();
         showScoreRetry(audioUrl, audioDataUrl, mimeType, question, partLabel, hint);
@@ -2783,7 +2784,7 @@
         else if (/429|quota|rate/i.test(warn)) hint = "Gemini đang giới hạn (rate-limit) — đợi ít phút rồi thử lại.";
         else if (/safety|blocked/i.test(warn)) hint = "Audio bị Gemini chặn vì safety — thử nói lại nội dung khác.";
         else if (warn) hint = "Gemini lỗi: " + warn.slice(0, 160);
-        if (/timed?\s*out|timeout|aborted/i.test(warn)) {
+        if (/timed?\s*out|timeout|aborted/i.test(warn) && allowAsync) {
           const ok = await startAsyncScoreJob({ apiKey, audioUrl, audioDataUrl, mimeType, question, partLabel, toast });
           toast.remove();
           return ok;
@@ -2800,7 +2801,7 @@
       clearTimeout(abortTimer);
       toast.remove();
       const isAbort = e?.name === "AbortError" || /timeout/i.test(String(e?.message || ""));
-      if (isAbort) {
+      if (isAbort && allowAsync) {
         const bgToast = document.body.appendChild(Object.assign(document.createElement("div"), {
           style: "position:fixed;top:1rem;right:1rem;background:#d9381e;color:white;padding:.8rem 1.2rem;border-radius:.5rem;z-index:10000;font-family:Lexend,sans-serif;display:inline-flex;align-items:center;gap:.5rem;",
           innerHTML: '<span style="display:inline-block;width:.85rem;height:.85rem;border:2px solid #fff;border-top-color:transparent;border-radius:50%;animation:ln-spin .9s linear infinite;"></span> Chuyển sang chấm nền…'
