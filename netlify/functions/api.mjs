@@ -1,6 +1,5 @@
 import { randomUUID } from "node:crypto";
 import { buildScorePrompt, applyOverallFloor } from "./_lib/score.mjs";
-import { readScoreJobStatus, writeScoreJobStatus } from "./_lib/score-jobs.mjs";
 
 const SUPABASE_URL = (process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.SUPABASE_URL || "https://gxjgkwebrxzcawqkxmbt.supabase.co").replace(/\/+$/, "");
 const SUPABASE_PUBLISHABLE_KEY = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY || process.env.SUPABASE_PUBLISHABLE_KEY || "sb_publishable_ktG6l3TaDDppl9n6flBuZg_3THO38Dp";
@@ -600,14 +599,6 @@ async function handleScoreStart(event) {
     return json(400, { ok: false, error: "Missing Gemini API key" });
   }
   const jobId = randomUUID();
-  const now = new Date().toISOString();
-  const auth = getAuthInfo(event);
-  await writeScoreJobStatus(jobId, {
-    status: "queued",
-    userId: auth.userId,
-    createdAt: now,
-    progress: "queued"
-  });
   return json(202, {
     ok: true,
     jobId,
@@ -617,6 +608,7 @@ async function handleScoreStart(event) {
 }
 
 async function handleScoreStatus(event, jobId) {
+  const { readScoreJobStatus } = await import("./_lib/score-jobs.mjs");
   const status = await readScoreJobStatus(jobId);
   if (!status) return json(404, { ok: false, error: "Score job not found" });
   return json(200, { ok: true, ...status });
