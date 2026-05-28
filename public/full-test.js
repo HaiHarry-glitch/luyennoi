@@ -1084,14 +1084,15 @@
         clearTimeout(timer);
       }
     };
-    const useAsyncFirst = partLabel === "PART 2" || b64.length > 1800000;
+    // Phase 1: async background đang gãy trên Netlify — tắt mặc định, chỉ bật khi
+    // window.LN_ASYNC_SCORE === true. Mọi audio đi sync; client-timeout 26s đủ cho
+    // Part 1/3 và Full Test thông thường.
+    const asyncOptIn = typeof window !== "undefined" && window.LN_ASYNC_SCORE === true;
+    const useAsyncFirst = asyncOptIn && (partLabel === "PART 2" || b64.length > 1800000);
     if (!useAsyncFirst) {
-      try {
-        const data = await trySyncScore();
-        if (data) return data;
-      } catch (e) {
-        if (!(e?.name === "AbortError" || /timeout/i.test(String(e?.message || "")))) throw e;
-      }
+      const data = await trySyncScore();
+      if (data) return data;
+      throw new Error("Sync score returned fallback");
     }
 
     const started = await fetch("/api/gemini/score-speaking/start", {
@@ -1118,10 +1119,22 @@
     }
 
     const startedAt = Date.now();
+    let failStreak = 0;
     while (Date.now() - startedAt < 660000) {
       await new Promise((resolve) => setTimeout(resolve, 3000));
       const r = await fetch("/api/gemini/score-speaking/status/" + encodeURIComponent(job.jobId), { cache: "no-store" });
-      if (!r.ok) continue;
+      if (!r.ok) {
+        if (r.status >= 500) {
+          failStreak++;
+          if (failStreak >= 3) {
+            const data = await trySyncScore();
+            if (data) return data;
+            throw new Error("Polling status broken (HTTP " + r.status + ")");
+          }
+        }
+        continue;
+      }
+      failStreak = 0;
       const status = await r.json();
       if (status.status === "done" && status.result) return status.result;
       if (status.status === "error") throw new Error(status.error || "Gemini chấm nền thất bại");

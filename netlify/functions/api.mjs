@@ -109,8 +109,13 @@ export async function callGemini({ apiKey, model, prompt, responseJson = false, 
   if (audioBase64) modelList = modelList.slice(0, 3);
   // Per-call timeout scales with the total budget so a Background Function
   // with a 10 min budget can wait far longer for any single Gemini call.
+  // Phase 1: chia budget 2 call cho audio (≤14s/call trong sync 25s) để kịp thử model
+  // dự phòng nếu model 1 timeout/HTTP 5xx; background path (totalBudgetMs > 60s) vẫn
+  // được phép gọi 1 call rất dài.
   const defaultCallMs = audioBase64
-    ? Math.min(audioTotalBudgetMs - 1000, 180000) // never wait longer than 3 min on a single call
+    ? (audioTotalBudgetMs > 60000
+        ? Math.min(audioTotalBudgetMs - 1000, 180000)
+        : Math.min(Math.floor(audioTotalBudgetMs * 0.55), 14000))
     : 15000;
   let lastError = "";
   for (let mi = 0; mi < modelList.length; mi++) {
@@ -427,7 +432,8 @@ Return ONLY this JSON:
 // callGemini still falls back to the full GEMINI_MODELS list on errors.
 export const MODELS_BY_PURPOSE = {
   // 🎤 Chấm phát âm (audio scoring) — Part 1/2/3 + Full Test
-  pronunciation: ["gemini-3.5-flash", "gemini-3-flash-preview", "gemini-3.1-pro-preview"],
+  // 2.5-flash đứng đầu vì ổn định + nhanh nhất với audio trên Netlify; preview models có thể cold-start chậm.
+  pronunciation: ["gemini-2.5-flash", "gemini-2.5-flash-lite", "gemini-3-flash-preview"],
   // 💡 Sinh ý / câu mẫu (sample, note, expand, cuecards)
   ideas:         ["gemini-3.1-flash-lite-preview", "gemini-3-flash-preview", "gemini-2.5-pro"],
   // 📖 Tra từ điển (vocab, translate, pronun explanation, score-word)

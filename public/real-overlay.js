@@ -2677,10 +2677,18 @@
     if (!kicked.ok) throw new Error("Không chạy được job nền (HTTP " + kicked.status + ")");
 
     const startedAt = Date.now();
+    let failStreak = 0;
     while (Date.now() - startedAt < 660000) {
       await new Promise((resolve) => setTimeout(resolve, 3000));
       const r = await fetch("/api/gemini/score-speaking/status/" + encodeURIComponent(job.jobId), { cache: "no-store" });
-      if (!r.ok) continue;
+      if (!r.ok) {
+        if (r.status >= 500) {
+          failStreak++;
+          if (failStreak >= 3) throw new Error("Polling status broken (HTTP " + r.status + ")");
+        }
+        continue;
+      }
+      failStreak = 0;
       const status = await r.json();
       if (status.status === "done" && status.result) {
         applyScoreResult(status.result, audioUrl, audioDataUrl, mimeType, question, partLabel);
@@ -2706,14 +2714,17 @@
     toast.innerHTML = '<span style="display:inline-block;width:.85rem;height:.85rem;border:2px solid #fff;border-top-color:transparent;border-radius:50%;animation:ln-spin .9s linear infinite;"></span> Đang chấm điểm…';
     document.body.appendChild(toast);
 
-    const useAsyncFirst = /^PART\s*2/i.test(String(partLabel || "")) || (audioDataUrl || "").length > 1800000;
+    // Phase 1: async background đang gãy trên Netlify (MissingBlobsEnvironmentError) —
+    // tắt mặc định, chỉ bật khi window.LN_ASYNC_SCORE === true để debug.
+    const asyncOptIn = typeof window !== "undefined" && window.LN_ASYNC_SCORE === true;
+    const useAsyncFirst = asyncOptIn && (/^PART\s*2/i.test(String(partLabel || "")) || (audioDataUrl || "").length > 1800000);
     if (useAsyncFirst) {
       try {
         const ok = await startAsyncScoreJob({ apiKey, audioUrl, audioDataUrl, mimeType, question, partLabel, toast });
         toast.remove();
         return ok;
       } catch (e) {
-        if (/Không tạo được job|Server không trả jobId|Không chạy được job nền/i.test(String(e?.message || e))) {
+        if (/Không tạo được job|Server không trả jobId|Không chạy được job nền|Polling status broken/i.test(String(e?.message || e))) {
           console.warn("[ln-score] async start failed, falling back to sync", e?.message || e);
           toast.innerHTML = '<span style="display:inline-block;width:.85rem;height:.85rem;border:2px solid #fff;border-top-color:transparent;border-radius:50%;animation:ln-spin .9s linear infinite;"></span> Đang chấm điểm…';
         } else {
