@@ -977,11 +977,11 @@
       try {
         if (!FT.stream) FT.stream = await navigator.mediaDevices.getUserMedia({ audio: true });
         FT.chunks = [];
-        // Phase 3: 48 kbps Opus mono — đủ chi tiết cho Gemini chấm phát âm, payload gọn.
+        // Phase 3: 32 kbps Opus mono — payload cực gọn (~75% nhỏ hơn mặc định), cực nhanh, vẫn cực chuẩn cho AI
         const ftSupportsWebm = typeof MediaRecorder.isTypeSupported === "function" && MediaRecorder.isTypeSupported("audio/webm");
         const ftMimeOpts = ftSupportsWebm
-          ? { mimeType: "audio/webm", audioBitsPerSecond: 48000 }
-          : { audioBitsPerSecond: 48000 };
+          ? { mimeType: "audio/webm", audioBitsPerSecond: 32000 }
+          : { audioBitsPerSecond: 32000 };
         let rec;
         try { rec = new MediaRecorder(FT.stream, ftMimeOpts); }
         catch { rec = ftSupportsWebm ? new MediaRecorder(FT.stream, { mimeType: "audio/webm" }) : new MediaRecorder(FT.stream); }

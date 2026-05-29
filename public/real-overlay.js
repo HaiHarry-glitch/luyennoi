@@ -2543,22 +2543,21 @@
       REC_STATE.stream = stream;
       REC_STATE.chunks = [];
       REC_STATE.cancelled = false;
-      const pickedMimeType = pickRecordingMimeType();
-      // 32 kbps mono is more than enough for speech and dramatically shrinks
-      // the upload payload, which is critical because Netlify Functions have a
-      // hard 10 s timeout on the free tier — Part 2 (~2 min) at default 128 kbps
-      // produced ~1.9 MB base64 strings that pushed Gemini past 10 s.
-      // Phase 3: 48 kbps Opus mono — payload nhỏ hơn ~62% so với mặc định 128 kbps
-      // nhưng vẫn giữ chi tiết phát âm (đủ cho Gemini chấm /θ/ vs /s/, vowel length...).
+      let pickedMimeType = localStorage.getItem("ln.audioCfg") || pickRecordingMimeType();
+      if (pickedMimeType) localStorage.setItem("ln.audioCfg", pickedMimeType);
+      // Phase 3: 32 kbps Opus mono — payload cực nhỏ (~75% nhỏ hơn mặc định), cực nhanh, vẫn cực chuẩn cho AI
       const recOpts = pickedMimeType
-        ? { mimeType: pickedMimeType, audioBitsPerSecond: 48000 }
-        : { audioBitsPerSecond: 48000 };
+        ? { mimeType: pickedMimeType, audioBitsPerSecond: 32000 }
+        : { audioBitsPerSecond: 32000 };
       let rec;
       try { rec = new MediaRecorder(stream, recOpts); }
       catch { rec = pickedMimeType ? new MediaRecorder(stream, { mimeType: pickedMimeType }) : new MediaRecorder(stream); }
       REC_STATE.mimeType = rec.mimeType || pickedMimeType || "audio/webm";
+      REC_STATE.startTime = Date.now();
+      REC_STATE.durationMs = 0;
       rec.ondataavailable = (e) => { if (e.data?.size) REC_STATE.chunks.push(e.data); };
       rec.onstop = async () => {
+        REC_STATE.durationMs = Date.now() - REC_STATE.startTime;
         REC_STATE.stream?.getTracks().forEach(t => t.stop());
         REC_STATE.recording = false;
         if (REC_STATE.cancelled) return;
@@ -2567,7 +2566,7 @@
           alert("Bản ghi âm quá ngắn hoặc không có âm thanh. Hãy bấm Ghi âm và nói ít nhất 2 giây rồi gửi lại.");
           return;
         }
-        await scoreAndSave(blob);
+        await scoreAndSave(blob, REC_STATE.durationMs);
       };
       rec.start();
       REC_STATE.recorder = rec;
@@ -2582,7 +2581,7 @@
   };
 
   // Render a sticky retry banner so the user can re-score the SAME blob without re-recording.
-  function showScoreRetry(audioUrl, audioDataUrl, mimeType, question, partLabel, message) {
+  function showScoreRetry(audioUrl, audioDataUrl, mimeType, question, partLabel, message, durationMs) {
     document.getElementById("ln-score-retry")?.remove();
     const banner = document.createElement("div");
     banner.id = "ln-score-retry";
@@ -2601,7 +2600,7 @@
       const btn = ev.currentTarget;
       if (btn.__lnBusy) return;
       markBusy(btn, "record");
-      const ok = await submitScoreRequest({ audioUrl, audioDataUrl, mimeType, question, partLabel });
+      const ok = await submitScoreRequest({ audioUrl, audioDataUrl, mimeType, question, partLabel, durationMs });
       unmarkBusy(btn);
       if (ok) banner.remove();
     };
@@ -2654,13 +2653,14 @@
     showScoreDoneToast();
   }
 
-  async function startAsyncScoreJob({ apiKey, audioUrl, audioDataUrl, mimeType, question, partLabel, toast }) {
+  async function startAsyncScoreJob({ apiKey, audioUrl, audioDataUrl, mimeType, question, partLabel, toast, durationMs }) {
     const payload = {
       apiKey,
       question, part: partLabel,
       audioBase64: audioDataUrl.split(",")[1] || audioDataUrl,
       mimeType,
-      note: localStorage.getItem("ln.userNote") || ""
+      note: localStorage.getItem("ln.userNote") || "",
+      durationMs: durationMs || 0
     };
     const started = await fetch("/api/gemini/score-speaking/start", {
       method: "POST",
@@ -2703,29 +2703,43 @@
 
   // Single source of truth for posting audio → /api/gemini/score-speaking.
   // Returns true on a real result, false otherwise (so the caller can keep the retry banner).
-  async function submitScoreRequest({ audioUrl, audioDataUrl, mimeType, question, partLabel }) {
+  async function submitScoreRequest({ audioUrl, audioDataUrl, mimeType, question, partLabel, durationMs }) {
     document.getElementById("ln-score-retry")?.remove();
     const apiKey = getKey();
     if (!apiKey) {
       showScoreRetry(audioUrl, audioDataUrl, mimeType, question, partLabel,
-        "Chưa cài API key Gemini — vào /settings để thêm key, audio đã được giữ.");
+        "Chưa cài API key Gemini — vào /settings để thêm key, audio đã được giữ.", durationMs);
       return false;
     }
+
+    // Phase 4: Warn if audio payload size is extremely large (> 4 MB)
+    const base64SizeMb = ((audioDataUrl || "").length * 0.75) / (1024 * 1024);
+    if (base64SizeMb > 4.0) {
+      showToast("Bản ghi âm quá lớn (~" + base64SizeMb.toFixed(1) + "MB). Netlify có thể quá hạn, hãy cân nhắc nói ngắn gọn hơn.");
+    }
+
     const toast = document.createElement("div");
     toast.style.cssText = "position:fixed;top:1rem;right:1rem;background:#d9381e;color:white;padding:.8rem 1.2rem;border-radius:.5rem;z-index:10000;font-family:Lexend,sans-serif;display:inline-flex;align-items:center;gap:.5rem;";
     toast.innerHTML = '<span style="display:inline-block;width:.85rem;height:.85rem;border:2px solid #fff;border-top-color:transparent;border-radius:50%;animation:ln-spin .9s linear infinite;"></span> Đang chấm điểm…';
     document.body.appendChild(toast);
 
-    // Phase 2: async background dùng Supabase score_jobs cho Part 2 / audio dài.
-    // Có thể tắt thủ công bằng window.LN_ASYNC_SCORE === false.
+    // Phase 2: async background scoring.
+    // On deployed hosts (Netlify), ALWAYS use async-first for audio scoring:
+    //   - Netlify sync function hard-caps at 26s which is too tight for Gemini
+    //     cold-starts + medium/long audio (even 18s recordings can timeout).
+    //   - Background function has 900s budget — never times out.
+    //   - Polling adds ~3-6s overhead but guarantees results.
+    // On localhost, keep sync (no timeout issue, faster UX).
+    // Manual opt-out: window.LN_ASYNC_SCORE === false.
     const asyncOptOut = typeof window !== "undefined" && window.LN_ASYNC_SCORE === false;
+    const isDeployed = !/^(localhost|127\.0\.0\.1|0\.0\.0\.0)$/i.test(location.hostname);
     const isPart2 = /^PART\s*2/i.test(String(partLabel || ""));
-    const isLongAudio = (audioDataUrl || "").length > 1800000;
-    const allowAsync = !asyncOptOut && (isPart2 || isLongAudio);
+    const isLongAudio = (audioDataUrl || "").length > 600000;
+    const allowAsync = !asyncOptOut && (isDeployed || isPart2 || isLongAudio);
     const useAsyncFirst = allowAsync;
     if (useAsyncFirst) {
       try {
-        const ok = await startAsyncScoreJob({ apiKey, audioUrl, audioDataUrl, mimeType, question, partLabel, toast });
+        const ok = await startAsyncScoreJob({ apiKey, audioUrl, audioDataUrl, mimeType, question, partLabel, toast, durationMs });
         toast.remove();
         return ok;
       } catch (e) {
@@ -2734,7 +2748,7 @@
           toast.innerHTML = '<span style="display:inline-block;width:.85rem;height:.85rem;border:2px solid #fff;border-top-color:transparent;border-radius:50%;animation:ln-spin .9s linear infinite;"></span> Đang chấm điểm…';
         } else {
           toast.remove();
-          showScoreRetry(audioUrl, audioDataUrl, mimeType, question, partLabel, "Lỗi chấm nền: " + (e?.message || e));
+          showScoreRetry(audioUrl, audioDataUrl, mimeType, question, partLabel, "Lỗi chấm nền: " + (e?.message || e), durationMs);
           return false;
         }
       }
@@ -2745,6 +2759,8 @@
     const abortMs = 26000;
     const abortTimer = setTimeout(() => controller.abort(new Error("client-timeout")), abortMs);
 
+    // Phase 4: Measuring latency
+    console.time("score:sync");
     try {
       const r = await fetch("/api/gemini/score-speaking", {
         method: "POST",
@@ -2755,22 +2771,28 @@
           question, part: partLabel,
           audioBase64: audioDataUrl.split(",")[1] || audioDataUrl,
           mimeType,
-          note: localStorage.getItem("ln.userNote") || ""
+          note: localStorage.getItem("ln.userNote") || "",
+          durationMs: durationMs || 0
         })
       });
       clearTimeout(abortTimer);
+      console.timeEnd("score:sync");
       if (!r.ok) {
         const code = r.status;
-        if ((code === 504 || code === 408) && allowAsync) {
-          const ok = await startAsyncScoreJob({ apiKey, audioUrl, audioDataUrl, mimeType, question, partLabel, toast });
-          toast.remove();
-          return ok;
+        if (code === 504 || code === 408) {
+          try {
+            const ok = await startAsyncScoreJob({ apiKey, audioUrl, audioDataUrl, mimeType, question, partLabel, toast, durationMs });
+            toast.remove();
+            return ok;
+          } catch (bgErr) {
+            console.warn("[ln-score] async fallback after HTTP", code, "failed", bgErr?.message || bgErr);
+          }
         }
         const hint = code === 504 || code === 408
           ? "Server quá hạn — thử lại hoặc nói ngắn gọn hơn."
           : "Không gọi được API chấm điểm (HTTP " + code + ").";
         toast.remove();
-        showScoreRetry(audioUrl, audioDataUrl, mimeType, question, partLabel, hint);
+        showScoreRetry(audioUrl, audioDataUrl, mimeType, question, partLabel, hint, durationMs);
         return false;
       }
       const data = await r.json();
@@ -2784,13 +2806,17 @@
         else if (/429|quota|rate/i.test(warn)) hint = "Gemini đang giới hạn (rate-limit) — đợi ít phút rồi thử lại.";
         else if (/safety|blocked/i.test(warn)) hint = "Audio bị Gemini chặn vì safety — thử nói lại nội dung khác.";
         else if (warn) hint = "Gemini lỗi: " + warn.slice(0, 160);
-        if (/timed?\s*out|timeout|aborted/i.test(warn) && allowAsync) {
-          const ok = await startAsyncScoreJob({ apiKey, audioUrl, audioDataUrl, mimeType, question, partLabel, toast });
-          toast.remove();
-          return ok;
+        if (/timed?\s*out|timeout|aborted/i.test(warn)) {
+          try {
+            const ok = await startAsyncScoreJob({ apiKey, audioUrl, audioDataUrl, mimeType, question, partLabel, toast, durationMs });
+            toast.remove();
+            return ok;
+          } catch (bgErr) {
+            console.warn("[ln-score] async fallback after sync timeout failed", bgErr?.message || bgErr);
+          }
         }
         toast.remove();
-        showScoreRetry(audioUrl, audioDataUrl, mimeType, question, partLabel, hint);
+        showScoreRetry(audioUrl, audioDataUrl, mimeType, question, partLabel, hint, durationMs);
         return false;
       }
       toast.remove();
@@ -2799,39 +2825,40 @@
       return true;
     } catch (e) {
       clearTimeout(abortTimer);
+      console.timeEnd("score:sync");
       toast.remove();
       const isAbort = e?.name === "AbortError" || /timeout/i.test(String(e?.message || ""));
-      if (isAbort && allowAsync) {
+      if (isAbort) {
         const bgToast = document.body.appendChild(Object.assign(document.createElement("div"), {
           style: "position:fixed;top:1rem;right:1rem;background:#d9381e;color:white;padding:.8rem 1.2rem;border-radius:.5rem;z-index:10000;font-family:Lexend,sans-serif;display:inline-flex;align-items:center;gap:.5rem;",
           innerHTML: '<span style="display:inline-block;width:.85rem;height:.85rem;border:2px solid #fff;border-top-color:transparent;border-radius:50%;animation:ln-spin .9s linear infinite;"></span> Chuyển sang chấm nền…'
         }));
         try {
-          const ok = await startAsyncScoreJob({ apiKey, audioUrl, audioDataUrl, mimeType, question, partLabel, toast: bgToast });
+          const ok = await startAsyncScoreJob({ apiKey, audioUrl, audioDataUrl, mimeType, question, partLabel, toast: bgToast, durationMs });
           bgToast.remove();
           return ok;
         } catch (bgErr) {
           bgToast.remove();
-          showScoreRetry(audioUrl, audioDataUrl, mimeType, question, partLabel, "Lỗi chấm nền: " + (bgErr?.message || bgErr));
+          showScoreRetry(audioUrl, audioDataUrl, mimeType, question, partLabel, "Lỗi chấm nền: " + (bgErr?.message || bgErr), durationMs);
           return false;
         }
       }
       const msg = isAbort
         ? "Mạng/Server quá hạn — hãy thử lại (audio đã giữ)."
         : ("Lỗi chấm điểm: " + (e?.message || e));
-      showScoreRetry(audioUrl, audioDataUrl, mimeType, question, partLabel, msg);
+      showScoreRetry(audioUrl, audioDataUrl, mimeType, question, partLabel, msg, durationMs);
       return false;
     }
   }
 
-  async function scoreAndSave(blob) {
+  async function scoreAndSave(blob, durationMs) {
     const audioUrl = URL.createObjectURL(blob);
     const audioDataUrl = await blobToBase64(blob);
     const mimeType = blob.type || REC_STATE.mimeType || "audio/webm";
     const detail = parseDetailRoute?.();
     const question = (detail?.question || getQuestionFromPage()).trim();
     const partLabel = detail?.part || ("PART " + ((location.pathname.match(/PART%20(\d)|PART\s*(\d)|part(\d)/i) || [])[1] || (location.pathname.match(/PART%20(\d)|PART\s*(\d)|part(\d)/i) || [])[2] || (location.pathname.match(/PART%20(\d)|PART\s*(\d)|part(\d)/i) || [])[3] || "1"));
-    await submitScoreRequest({ audioUrl, audioDataUrl, mimeType, question, partLabel });
+    await submitScoreRequest({ audioUrl, audioDataUrl, mimeType, question, partLabel, durationMs });
   }
 
   // ──────────────── History playback panel ────────────────

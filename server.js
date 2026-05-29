@@ -3,6 +3,12 @@ import { readFileSync } from "node:fs";
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { extname, join, normalize, sep } from "node:path";
 import { randomUUID } from "node:crypto";
+// Robust Gemini JSON parser shared with the Netlify Functions.
+// Handles cases where Gemini returns valid JSON followed by trailing prose,
+// extra `{...}` blocks, control chars, or trailing commas — which would
+// otherwise crash the raw `JSON.parse` and surface as
+// "Unexpected non-whitespace character after JSON at position N".
+import { parseGeminiJson } from "./netlify/functions/_lib/score.mjs";
 
 // Load .env (inline, no dependency)
 try { readFileSync(join(import.meta.dirname || ".", ".env"), "utf8").split("\n").forEach(l => { const [k,...v] = l.split("="); if (k?.trim() && !k.startsWith("#")) process.env[k.trim()] = v.join("=").trim(); }); } catch {}
@@ -878,7 +884,7 @@ Return ONLY this JSON (criterion scores integer 1-9 or "?" if not assessable; ov
 
     const chosenModel = pickModelForKind("score", model);
     const { text, model: usedModel } = await callGemini({ apiKey, model: chosenModel, prompt, responseJson: true, audioBase64, mimeType });
-    const scored = JSON.parse(text);
+    const scored = parseGeminiJson(text);
     // Safety net: enforce overall = floor(avg-of-4-criteria * 2) / 2 so it always lands on a half-band.
     try {
       const c = scored.criteria || {};
@@ -990,7 +996,7 @@ Return ONLY JSON:
     // Use LITE tier (gemini-2.5-flash-lite first) — single-word scoring is small + needs to be FAST.
     const chosenModel = pickModelForKind("score-word", model);
     const { text, model: usedModel } = await callGemini({ apiKey, model: chosenModel, prompt, responseJson: true, audioBase64, mimeType });
-    const out = JSON.parse(text);
+    const out = parseGeminiJson(text);
     sendJson(res, 200, { provider: "gemini", model: usedModel, ...out });
     // Async: log drill result (no audio)
     const __wInfo = getAuthInfo(req);
@@ -1031,7 +1037,7 @@ Return ONLY this JSON:
 { "wordTimings": [{"word": string, "startMs": number, "endMs": number}] }`;
     const chosenModel = pickModelForKind("score", model); // use pronunciation tier (3.5-flash etc.)
     const { text, model: usedModel } = await callGemini({ apiKey, model: chosenModel, prompt, responseJson: true, audioBase64, mimeType });
-    const out = JSON.parse(text);
+    const out = parseGeminiJson(text);
     sendJson(res, 200, { provider: "gemini", model: usedModel, wordTimings: Array.isArray(out.wordTimings) ? out.wordTimings : [] });
   } catch (error) {
     sendJson(res, 200, { wordTimings: [], warning: error.message });
@@ -1059,7 +1065,7 @@ Return ONLY this JSON, no markdown:
 }`;
     const chosenModel = pickModelForKind("ideas", model); // use ideas (lite) tier — small task
     const { text, model: usedModel } = await callGemini({ apiKey, model: chosenModel, prompt, responseJson: true });
-    const out = JSON.parse(text);
+    const out = parseGeminiJson(text);
     sendJson(res, 200, { provider: "gemini", model: usedModel, sound, words: out.words || [], phrases: out.phrases || [] });
   } catch (error) {
     sendJson(res, 200, { sound: "", words: [], phrases: [], warning: error.message });
@@ -1101,7 +1107,7 @@ Return ONLY JSON:
 }`;
     const chosenModel = pickModelForKind("score-word", model);
     const { text, model: usedModel } = await callGemini({ apiKey, model: chosenModel, prompt, responseJson: true, audioBase64, mimeType });
-    const out = JSON.parse(text);
+    const out = parseGeminiJson(text);
     sendJson(res, 200, { provider: "gemini", model: usedModel, ...out });
     // Async: log drill result (no audio)
     const __sInfo = getAuthInfo(req);
@@ -1132,7 +1138,7 @@ Rules:
 Return ONLY this JSON: {"ipa": "<full IPA string>", "perWord": [{"word": "word1", "ipa": "/wɜːd/"}, ...]}`;
     const chosenModel = pickModelForKind("score-word", model); // use LITE tier — fast
     const { text: out, model: usedModel } = await callGemini({ apiKey, model: chosenModel, prompt, responseJson: true });
-    const data = JSON.parse(out);
+    const data = parseGeminiJson(out);
     sendJson(res, 200, { provider: "gemini", model: usedModel, ipa: data.ipa || "", perWord: data.perWord || [] });
   } catch (error) {
     sendJson(res, 200, { ipa: "", perWord: [], warning: error.message });
@@ -1354,7 +1360,7 @@ Return ONLY this JSON:
 
     const chosenModel = pickModelForKind(kind, model);
     const { text, model: usedModel } = await callGemini({ apiKey, model: chosenModel, prompt, responseJson: true });
-    const answer = JSON.parse(text);
+    const answer = parseGeminiJson(text);
     // Array responses (intonation, chunking) go under "data" key; object responses spread normally
     if (Array.isArray(answer)) {
       sendJson(res, 200, { provider: "gemini", model: usedModel, kind, data: answer });
