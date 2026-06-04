@@ -2736,19 +2736,18 @@
     toast.innerHTML = '<span style="display:inline-block;width:.85rem;height:.85rem;border:2px solid #fff;border-top-color:transparent;border-radius:50%;animation:ln-spin .9s linear infinite;"></span> Đang chấm điểm…';
     document.body.appendChild(toast);
 
-    // Phase 2: async background scoring.
-    // On deployed hosts (Netlify), ALWAYS use async-first for audio scoring:
-    //   - Netlify sync function hard-caps at 26s which is too tight for Gemini
-    //     cold-starts + medium/long audio (even 18s recordings can timeout).
-    //   - Background function has 900s budget — never times out.
-    //   - Polling adds ~3-6s overhead but guarantees results.
-    // On localhost, keep sync (no timeout issue, faster UX).
+    // Chọn chế độ chấm theo ĐỘ DÀI thật của audio (không ép theo host nữa):
+    //   - Audio NGẮN  -> chấm ĐỒNG BỘ (sync): nhanh, không phải đợi polling nền.
+    //     Nếu sync chạm trần 26s của Netlify -> tự fallback sang nền (xử lý bên dưới).
+    //   - Audio DÀI / Part 2 / payload lớn -> chấm NỀN (background 900s) ngay từ đầu,
+    //     vì sync gần như chắc chắn timeout.
+    // "Dài" = Part 2 (độc thoại ~2 phút), hoặc thời lượng > 30s, hoặc base64 > 600k.
     // Manual opt-out: window.LN_ASYNC_SCORE === false.
     const asyncOptOut = typeof window !== "undefined" && window.LN_ASYNC_SCORE === false;
-    const isDeployed = !/^(localhost|127\.0\.0\.1|0\.0\.0\.0)$/i.test(location.hostname);
     const isPart2 = /^PART\s*2/i.test(String(partLabel || ""));
-    const isLongAudio = (audioDataUrl || "").length > 600000;
-    const allowAsync = !asyncOptOut && (isDeployed || isPart2 || isLongAudio);
+    const durationSec = (durationMs || 0) / 1000;
+    const isLongAudio = (audioDataUrl || "").length > 600000 || durationSec > 30;
+    const allowAsync = !asyncOptOut && (isPart2 || isLongAudio);
     const useAsyncFirst = allowAsync;
     if (useAsyncFirst) {
       try {
