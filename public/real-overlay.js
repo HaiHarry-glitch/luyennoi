@@ -2789,6 +2789,168 @@
     throw new Error("Chấm nền quá lâu — audio vẫn còn, bạn có thể thử lại.");
   }
 
+  // ──────────── Chấm TRỰC TIẾP client → Gemini (không qua Netlify) ────────────
+  // Bỏ qua cap 26s + cold-start + polling của Netlify Functions -> nhanh nhất và
+  // chạy được audio dài bao nhiêu cũng được. Dùng key của chính người dùng.
+  const LN_DIRECT_SCORE_MODELS = ["gemini-3.5-flash", "gemini-3-flash-preview"];
+
+  // Prompt chấm — giữ ĐỒNG BỘ với netlify/functions/_lib/score.mjs (buildScorePrompt).
+  function buildDirectScorePrompt({ part, question, transcript, note, audioBase64 }) {
+    return `You are a FAIR, encouraging IELTS Speaking examiner. Score per the official public band descriptors below. Be balanced — recognise what the learner does well, but still flag genuine errors so they can improve. Do not inflate scores wildly, but reward clear effort and good ideas. Return ONLY valid JSON — no markdown, no explanation.
+
+OFFICIAL IELTS SPEAKING BAND DESCRIPTORS (public version — use exactly):
+
+FLUENCY & COHERENCE
+- Band 9: Speaks fluently with only rare repetition/self-correction; hesitation is content-related; fully coherent and appropriately extended.
+- Band 8: Speaks fluently with only occasional repetition/self-correction; develops topics coherently.
+- Band 7: Speaks at length without noticeable effort or loss of coherence; some language-related hesitation; uses connectives flexibly.
+- Band 6: Willing to speak at length though may lose coherence at times due to repetition, self-correction or hesitation.
+- Band 5: Usually maintains flow but uses repetition, self-correction or slow speech; overuses certain connectives.
+- Band 4: Cannot respond without noticeable pauses; slow speech with frequent repetition.
+- Band 3: Long pauses; limited ability to link simple sentences.
+
+LEXICAL RESOURCE
+- Band 9: Full flexibility and precise use; idiomatic language natural and accurate.
+- Band 8: Wide vocabulary used fluently; less common and idiomatic vocabulary skillfully; occasional inaccuracy.
+- Band 7: Flexible vocabulary; some less common/idiomatic items; paraphrases effectively.
+- Band 6: Wide enough to discuss topics at length though with some inappropriacy; generally paraphrases successfully.
+- Band 5: Limited but flexible enough for familiar/unfamiliar topics; limited paraphrasing.
+- Band 4: Familiar topics only; rare paraphrasing.
+- Band 3: Simple vocab for personal info; insufficient for unfamiliar topics.
+
+GRAMMATICAL RANGE & ACCURACY
+- Band 9: Wide range with full flexibility and accuracy; rare minor slips.
+- Band 8: Wide range flexibly; majority of sentences error-free; occasional inappropriacies.
+- Band 7: Range of complex structures with flexibility; frequent error-free sentences; some mistakes persist.
+- Band 6: Mix of simple and complex; errors frequent but rarely cause comprehension problems.
+- Band 5: Basic forms with reasonable accuracy; limited complex structures with frequent errors.
+- Band 4: Basic forms with errors; rare subordinate clauses.
+- Band 3: Attempts basic forms with limited success; numerous errors.
+
+PRONUNCIATION
+- Band 9: Effortless to understand; full range of phonological features.
+- Band 8: Wide range of features; easy to understand throughout; L1 accent minimal effect.
+- Band 7: Range of features with variable control; generally understood throughout.
+- Band 6: Range of features with mixed control; mispronunciation reduces clarity at times.
+- Band 5: Frequent mispronunciations cause some difficulty.
+- Band 4: Limited features; frequent mispronunciations cause difficulty.
+- Band 3: Some basic features but limited control; frequent mispronunciation causes strain.
+
+QUESTION
+- Part: ${part}
+- Question: ${question}
+- Transcript hint: ${transcript || "None — transcribe from audio if attached."}
+- Learner note / focus area: ${note || "None"}
+- Audio attached: ${audioBase64 ? "yes" : "no"}
+
+Scoring rules — BE FAIR:
+- Score each criterion as a WHOLE-INTEGER band (1-9).
+- "overall" = round DOWN to nearest 0.5: Math.floor(((fluency+vocabulary+grammar+pronunciation)/4)*2)/2. Always a number.
+- PRONUNCIATION: judge by intelligibility. A clear Vietnamese accent with good rhythm/stress can earn band 6-7. Reserve 8+ for near-native. Small slips alone should NOT drag down a whole band — only patterns do.
+- FLUENCY: minor fillers or 1-2 self-corrections acceptable up to band 7 if speech flows. For Part 2: if clearly under 60s or skips most cue card sub-questions -> cap fluency at band 5.
+- GRAMMAR: a few minor errors normal at band 6-7. Only simple sentences with no complex structures -> cap at band 5.
+- VOCABULARY: only basic words, no paraphrasing -> cap at band 5. Natural collocations -> 6-7. Idioms used appropriately -> 7+.
+- If audio unclear/noisy/inaudible, set pronunciation score to "?" and put a Vietnamese warning in pronunciation.feedback and environmentWarning.
+- pronunciationIssues: list EVERY noticeable mispronunciation. Min 5 if pronunciation < 7; min 3 at band 7. severity "heavy"/"light". Be generous in flagging. targetSound MUST be correct IPA with stress mark.
+- grammarIssues / vocabularyIssues / spellingIssues: MOST IMPORTANT — list EVERY error for inline strike-through. Be exhaustive. NEVER empty unless genuinely perfect.
+  - wordIndex = 0-based index of the wrong word when transcript split on whitespace.
+  - original = EXACT wrong token as in transcript. suggestion = corrected single token (or "" to delete).
+  - kind: grammar "tense"|"agreement"|"article"|"preposition"|"plural"|"word-form"|"pronoun"|"missing"; vocabulary "wrong-word"|"collocation"|"register"|"awkward"; spelling "spelling".
+  - explanation = one short Vietnamese sentence.
+- fluencyPauses: positions in transcript where speaker paused, with duration label.
+- suggestions: 3 concrete, actionable tips in Vietnamese.
+- All feedback text in Vietnamese (IPA/English where useful).
+
+Return ONLY this JSON (criterion scores integer 1-9 or "?"; overall a 0.5-step number rounded DOWN):
+{
+  "overall": number,
+  "transcript": string,
+  "rewrittenAnswer": string,
+  "feedback": string,
+  "environmentWarning": string,
+  "fluencyPauses": [{"afterWord": string, "wordIndex": number, "durationMs": number, "label": "short"|"medium"|"long"}],
+  "pronunciationIssues": [{"word": string, "targetSound": string, "observed": string, "severity": "light"|"heavy"}],
+  "grammarIssues": [{"wordIndex": number, "original": string, "suggestion": string, "kind": string, "explanation": string}],
+  "vocabularyIssues": [{"wordIndex": number, "original": string, "suggestion": string, "kind": string, "explanation": string}],
+  "spellingIssues": [{"wordIndex": number, "original": string, "suggestion": string, "explanation": string}],
+  "criteria": {
+    "pronunciation": {"score": number|"?", "feedback": string},
+    "fluency": {"score": number, "feedback": string},
+    "grammar": {"score": number, "feedback": string},
+    "vocabulary": {"score": number, "feedback": string}
+  },
+  "suggestions": [string, string, string]
+}`;
+  }
+
+  function lnApplyOverallFloor(scored) {
+    try {
+      const c = scored.criteria || {};
+      const nums = [c.fluency?.score, c.vocabulary?.score, c.grammar?.score, c.pronunciation?.score]
+        .map((x) => (typeof x === "number" ? x : null)).filter((x) => x !== null);
+      if (nums.length === 4) scored.overall = Math.floor((nums.reduce((a, b) => a + b, 0) / 4) * 2) / 2;
+      else if (typeof scored.overall === "number") scored.overall = Math.floor(scored.overall * 2) / 2;
+    } catch {}
+    return scored;
+  }
+
+  function lnParseGeminiJson(text) {
+    const strip = (t) => String(t || "").trim().replace(/^```(?:json)?\s*/i, "").replace(/```$/i, "").trim();
+    const extract = (t) => {
+      const s = strip(t);
+      const start = Math.min(...["{", "["].map((ch) => { const i = s.indexOf(ch); return i < 0 ? Infinity : i; }));
+      if (!Number.isFinite(start)) return s;
+      let depth = 0, quote = "", esc = false;
+      for (let i = start; i < s.length; i++) {
+        const ch = s[i];
+        if (quote) { if (esc) esc = false; else if (ch === "\\") esc = true; else if (ch === quote) quote = ""; continue; }
+        if (ch === '"' || ch === "'") { quote = ch; continue; }
+        if (ch === "{" || ch === "[") depth++;
+        if (ch === "}" || ch === "]") depth--;
+        if (depth === 0) return s.slice(start, i + 1);
+      }
+      return s.slice(start);
+    };
+    const repair = (t) => strip(t).replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F]/g, " ").replace(/,\s*([}\]])/g, "$1");
+    for (const cand of [strip(text), extract(text), repair(extract(text)), repair(text)]) {
+      try { return JSON.parse(cand); } catch {}
+    }
+    throw new Error("Invalid Gemini JSON");
+  }
+
+  async function scoreDirectGemini({ apiKey, audioBase64, mimeType, question, part, note }) {
+    if (!apiKey) throw new Error("Missing API key");
+    if (!audioBase64) throw new Error("Missing audio");
+    const prompt = buildDirectScorePrompt({ part: part || "", question: question || "", note: note || "", audioBase64 });
+    let lastErr = "";
+    for (const m of LN_DIRECT_SCORE_MODELS) {
+      const url = `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(m)}:generateContent?key=${encodeURIComponent(apiKey)}`;
+      let res;
+      try {
+        res = await fetch(url, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            contents: [{ role: "user", parts: [{ text: prompt }, { inline_data: { mime_type: mimeType || "audio/webm", data: audioBase64 } }] }],
+            generationConfig: { responseMimeType: "application/json" }
+          })
+        });
+      } catch (e) { lastErr = e?.message || "network/CORS"; continue; }
+      const data = await res.json().catch(() => ({}));
+      if (res.ok) {
+        const text = (data?.candidates?.[0]?.content?.parts || []).map((p) => p.text || "").join("\n");
+        const scored = lnApplyOverallFloor(lnParseGeminiJson(text));
+        if (!scored || (!scored.criteria && typeof scored.overall !== "number")) throw new Error("Empty score JSON");
+        return { provider: "gemini-direct", model: m, ...scored };
+      }
+      lastErr = data?.error?.message || ("HTTP " + res.status);
+      // Key sai -> báo ngay, không thử model khác.
+      if (/api[_ ]?key|invalid|401|permission|forbidden/i.test(lastErr)) throw new Error(lastErr);
+      // 404/429/khác -> thử model kế tiếp.
+    }
+    throw new Error(lastErr || "Direct scoring failed");
+  }
+
   // Single source of truth for posting audio → /api/gemini/score-speaking.
   // Returns true on a real result, false otherwise (so the caller can keep the retry banner).
   async function submitScoreRequest({ audioUrl, audioDataUrl, mimeType, question, partLabel, durationMs }) {
@@ -2810,6 +2972,34 @@
     toast.style.cssText = "position:fixed;top:1rem;right:1rem;background:#d9381e;color:white;padding:.8rem 1.2rem;border-radius:.5rem;z-index:10000;font-family:Lexend,sans-serif;display:inline-flex;align-items:center;gap:.5rem;";
     toast.innerHTML = '<span style="display:inline-block;width:.85rem;height:.85rem;border:2px solid #fff;border-top-color:transparent;border-radius:50%;animation:ln-spin .9s linear infinite;"></span> Đang chấm điểm…';
     document.body.appendChild(toast);
+
+    // ── BƯỚC 0: CHẤM TRỰC TIẾP client → Gemini (nhanh nhất, không cap 26s) ──
+    // Thành công -> render + đẩy điểm/audio lên Supabase (qua applyScoreResult).
+    // Lỗi CORS/mạng/parse -> rơi xuống đường Netlify cũ bên dưới (sync/nền).
+    // Tắt thủ công: window.LN_DIRECT_SCORE === false.
+    const directOff = typeof window !== "undefined" && window.LN_DIRECT_SCORE === false;
+    if (!directOff) {
+      try {
+        const audioB64 = (audioDataUrl || "").split(",")[1] || audioDataUrl;
+        const data = await scoreDirectGemini({
+          apiKey, audioBase64: audioB64, mimeType,
+          question, part: partLabel, note: localStorage.getItem("ln.userNote") || ""
+        });
+        toast.remove();
+        applyScoreResult(data, audioUrl, audioDataUrl, mimeType, question, partLabel, durationMs);
+        return true;
+      } catch (e) {
+        const msg = String(e?.message || e);
+        if (/api[_ ]?key|invalid|401|permission|forbidden/i.test(msg)) {
+          toast.remove();
+          showScoreRetry(audioUrl, audioDataUrl, mimeType, question, partLabel,
+            "API key Gemini không hợp lệ — kiểm tra lại trong /settings.", durationMs);
+          return false;
+        }
+        console.warn("[ln-score] chấm trực tiếp lỗi, fallback Netlify:", msg);
+        // tiếp tục xuống đường Netlify (sync/nền)
+      }
+    }
 
     // Chọn chế độ chấm theo ĐỘ DÀI thật của audio (không ép theo host nữa):
     //   - Audio NGẮN  -> chấm ĐỒNG BỘ (sync): nhanh, không phải đợi polling nền.
