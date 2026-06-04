@@ -2562,8 +2562,11 @@
         REC_STATE.recording = false;
         if (REC_STATE.cancelled) return;
         const blob = new Blob(REC_STATE.chunks, { type: REC_STATE.mimeType || REC_STATE.chunks[0]?.type || "audio/webm" });
-        if (!blob.size || blob.size < 1200) {
-          alert("Bản ghi âm quá ngắn hoặc không có âm thanh. Hãy bấm Ghi âm và nói ít nhất 2 giây rồi gửi lại.");
+        // Gửi mọi bản ghi (ngắn hay dài) đi chấm + lưu Supabase.
+        // Chỉ bỏ qua khi không thu được byte nào (mic không cấp dữ liệu) để
+        // tránh gọi API chắc chắn lỗi — còn lại đều gửi.
+        if (!blob.size) {
+          alert("Không thu được âm thanh nào (microphone không cấp dữ liệu). Hãy kiểm tra quyền mic rồi thử lại.");
           return;
         }
         await scoreAndSave(blob, REC_STATE.durationMs);
