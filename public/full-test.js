@@ -20,6 +20,9 @@
     examMode: "strict",          // strict (timed) | relaxed
     questionCount: 3,            // Part 1: 3 questions per topic × 3 topics = 9 questions
     followUp: false,
+    // Tùy chọn đề (custom-strict): số câu mỗi phần, cho phép 0 (bỏ qua phần đó).
+    // Tối thiểu tổng số câu phải >= 1 (ví dụ chỉ 1 câu Part 1 cũng được).
+    customCounts: { p1PerTopic: 3, p2: 1, p3: 5 },
     mode: TEST_MODE,             // for downstream branching
     strictSessionId: "",
     strictGuardActive: false,
@@ -377,14 +380,17 @@
     const data = FT.questionsData;
 
     if (IS_CUSTOM_STRICT) {
+      const cc = FT.customCounts || { p1PerTopic: 3, p2: 1, p3: 5 };
       const selected = new Set(FT.selectedPart1Topics);
       const p1Topics = (data.part1?.topics || []).filter(t => selected.has(t.title)).slice(0, 3);
       FT.questions.part1 = [];
-      p1Topics.forEach(t => {
-        pickRandom(t.questions || [], Math.min(3, t.questions?.length || 0)).forEach((q, i) => {
-          FT.questions.part1.push({ section: "part1", topic: t.title, question: q, isFirstInTopic: i === 0 });
+      if (cc.p1PerTopic > 0) {
+        p1Topics.forEach(t => {
+          pickRandom(t.questions || [], Math.min(cc.p1PerTopic, t.questions?.length || 0)).forEach((q, i) => {
+            FT.questions.part1.push({ section: "part1", topic: t.title, question: q, isFirstInTopic: i === 0 });
+          });
         });
-      });
+      }
 
       const allCards = [];
       if (Array.isArray(FT.part23Detailed) && FT.part23Detailed.length) {
@@ -393,12 +399,12 @@
         }));
       }
       const pickedCard = allCards.find(c => c.key === FT.selectedPart2Key) || allCards[0];
-      FT.questions.part2 = pickedCard || null;
-      FT.questions.part3 = (pickedCard?.questions || []).slice(0, 5).map(q => ({
-        section: "part3",
-        topic: pickedCard.title,
-        question: q,
-      }));
+      // Part 2: chỉ đưa vào khi số câu Part 2 >= 1 (0 = bỏ qua phần nói Part 2).
+      FT.questions.part2 = (cc.p2 >= 1) ? (pickedCard || null) : null;
+      // Part 3: lấy theo số câu chọn (0 = bỏ qua); nguồn câu vẫn từ card đã chọn.
+      FT.questions.part3 = (cc.p3 > 0 && pickedCard)
+        ? (pickedCard.questions || []).slice(0, cc.p3).map(q => ({ section: "part3", topic: pickedCard.title, question: q }))
+        : [];
       FT.lockedQuestionIds = [
         ...FT.questions.part1.map(q => `part1:${q.topic}:${q.question}`),
         FT.questions.part2 ? `part2:${FT.questions.part2.group}:${FT.questions.part2.title}` : "",
@@ -524,6 +530,8 @@
     }
     if (!FT.selectedPart1Topics.length) FT.selectedPart1Topics = p1Topics.slice(0, 3).map(t => t.title);
     if (!FT.selectedPart2Key && allCards[0]) FT.selectedPart2Key = allCards[0].key;
+    const cc = FT.customCounts || { p1PerTopic: 3, p2: 1, p3: 5 };
+    const numOpts = (sel) => [0, 1, 2, 3, 4, 5].map(n => `<option value="${n}" ${n === sel ? "selected" : ""}>${n}</option>`).join("");
     FT.state = "setup";
     root.innerHTML = `
       <div class="ft-card" style="max-width:860px;">
@@ -559,6 +567,24 @@
           </select>
           <div class="ft-hint">Part 3 sẽ tự đi theo chủ đề Part 2 đã chọn.</div>
         </div>
+        <div class="ft-row">
+          <label class="ft-label">Số câu mỗi phần (chọn 0 để bỏ qua phần đó)</label>
+          <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:.6rem;">
+            <div>
+              <div class="ft-hint" style="margin:0 0 .25rem;">Part 1 (mỗi nhóm)</div>
+              <select id="cc-p1" class="ft-select">${numOpts(cc.p1PerTopic)}</select>
+            </div>
+            <div>
+              <div class="ft-hint" style="margin:0 0 .25rem;">Part 2 (cue card)</div>
+              <select id="cc-p2" class="ft-select"><option value="0" ${cc.p2 === 0 ? "selected" : ""}>0 (bỏ qua)</option><option value="1" ${cc.p2 >= 1 ? "selected" : ""}>1</option></select>
+            </div>
+            <div>
+              <div class="ft-hint" style="margin:0 0 .25rem;">Part 3 (số câu)</div>
+              <select id="cc-p3" class="ft-select">${numOpts(cc.p3)}</select>
+            </div>
+          </div>
+          <div class="ft-hint" id="cc-total"></div>
+        </div>
         <div style="display:flex;justify-content:space-between;gap:.5rem;margin-top:1.5rem;">
           <button id="ft-cancel" class="ft-btn ft-btn-danger">Huỷ</button>
           <button id="ft-start" class="ft-btn ft-btn-primary">Bắt đầu fullscreen</button>
@@ -569,8 +595,18 @@
       const checks = [...root.querySelectorAll('#strict-p1-topics input[type="checkbox"]')];
       FT.selectedPart1Topics = checks.filter(c => c.checked).map(c => c.value).slice(0, 3);
       checks.forEach(c => { c.disabled = !c.checked && FT.selectedPart1Topics.length >= 3; });
-      root.querySelector("#strict-p1-count").textContent = `Đã chọn ${FT.selectedPart1Topics.length}/3 nhóm.`;
-      root.querySelector("#ft-start").disabled = FT.selectedPart1Topics.length === 0 || !FT.selectedPart2Key;
+      const p1 = Math.max(0, Number(root.querySelector("#cc-p1").value) || 0);
+      const p2 = Math.max(0, Number(root.querySelector("#cc-p2").value) || 0);
+      const p3 = Math.max(0, Number(root.querySelector("#cc-p3").value) || 0);
+      FT.customCounts = { p1PerTopic: p1, p2, p3 };
+      const p1Total = (p1 > 0 ? FT.selectedPart1Topics.length : 0) * p1;
+      const total = p1Total + (p2 >= 1 ? 1 : 0) + p3;
+      const needCard = (p2 >= 1 || p3 > 0);
+      root.querySelector("#strict-p1-count").textContent = `Đã chọn ${FT.selectedPart1Topics.length}/3 nhóm Part 1.`;
+      root.querySelector("#cc-total").textContent = total >= 1
+        ? `Tổng ${total} câu — Part 1: ${p1Total}, Part 2: ${p2 >= 1 ? 1 : 0}, Part 3: ${p3}.`
+        : "⚠ Cần ít nhất 1 câu: chọn số câu > 0 cho ít nhất một phần.";
+      root.querySelector("#ft-start").disabled = total < 1 || (needCard && !FT.selectedPart2Key);
     };
     root.querySelector("#ft-voice").addEventListener("change", (e) => {
       const v = voices.find(x => x.name === e.target.value);
@@ -579,6 +615,7 @@
     root.querySelector("#ft-voice-test").addEventListener("click", () => speak("Hello, I'm your IELTS examiner. Strict test mode will now begin."));
     root.querySelectorAll('#strict-p1-topics input[type="checkbox"]').forEach(input => input.addEventListener("change", updateSelection));
     root.querySelector("#strict-p2-topic").addEventListener("change", (e) => { FT.selectedPart2Key = e.target.value; updateSelection(); });
+    ["#cc-p1", "#cc-p2", "#cc-p3"].forEach(sel => root.querySelector(sel).addEventListener("change", updateSelection));
     root.querySelector("#ft-cancel").addEventListener("click", () => { location.href = "/take-test/home"; });
     root.querySelector("#ft-start").addEventListener("click", startTest);
     updateSelection();
@@ -686,7 +723,7 @@
     // Validate based on mode — don't require Part 1 when running Part 2/3 alone
     const haveContent =
       (TEST_MODE === "full-test" && FT.questions.part1.length && FT.questions.part2) ||
-      (IS_CUSTOM_STRICT        && FT.questions.part1.length && FT.questions.part2 && FT.questions.part3.length) ||
+      (IS_CUSTOM_STRICT        && (FT.questions.part1.length || FT.questions.part2 || FT.questions.part3.length)) ||
       (TEST_MODE === "part1"     && FT.questions.part1.length) ||
       (TEST_MODE === "part2"     && FT.questions.part2) ||
       (TEST_MODE === "part3"     && FT.questions.part3.length);
