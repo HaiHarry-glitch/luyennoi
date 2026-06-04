@@ -2926,16 +2926,22 @@ Return ONLY this JSON (criterion scores integer 1-9 or "?"; overall a 0.5-step n
     for (const m of LN_DIRECT_SCORE_MODELS) {
       const url = `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(m)}:generateContent?key=${encodeURIComponent(apiKey)}`;
       let res;
+      // Timeout 180s/lần gọi -> nếu Gemini treo thì hủy, rơi sang model kế / fallback Netlify
+      // (không để treo vô hạn vì fetch trực tiếp không có giới hạn mặc định).
+      const ctrl = new AbortController();
+      const timer = setTimeout(() => ctrl.abort(), 180000);
       try {
         res = await fetch(url, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
+          signal: ctrl.signal,
           body: JSON.stringify({
             contents: [{ role: "user", parts: [{ text: prompt }, { inline_data: { mime_type: mimeType || "audio/webm", data: audioBase64 } }] }],
             generationConfig: { responseMimeType: "application/json" }
           })
         });
-      } catch (e) { lastErr = e?.message || "network/CORS"; continue; }
+      } catch (e) { lastErr = e?.name === "AbortError" ? "Gemini timed out (180s)" : (e?.message || "network/CORS"); continue; }
+      finally { clearTimeout(timer); }
       const data = await res.json().catch(() => ({}));
       if (res.ok) {
         const text = (data?.candidates?.[0]?.content?.parts || []).map((p) => p.text || "").join("\n");
@@ -2944,9 +2950,11 @@ Return ONLY this JSON (criterion scores integer 1-9 or "?"; overall a 0.5-step n
         return { provider: "gemini-direct", model: m, ...scored };
       }
       lastErr = data?.error?.message || ("HTTP " + res.status);
-      // Key sai -> báo ngay, không thử model khác.
-      if (/api[_ ]?key|invalid|401|permission|forbidden/i.test(lastErr)) throw new Error(lastErr);
-      // 404/429/khác -> thử model kế tiếp.
+      // CHỈ bail khi key thật sự sai (để báo người dùng). 403/permission/referrer
+      // có thể do key bị giới hạn HTTP referrer -> gọi thẳng từ trình duyệt bị chặn
+      // nhưng qua Netlify (server, không referrer) vẫn chạy -> KHÔNG bail, để fallback.
+      if (/API key not valid|api[_ ]?key.*invalid|invalid.*api[_ ]?key|401/i.test(lastErr)) throw new Error(lastErr);
+      // 403/404/429/permission/khác -> thử model kế tiếp rồi fallback Netlify.
     }
     throw new Error(lastErr || "Direct scoring failed");
   }
@@ -2993,7 +3001,8 @@ Return ONLY this JSON (criterion scores integer 1-9 or "?"; overall a 0.5-step n
         return true;
       } catch (e) {
         const msg = String(e?.message || e);
-        if (/api[_ ]?key|invalid|401|permission|forbidden/i.test(msg)) {
+        // Chỉ chặn khi key thật sự sai; còn lại (403 referrer, mạng, CORS...) -> fallback Netlify.
+        if (/API key not valid|api[_ ]?key.*invalid|invalid.*api[_ ]?key|401/i.test(msg)) {
           toast.remove();
           showScoreRetry(audioUrl, audioDataUrl, mimeType, question, partLabel,
             "API key Gemini không hợp lệ — kiểm tra lại trong /settings.", durationMs);
