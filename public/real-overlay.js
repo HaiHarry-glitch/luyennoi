@@ -642,6 +642,18 @@
     const HIGHLIGHT_OUT = "2px solid #d9381e";
     let currentIdx = -1;
 
+    // Ép startMs KHÔNG GIẢM để karaoke không nhảy lùi (Gemini đôi khi trả lệch thứ tự).
+    (function enforceMonotonic() {
+      let prev = -Infinity;
+      for (const t of alignedTimings) {
+        if (!t) continue;
+        let s = Number(t.startMs ?? t.start ?? 0);
+        if (!(s >= prev)) s = prev;
+        if (t.startMs != null) t.startMs = s; else t.start = s;
+        prev = s;
+      }
+    })();
+
     // Hiệu chỉnh TRÔI NHỊP: Gemini ước lượng mốc thời gian theo tổng độ dài nó
     // tự đoán, thường lệch dần so với audio thật (càng dài càng lệch). Rescale
     // tuyến tính toàn bộ mốc về đúng độ dài audio thật để highlight bám sát hơn.
@@ -683,21 +695,17 @@
 
     const tick = () => {
       const tMs = a.currentTime * 1000;
-      // Find the active word: a timing entry whose [startMs, endMs) contains tMs.
-      // GAPS BETWEEN WORDS (silence/pauses) are intentional — during a gap, NO word
-      // is highlighted. We do NOT extend a word's range to the next word's start.
+      // Karaoke LIÊN TỤC: luôn sáng TỪ vừa bắt đầu gần nhất (start <= thời điểm hiện
+      // tại). Chỉ phụ thuộc startMs (endMs của Gemini rất nhiễu) -> ít lệch hơn, và
+      // KHÔNG còn khoảng "tắt highlight" giữa các từ khiến cảm giác giật/sai nhịp.
+      // Cho phép sáng sớm 80ms để bù độ trễ render + lệch nhỏ của Gemini.
+      const LEAD_MS = 80;
       let activeIdx = -1;
       for (let i = 0; i < alignedTimings.length; i++) {
         const t = alignedTimings[i];
         if (!t) continue;
         const start = Number(t.startMs ?? t.start ?? 0);
-        const rawEnd = (t.endMs ?? t.end);
-        // Only fall back if endMs is missing entirely — give a small 250ms window,
-        // never extend all the way to the next word.
-        const end = (typeof rawEnd === "number" && rawEnd > start) ? rawEnd : (start + 250);
-        // Zero-length placeholders (start === end) are deliberately un-matchable
-        if (start === end) continue;
-        if (tMs >= start && tMs < end) { activeIdx = i; break; }
+        if (start - LEAD_MS <= tMs) activeIdx = i; // lấy index lớn nhất đã bắt đầu
       }
       if (activeIdx !== currentIdx) {
         if (currentIdx >= 0) {
@@ -2733,8 +2741,13 @@
 
     const startedAt = Date.now();
     let failStreak = 0;
+    let pollCount = 0;
     while (Date.now() - startedAt < 660000) {
-      await new Promise((resolve) => setTimeout(resolve, 3000));
+      // Poll dày lúc đầu (kết quả thường về nhanh sau khi Gemini xong) rồi giãn dần
+      // để giảm độ trễ cảm nhận mà không spam server: 1.2s, 1.5s, 1.5s, ... tối đa 2.5s.
+      const wait = pollCount === 0 ? 1200 : Math.min(1500 + pollCount * 100, 2500);
+      pollCount++;
+      await new Promise((resolve) => setTimeout(resolve, wait));
       const r = await fetch("/api/gemini/score-speaking/status/" + encodeURIComponent(job.jobId), { cache: "no-store" });
       if (!r.ok) {
         if (r.status >= 500) {
