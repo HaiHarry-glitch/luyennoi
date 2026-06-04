@@ -4,7 +4,7 @@ import { dirname, join } from "node:path";
 const root = process.cwd();
 const publicDir = join(root, "public");
 const realDir = join(publicDir, "real");
-const ASSET_VERSION = "score-async-v7";
+const ASSET_VERSION = "score-async-v8";
 
 // ── Mojibake fix map (same as real-overlay.js fixMojibakeText) ──
 const MOJIBAKE = [
@@ -132,9 +132,10 @@ function injectOverlay(html) {
     .replace(/<link[^>]+rel=["']manifest["'][^>]*>/gi, "")
     .replace(/<meta[^>]+name=["']theme-color["'][^>]*>/gi, "");
   const iconTag = `
-<link rel="icon" href="/real/favicon.svg?v=ln" type="image/svg+xml" sizes="any">
-<link rel="shortcut icon" href="/real/favicon.svg?v=ln" type="image/svg+xml">
-<link rel="apple-touch-icon" href="/real/favicon.png">
+<link rel="icon" type="image/png" sizes="32x32" href="/real/favicon.png?v=logo2">
+<link rel="icon" type="image/png" sizes="192x192" href="/real/icons/icon-192.png?v=logo2">
+<link rel="shortcut icon" href="/real/favicon.ico?v=logo2">
+<link rel="apple-touch-icon" sizes="180x180" href="/real/apple-touch-icon-iphone-retina-120x120.png?v=logo2">
 <link rel="manifest" href="/real/manifest.webmanifest">
 <meta name="theme-color" content="#d9381e">`;
   const tag = `
@@ -158,6 +159,45 @@ ${iconTag}
   if (html.includes("<head>")) return html.replace("<head>", "<head>" + tag);
   if (html.includes("<head ")) return html.replace(/(<head[^>]*>)/, "$1" + tag);
   return tag + html;
+}
+
+const SITE_URL = "https://luyennoi.netlify.app";
+const SEO_DEFAULT_DESC = "HIN Luyện Nói: luyện IELTS Speaking miễn phí với đề Forecast, AI chấm chi tiết từng tiêu chí, Smart IPA và thi thử chống gian lận.";
+const SEO_IMAGE = SITE_URL + "/real/icons/icon-512.png";
+
+function escAttr(s) {
+  return String(s || "").replace(/&/g, "&amp;").replace(/"/g, "&quot;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+}
+
+// Thêm thẻ SEO chuẩn cho mạng xã hội + canonical (Open Graph, Twitter Card).
+// Lấy title + description sẵn có của trang để og/twitter khớp nội dung.
+function injectSeo(html, route) {
+  const url = SITE_URL + (route === "/" ? "/" : route);
+  const title = (html.match(/<title[^>]*>([^<]*)<\/title>/i)?.[1] || "HIN Luyện Nói | IELTS Speaking AI").trim();
+  const desc = (html.match(/<meta[^>]+name=["']description["'][^>]+content=["']([^"']*)["']/i)?.[1] || SEO_DEFAULT_DESC).trim();
+  // Bỏ các thẻ og/twitter/canonical cũ (nếu có) để tránh trùng lặp.
+  let out = html
+    .replace(/<link[^>]+rel=["']canonical["'][^>]*>/gi, "")
+    .replace(/<meta[^>]+property=["']og:[^"']*["'][^>]*>/gi, "")
+    .replace(/<meta[^>]+name=["']twitter:[^"']*["'][^>]*>/gi, "");
+  const seo = `
+<link rel="canonical" href="${escAttr(url)}">
+<meta name="robots" content="index,follow">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="HIN Luyện Nói">
+<meta property="og:locale" content="vi_VN">
+<meta property="og:title" content="${escAttr(title)}">
+<meta property="og:description" content="${escAttr(desc)}">
+<meta property="og:url" content="${escAttr(url)}">
+<meta property="og:image" content="${SEO_IMAGE}">
+<meta property="og:image:width" content="512">
+<meta property="og:image:height" content="512">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="${escAttr(title)}">
+<meta name="twitter:description" content="${escAttr(desc)}">
+<meta name="twitter:image" content="${SEO_IMAGE}">`;
+  if (out.includes("</head>")) return out.replace("</head>", seo + "\n</head>");
+  return out + seo;
 }
 
 function versionAssets(html) {
@@ -194,7 +234,7 @@ const NO_OVERLAY = new Set(["../landing-new.html", "landing.html"]);
 async function writeRoute(route, html, { skipOverlay = false } = {}) {
   const outPath = route === "/" ? join(publicDir, "index.html") : join(publicDir, route.replace(/^\/+/, ""), "index.html");
   await mkdir(dirname(outPath), { recursive: true });
-  const final = versionAssets(skipOverlay ? html : stripSvelteScripts(injectOverlay(fixMojibake(html))));
+  const final = versionAssets(injectSeo(skipOverlay ? html : stripSvelteScripts(injectOverlay(fixMojibake(html))), route));
   await writeFile(outPath, final, "utf8");
   console.log(`[export] ${route} -> ${outPath}${skipOverlay ? " (no overlay)" : ""}`);
 }
@@ -299,6 +339,28 @@ async function main() {
   } catch (e) {
     console.warn(`[export] LuyenDoc IPA dict not found — IPA will fall back to Gemini API: ${e.message}`);
   }
+
+  // ── SEO: robots.txt + sitemap.xml ──
+  const seoRoutes = [
+    "/", "/home", "/question-answer", "/question-answer/part1", "/question-answer/part2",
+    "/question-answer/part3", "/question-answer/user-question", "/take-test", "/take-test/full-test",
+    "/reading", "/alphafeature/pronun", "/alphafeature/vocab", "/alphafeature/boxing",
+    "/alphafeature/past-tense", "/alphafeature/intonation", "/alphafeature/rhythm"
+  ];
+  const today = new Date().toISOString().slice(0, 10);
+  const sitemap = `<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+${seoRoutes.map(r => `  <url><loc>${SITE_URL}${r === "/" ? "/" : r}</loc><lastmod>${today}</lastmod><changefreq>weekly</changefreq><priority>${r === "/" ? "1.0" : "0.7"}</priority></url>`).join("\n")}
+</urlset>
+`;
+  await writeFile(join(publicDir, "sitemap.xml"), sitemap, "utf8");
+  const robots = `User-agent: *
+Allow: /
+Disallow: /api/
+Sitemap: ${SITE_URL}/sitemap.xml
+`;
+  await writeFile(join(publicDir, "robots.txt"), robots, "utf8");
+  console.log("[export] wrote sitemap.xml + robots.txt");
 }
 
 main().catch((error) => {

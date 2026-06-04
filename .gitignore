@@ -37,3 +37,6 @@ package-lock.json
 # Backup files
 *.before-*
 public/real/home-netlify.html
+
+# Local Netlify folder
+.netlify

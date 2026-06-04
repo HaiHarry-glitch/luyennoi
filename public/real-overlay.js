@@ -568,30 +568,34 @@
         }
       } catch {}
     }
-    // Call API if still no timings
+    // Call API if still no timings. KHÔNG chặn lâu: nếu Gemini chậm/timeout/rỗng
+    // (hay gặp với audio Part 2 dài) thì bỏ qua và sẽ TỰ SINH mốc bên dưới để
+    // highlight vẫn chạy — không alert rồi thoát như trước (gây "bấm mà không thấy gì").
     if (!Array.isArray(timings) || !timings.length) {
-      try {
-        const r = await realFetch("/api/gemini/word-timings", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            apiKey: getKey(),
-            audioBase64: (d.audioDataUrl || "").split(",")[1] || "",
-            mimeType: "audio/webm",
-            transcript: d.transcript || ""
-          })
-        });
-        const j = await r.json();
-        timings = Array.isArray(j.wordTimings) ? j.wordTimings : [];
-        d.wordTimings = timings;
-        // Save to localStorage (3-day cache)
-        if (timings.length) {
-          try { localStorage.setItem(wsCacheKey, JSON.stringify({ t: timings, ts: Date.now() })); } catch {}
+      const b64 = (d.audioDataUrl || "").split(",")[1] || "";
+      if (b64) {
+        const wtMime = (d.audioDataUrl?.match(/^data:([^;]+);/) || [])[1] || d.mimeType || "audio/webm";
+        const ctrl = new AbortController();
+        const wtTimer = setTimeout(() => ctrl.abort(), 12000);
+        try {
+          const r = await realFetch("/api/gemini/word-timings", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            signal: ctrl.signal,
+            body: JSON.stringify({ apiKey: getKey(), audioBase64: b64, mimeType: wtMime, transcript: d.transcript || "" })
+          });
+          const j = await r.json();
+          timings = Array.isArray(j.wordTimings) ? j.wordTimings : [];
+          d.wordTimings = timings;
+          if (timings.length) {
+            try { localStorage.setItem(wsCacheKey, JSON.stringify({ t: timings, ts: Date.now() })); } catch {}
+          }
+        } catch (e) {
+          console.warn("[word-sync] timings fetch failed, dùng mốc tự sinh:", e?.message || e);
+          timings = [];
+        } finally {
+          clearTimeout(wtTimer);
         }
-      } catch (e) {
-        btn.innerHTML = originalLabel; btn.disabled = false;
-        alert("Không lấy được timestamp: " + e.message);
-        return;
       }
     }
 
@@ -642,49 +646,66 @@
     const HIGHLIGHT_OUT = "2px solid #d9381e";
     let currentIdx = -1;
 
-    // Ép startMs KHÔNG GIẢM để karaoke không nhảy lùi (Gemini đôi khi trả lệch thứ tự).
-    (function enforceMonotonic() {
-      let prev = -Infinity;
-      for (const t of alignedTimings) {
-        if (!t) continue;
-        let s = Number(t.startMs ?? t.start ?? 0);
-        if (!(s >= prev)) s = prev;
-        if (t.startMs != null) t.startMs = s; else t.start = s;
-        prev = s;
-      }
-    })();
+    // Số mốc thật (non-null) từ Gemini. Part 2 audio dài hay khiến API word-timings
+    // (sync, cap 26s) timeout -> mảng rỗng -> không highlight gì. Khi thiếu mốc, ta
+    // TỰ SINH mốc đều theo độ dài từng từ trải trên độ dài audio thật để karaoke vẫn chạy.
+    const realTimingCount = alignedTimings.filter(Boolean).length;
+    const needSynthetic = realTimingCount < Math.max(2, Math.floor(wordSpans.length * 0.5));
 
-    // Hiệu chỉnh TRÔI NHỊP: Gemini ước lượng mốc thời gian theo tổng độ dài nó
-    // tự đoán, thường lệch dần so với audio thật (càng dài càng lệch). Rescale
-    // tuyến tính toàn bộ mốc về đúng độ dài audio thật để highlight bám sát hơn.
-    let rescaled = false;
-    const rescaleToRealDuration = () => {
-      if (rescaled) return;
+    const resolveRealMs = () => {
       let realMs = Number(d.durationMs || d.audio_duration_ms || 0);
       if (!(realMs > 0) && isFinite(a.duration) && a.duration > 0) realMs = a.duration * 1000;
-      if (!(realMs > 0)) return;
-      let lastEnd = 0;
-      for (const t of alignedTimings) {
-        if (!t) continue;
-        const e = Number(t.endMs ?? t.end ?? 0);
-        if (e > lastEnd) lastEnd = e;
-      }
-      if (!(lastEnd > 0)) return;
-      const scale = realMs / lastEnd;
-      // Chỉ rescale khi lệch đáng kể nhưng vẫn hợp lý (tránh phá khi Gemini đã đúng).
-      if (scale > 0.4 && scale < 2.5 && Math.abs(scale - 1) > 0.04) {
+      if (!(realMs > 0)) realMs = wordSpans.length * 380; // ước lượng cuối: ~0.38s/từ
+      return realMs;
+    };
+
+    let prepared = false;
+    const prepareTimings = () => {
+      if (prepared) return;
+      const realMs = resolveRealMs();
+      if (needSynthetic) {
+        // Sinh mốc tỉ lệ theo độ dài ký tự từng từ, trải đều trên [0, realMs].
+        const lens = wordSpans.map(sp => Math.max(1, (sp.textContent || "").trim().length));
+        const total = lens.reduce((a, b) => a + b, 0) || 1;
+        let acc = 0;
+        for (let i = 0; i < wordSpans.length; i++) {
+          const start = (acc / total) * realMs;
+          acc += lens[i];
+          alignedTimings[i] = { startMs: start, endMs: (acc / total) * realMs };
+        }
+      } else {
+        // Ép startMs không giảm (tránh nhảy lùi) rồi rescale tuyến tính về độ dài thật.
+        let prev = -Infinity;
         for (const t of alignedTimings) {
           if (!t) continue;
-          if (t.startMs != null) t.startMs = Number(t.startMs) * scale;
-          if (t.endMs != null) t.endMs = Number(t.endMs) * scale;
-          if (t.start != null) t.start = Number(t.start) * scale;
-          if (t.end != null) t.end = Number(t.end) * scale;
+          let s = Number(t.startMs ?? t.start ?? 0);
+          if (!(s >= prev)) s = prev;
+          if (t.startMs != null) t.startMs = s; else t.start = s;
+          prev = s;
+        }
+        let lastEnd = 0;
+        for (const t of alignedTimings) {
+          if (!t) continue;
+          const e = Number(t.endMs ?? t.end ?? t.startMs ?? t.start ?? 0);
+          if (e > lastEnd) lastEnd = e;
+        }
+        if (lastEnd > 0) {
+          const scale = realMs / lastEnd;
+          if (scale > 0.4 && scale < 2.5 && Math.abs(scale - 1) > 0.04) {
+            for (const t of alignedTimings) {
+              if (!t) continue;
+              if (t.startMs != null) t.startMs = Number(t.startMs) * scale;
+              if (t.endMs != null) t.endMs = Number(t.endMs) * scale;
+              if (t.start != null) t.start = Number(t.start) * scale;
+              if (t.end != null) t.end = Number(t.end) * scale;
+            }
+          }
         }
       }
-      rescaled = true;
+      prepared = true;
     };
-    if (a.readyState >= 1) rescaleToRealDuration();
-    else a.addEventListener("loadedmetadata", rescaleToRealDuration, { once: true });
+    if (a.readyState >= 1) prepareTimings();
+    else a.addEventListener("loadedmetadata", prepareTimings, { once: true });
 
     const clearAll = () => {
       wordSpans.forEach(s => { s.style.outline = ""; s.style.backgroundColor = ""; s.style.borderRadius = ""; });
@@ -694,6 +715,7 @@
     };
 
     const tick = () => {
+      if (!prepared) prepareTimings();
       const tMs = a.currentTime * 1000;
       // Karaoke LIÊN TỤC: luôn sáng TỪ vừa bắt đầu gần nhất (start <= thời điểm hiện
       // tại). Chỉ phụ thuộc startMs (endMs của Gemini rất nhiễu) -> ít lệch hơn, và

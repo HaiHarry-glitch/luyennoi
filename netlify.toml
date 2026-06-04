@@ -13,7 +13,12 @@
 
 [[redirects]]
   from = "/favicon.ico"
-  to = "/real/favicon.svg"
+  to = "/real/favicon.ico"
+  status = 200
+
+[[redirects]]
+  from = "/apple-touch-icon.png"
+  to = "/real/apple-touch-icon-iphone-retina-120x120.png"
   status = 200
 
 [[redirects]]
