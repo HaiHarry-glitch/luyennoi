@@ -1104,10 +1104,13 @@
       throw new Error("Sync score returned fallback");
     }
 
+    // Gửi audio (payload) tới /start để lưu score_jobs; trigger nền chỉ còn {jobId}.
+    // Netlify Background Functions giới hạn payload nhỏ -> gửi audio qua body trigger
+    // làm audio thật trả HTTP 500 (Thi thử Part 2 luôn fail trước đây).
     const started = await fetch("/api/gemini/score-speaking/start", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ clientHasApiKey: !!payload.apiKey })
+      body: JSON.stringify({ clientHasApiKey: !!payload.apiKey, payload })
     });
     if (!started.ok) {
       const data = await trySyncScore();
@@ -1116,10 +1119,11 @@
     }
     const job = await started.json();
     if (!job?.jobId) throw new Error("Server không trả jobId chấm điểm");
+    const kickBody = job.payloadStored ? { jobId: job.jobId } : { jobId: job.jobId, payload };
     const kicked = await fetch(job.backgroundUrl || "/api/gemini/score-speaking/background", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ jobId: job.jobId, payload })
+      body: JSON.stringify(kickBody)
     });
     if (!kicked.ok) {
       const data = await trySyncScore();
