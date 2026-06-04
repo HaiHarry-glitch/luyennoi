@@ -1096,7 +1096,8 @@
     });
     const avgCrit = {};
     Object.keys(crit).forEach(k => { avgCrit[k] = +avg(crit[k]).toFixed(1); });
-    const band = +avg(Object.values(avgCrit)).toFixed(1);
+    // Làm tròn band XUỐNG bội 0.5 như phần luyện (Math.floor(avg*2)/2).
+    const band = Math.floor(avg(Object.values(avgCrit)) * 2) / 2;
     return { band, criteria: avgCrit, count: scoredArr.length };
   }
 
@@ -1239,9 +1240,9 @@
     if (p3.band >= base + 0.75) delta = 0.5;
     else if (p3.band <= base - 0.75) delta = -0.5;
     const overall = Math.max(1, Math.min(9, base + delta));
-    // Round to nearest 0.5 (IELTS bands)
-    const rounded = Math.round(overall * 2) / 2;
-    return { overall: rounded, base: +base.toFixed(1), delta };
+    // Làm tròn XUỐNG bội 0.5 (như phần luyện), không round lên.
+    const rounded = Math.floor(overall * 2) / 2;
+    return { overall: rounded, base: Math.floor(base * 2) / 2, delta };
   }
 
   // Save a scored answer into the per-question practice history so the student can
@@ -1296,7 +1297,7 @@
         <h1 class="ft-h1">Đang chấm điểm bài thi…</h1>
         <p class="ft-hint" id="ft-score-prog">Chuẩn bị chấm ${total} câu.</p>
         <div class="ft-progress" style="margin:1.5rem 0;"><div class="ft-progress-bar" id="ft-score-bar" style="width:0%"></div></div>
-        <div style="font-size:.78rem;color:#9ca3af;">Có thể mất 1-3 phút tuỳ mạng. Đừng đóng tab.</div>
+        <div style="font-size:.78rem;color:#9ca3af;">Chấm trực tiếp, thường khá nhanh. Đừng đóng tab.</div>
       </div>
     `;
 
@@ -1309,7 +1310,7 @@
       try {
         const b64 = await blobToBase64(ans.blob);
         const data = await scoreSpeakingAnswer(ans, partLabel, b64);
-        scored.push({ ...ans, score: data });
+        scored.push({ ...ans, score: data, _audioB64: b64, _mime: ans.blob?.type || "audio/webm", _durationMs: ans.durationMs || null });
         // Save into per-question history so it appears in that question's detail
         if (data?.criteria) saveToPerQuestionHistory(ans, data);
       } catch (e) {
@@ -1387,34 +1388,40 @@
         selectedPart2Topic: FT.questions.part2?.title || ""
       });
       try { if (document.fullscreenElement) await document.exitFullscreen(); } catch {}
+    }
 
-      // ── Sync điểm lên Supabase (chỉ cho thi chống gian lận) ──
-      try {
-        const attempts = scored.map(s => {
-          const c = s.score?.criteria || {};
-          return {
-            mode: "custom_strict",
-            part: s.section === "part1" ? "PART 1" : s.section === "part2" ? "PART 2" : "PART 3",
-            topic: s.topic || "",
-            prompt_text: s.question || "",
-            transcript: s.score?.transcript || "",
-            audio_duration_ms: null,
-            score_overall: s.score?.overall ?? null,
-            score_fluency: c.fluency?.score ?? null,
-            score_vocab: c.vocabulary?.score ?? null,
-            score_grammar: c.grammar?.score ?? null,
-            score_pronunciation: c.pronunciation?.score ?? null,
-            raw_score_json: s.score || {},
-            gemini_model: getModel(),
-          };
-        });
+    // ── Lưu điểm + AUDIO bài thi lên Supabase (mọi chế độ) ──
+    // Gửi TỪNG câu (kèm audio_b64) để server upload Storage -> mở lại không mất audio,
+    // và để body mỗi request nhỏ (tránh giới hạn 6MB khi bài có nhiều câu).
+    try {
+      const modeLabel = IS_CUSTOM_STRICT ? "custom_strict" : (TEST_MODE === "full-test" ? "full_test" : TEST_MODE);
+      for (const s of scored) {
+        const c = s.score?.criteria || {};
+        const attempt = {
+          mode: modeLabel,
+          part: s.section === "part1" ? "PART 1" : s.section === "part2" ? "PART 2" : "PART 3",
+          topic: s.topic || "",
+          prompt_text: s.section === "part2" ? (s.topic || s.question) : (s.question || ""),
+          transcript: s.score?.transcript || "",
+          audio_b64: (s._audioB64 || "").split(",")[1] || s._audioB64 || "",
+          audio_mime: s._mime || "audio/webm",
+          audio_duration_ms: s._durationMs || null,
+          score_overall: s.score?.overall ?? null,
+          score_fluency: c.fluency?.score ?? null,
+          score_vocab: c.vocabulary?.score ?? null,
+          score_grammar: c.grammar?.score ?? null,
+          score_pronunciation: c.pronunciation?.score ?? null,
+          raw_score_json: s.score || {},
+          gemini_model: getModel(),
+        };
+        // không await để không chặn hiển thị kết quả; lỗi 1 câu không ảnh hưởng câu khác
         fetch("/api/practice-attempts", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ session_id: FT.strictSessionId || null, attempts })
-        }).catch(e => console.warn("[FT] sync attempts:", e));
-      } catch (e) { console.warn("[FT] sync attempts build:", e); }
-    }
+          body: JSON.stringify({ session_id: FT.strictSessionId || null, attempts: [attempt] })
+        }).catch(e => console.warn("[FT] sync attempt:", e?.message || e));
+      }
+    } catch (e) { console.warn("[FT] sync attempts build:", e); }
 
     showSummary(scored, { p1, p2, p3, overall: overallRes, part2Duration });
   }
@@ -1528,6 +1535,7 @@
     root.innerHTML = `
       <div class="ft-card" style="max-width:780px;">
         <h1 class="ft-h1" style="margin-bottom:.7rem;">${
+          IS_CUSTOM_STRICT ? "Kết quả Thi thử (Tùy chọn đề)" :
           TEST_MODE === "full-test" ? "Kết quả Full Test" :
           TEST_MODE === "part1" ? "Kết quả Thi Part 1" :
           TEST_MODE === "part2" ? "Kết quả Thi Part 2" :

@@ -4,7 +4,7 @@ import { dirname, join } from "node:path";
 const root = process.cwd();
 const publicDir = join(root, "public");
 const realDir = join(publicDir, "real");
-const ASSET_VERSION = "score-async-v13";
+const ASSET_VERSION = "score-async-v14";
 
 // ── Mojibake fix map (same as real-overlay.js fixMojibakeText) ──
 const MOJIBAKE = [
