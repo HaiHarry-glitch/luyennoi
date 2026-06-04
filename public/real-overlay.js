@@ -2951,6 +2951,9 @@ Return ONLY this JSON (criterion scores integer 1-9 or "?"; overall a 0.5-step n
     throw new Error(lastErr || "Direct scoring failed");
   }
 
+  // Cho full-test.js (Thi thử) tái sử dụng chấm-thẳng để cũng nhanh như luyện từng câu.
+  if (typeof window !== "undefined") window.LN_scoreDirect = scoreDirectGemini;
+
   // Single source of truth for posting audio → /api/gemini/score-speaking.
   // Returns true on a real result, false otherwise (so the caller can keep the retry banner).
   async function submitScoreRequest({ audioUrl, audioDataUrl, mimeType, question, partLabel, durationMs }) {

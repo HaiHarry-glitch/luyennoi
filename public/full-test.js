@@ -1072,6 +1072,20 @@
       mimeType: "audio/webm",
       note: "FULL TEST. Give GENERAL (not personal) feedback in Vietnamese — avoid phrasing like 'I think', 'mình thấy bạn...'. Be objective and concise.",
     };
+    // BƯỚC 0: CHẤM TRỰC TIẾP client→Gemini (nhanh nhất, không cap 26s) — dùng chung
+    // hàm với luyện từng câu (real-overlay.js expose window.LN_scoreDirect).
+    // Lỗi -> rơi xuống đường Netlify (sync/nền) bên dưới.
+    if (typeof window !== "undefined" && typeof window.LN_scoreDirect === "function" && window.LN_DIRECT_SCORE !== false && audioBase64) {
+      try {
+        const direct = await window.LN_scoreDirect({
+          apiKey: payload.apiKey, audioBase64, mimeType: payload.mimeType,
+          question: payload.question, part: partLabel, note: payload.note
+        });
+        if (direct && (direct.criteria || typeof direct.overall === "number")) return direct;
+      } catch (e) {
+        console.warn("[full-test] chấm trực tiếp lỗi, fallback Netlify:", e?.message || e);
+      }
+    }
     const trySyncScore = async () => {
       const controller = new AbortController();
       const timer = setTimeout(() => controller.abort(new Error("client-timeout")), 26000);
