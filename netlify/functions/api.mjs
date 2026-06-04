@@ -494,12 +494,12 @@ Return ONLY this JSON:
 
 // Purpose-based model routing — assigns first-try model by task type.
 // callGemini still falls back to the full GEMINI_MODELS list on errors.
+// Khớp đúng bảng model trong /settings (bảng kia là chuẩn).
 export const MODELS_BY_PURPOSE = {
   // 🎤 Chấm phát âm (audio scoring) — Part 1/2/3 + Full Test
-  // 2.5-flash đứng đầu vì ổn định + nhanh nhất với audio trên Netlify; preview models có thể cold-start chậm.
-  pronunciation: ["gemini-2.5-flash", "gemini-2.5-flash-lite", "gemini-3-flash-preview"],
+  pronunciation: ["gemini-3.5-flash", "gemini-3-flash-preview", "gemini-3.1-pro-preview"],
   // 💡 Sinh ý / câu mẫu (sample, note, expand, cuecards)
-  ideas:         ["gemini-3.1-flash-lite-preview", "gemini-3-flash-preview", "gemini-2.5-pro"],
+  ideas:         ["gemini-3.1-flash-lite-preview", "gemini-2.5-pro"],
   // 📖 Tra từ điển (vocab, translate, pronun explanation, score-word)
   dictionary:    ["gemini-2.5-flash-lite", "gemini-2.5-flash"],
 };
