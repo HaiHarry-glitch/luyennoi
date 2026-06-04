@@ -308,10 +308,17 @@
         saveBoundedScoreHistory(key, [localAttempt, ...(Array.isArray(arr) ? arr : [])]);
         try {
           const crit = d.criteria || {};
+          // Gửi kèm audio bản ghi để server upload lên Supabase Storage,
+          // nhờ đó mở lại bài cũ nghe được giọng thật (không rơi về TTS).
+          const _adu = audioDataUrl || "";
+          const _amime = (_adu.match(/^data:([^;]+);/) || [])[1] || (d.mimeType || "audio/webm");
+          const _ab64 = _adu.includes(",") ? _adu.split(",")[1] : "";
+          const _attemptId = (self.crypto?.randomUUID?.() || (Date.now() + "-" + Math.random().toString(16).slice(2)));
           realFetch("/api/practice-attempts", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ attempts: [{
+              client_attempt_id: _attemptId,
               prompt_text: q,
               part: d.part || "",
               transcript: d.transcript || "",
@@ -323,6 +330,9 @@
               raw_score_json: persistable,
               gemini_model: persistable.model || "",
               mode: "practice",
+              audio_b64: _ab64,
+              audio_mime: _amime,
+              audio_duration_ms: d.durationMs || null,
               created_at: new Date().toISOString()
             }]})
           }).catch(function(){});

@@ -94,6 +94,72 @@ async function supabaseRest(path, { method = "GET", body, token = "" } = {}) {
   return data;
 }
 
+// ── Supabase Storage helpers (audio bản ghi của học viên) ──
+// Bucket private; upload + sign đều dùng service-role (bypass RLS).
+const SUPABASE_SERVICE_ROLE = (process.env.SUPABASE_SERVICE_ROLE_KEY || "").trim();
+const RECORDINGS_BUCKET = "recordings";
+
+function extFromMime(m = "") {
+  if (/mp4|m4a|aac/i.test(m)) return "m4a";
+  if (/ogg/i.test(m)) return "ogg";
+  if (/wav/i.test(m)) return "wav";
+  if (/mpeg|mp3/i.test(m)) return "mp3";
+  return "webm";
+}
+
+function safeSeg(s = "") {
+  return String(s).replace(/[^a-zA-Z0-9._-]/g, "_").slice(0, 80) || "x";
+}
+
+// Upload base64 audio → trả về object path (hoặc null nếu thất bại / không cấu hình).
+async function uploadRecording(objectPath, base64, mimeType) {
+  if (!SUPABASE_SERVICE_ROLE || !base64) return null;
+  try {
+    const bytes = Buffer.from(base64, "base64");
+    if (!bytes.length) return null;
+    const res = await fetch(`${SUPABASE_URL}/storage/v1/object/${RECORDINGS_BUCKET}/${objectPath}`, {
+      method: "POST",
+      headers: {
+        apikey: SUPABASE_SERVICE_ROLE,
+        Authorization: `Bearer ${SUPABASE_SERVICE_ROLE}`,
+        "Content-Type": mimeType || "audio/webm",
+        "x-upsert": "true"
+      },
+      body: bytes
+    });
+    if (!res.ok) {
+      console.warn("[storage] upload failed", res.status, (await res.text().catch(() => "")).slice(0, 200));
+      return null;
+    }
+    return objectPath;
+  } catch (e) {
+    console.warn("[storage] upload error", e?.message || e);
+    return null;
+  }
+}
+
+// Tạo signed URL (mặc định 7 ngày) cho 1 object path.
+async function signRecording(objectPath, expiresIn = 60 * 60 * 24 * 7) {
+  if (!SUPABASE_SERVICE_ROLE || !objectPath) return null;
+  try {
+    const res = await fetch(`${SUPABASE_URL}/storage/v1/object/sign/${RECORDINGS_BUCKET}/${objectPath}`, {
+      method: "POST",
+      headers: {
+        apikey: SUPABASE_SERVICE_ROLE,
+        Authorization: `Bearer ${SUPABASE_SERVICE_ROLE}`,
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({ expiresIn })
+    });
+    if (!res.ok) return null;
+    const data = await res.json().catch(() => null);
+    if (!data?.signedURL) return null;
+    return `${SUPABASE_URL}/storage/v1${data.signedURL}`;
+  } catch {
+    return null;
+  }
+}
+
 export async function callGemini({ apiKey, model, prompt, responseJson = false, audioBase64 = "", mimeType = "audio/webm", fallbackModels, perCallTimeoutMs, totalBudgetMs }) {
   const keyPool = [...new Set([apiKey, ...(process.env.GEMINI_API_KEYS || "").split(",")].map((k) => k.trim()).filter(Boolean))];
   if (!keyPool.length) throw new Error("Missing Gemini API key");
@@ -709,12 +775,13 @@ async function handleGetAttempts(event) {
       `practice_attempts?select=id,created_at,prompt_text,transcript,audio_path,score_overall,score_fluency,score_vocab,score_grammar,score_pronunciation,raw_score_json,part&${filter}${userFilter}`,
       { method: "GET", token }
     );
-    const attempts = (rows || []).map(r => ({
-      id: r.id, created_at: r.created_at, transcript: r.transcript, audioUrl: null,
+    const attempts = await Promise.all((rows || []).map(async r => ({
+      id: r.id, created_at: r.created_at, transcript: r.transcript,
+      audioUrl: r.audio_path ? await signRecording(r.audio_path) : null,
       overall: r.score_overall, fluency: r.score_fluency, vocabulary: r.score_vocab,
       grammar: r.score_grammar, pronunciation: r.score_pronunciation,
       raw: r.raw_score_json || null, part: r.part
-    }));
+    })));
     return json(200, { ok: true, attempts: dedupeAttempts(attempts, limit) });
   } catch (e) {
     return json(200, { ok: true, attempts: [], warning: e.message });
@@ -743,7 +810,18 @@ async function handleSyncAttempts(event) {
   const info = getAuthInfo(event);
   const token = getToken(event);
   const sessionId = body.session_id || null;
-  const payload = attempts.map(a => ({
+  const payload = await Promise.all(attempts.map(async a => {
+    const clientAttemptId = a.client_attempt_id || crypto.randomUUID();
+    // Upload audio bản ghi (nếu client gửi kèm) → Supabase Storage, lưu audio_path
+    // để sau mở lại bài cũ nghe được giọng thật thay vì TTS.
+    let audioPath = null;
+    const audioB64 = a.audio_b64 || a.audioBase64 || "";
+    if (audioB64) {
+      const ext = extFromMime(a.audio_mime || a.mimeType || "");
+      const objectPath = `${safeSeg(info.userId)}/${safeSeg(clientAttemptId)}.${ext}`;
+      audioPath = await uploadRecording(objectPath, audioB64, a.audio_mime || a.mimeType || "audio/webm");
+    }
+    return {
     user_id: info.isAuthenticated ? info.userId : null,
     client_user_id: info.userId,
     session_id: sessionId,
@@ -753,7 +831,7 @@ async function handleSyncAttempts(event) {
     topic: a.topic || null,
     prompt_text: a.prompt_text || "",
     transcript: a.transcript || null,
-    audio_path: null,
+    audio_path: audioPath,
     audio_duration_ms: a.audio_duration_ms || null,
     recording_started_at: a.recording_started_at || null,
     recording_ended_at: a.recording_ended_at || null,
@@ -764,8 +842,9 @@ async function handleSyncAttempts(event) {
     score_pronunciation: a.score_pronunciation ?? null,
     raw_score_json: a.raw_score_json || {},
     gemini_model: a.gemini_model || null,
-    client_attempt_id: a.client_attempt_id || crypto.randomUUID(),
+    client_attempt_id: clientAttemptId,
     created_at: a.created_at || now
+  };
   }));
   try {
     const rows = await supabaseRest("practice_attempts", { method: "POST", body: payload, token });
