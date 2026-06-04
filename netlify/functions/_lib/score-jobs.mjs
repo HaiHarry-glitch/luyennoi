@@ -48,7 +48,7 @@ function normaliseRow(row) {
 
 export async function writeScoreJobStatus(jobId, status) {
   const now = new Date().toISOString();
-  const payload = {
+  const row = {
     id: jobId,
     status: status.status || "queued",
     progress: status.progress ?? null,
@@ -58,9 +58,14 @@ export async function writeScoreJobStatus(jobId, status) {
     user_id: status.authUserId || null,
     updated_at: now
   };
+  // Chỉ ghi cột payload (audio + tham số chấm) khi được truyền rõ ràng,
+  // hoặc xoá payload (clearPayload) sau khi xong để DB không phình.
+  // Bỏ qua key payload ở các lần ghi khác -> giữ nguyên giá trị cũ.
+  if (status.payload !== undefined) row.payload = status.payload;
+  if (status.clearPayload) row.payload = null;
   const rows = await rest("score_jobs?on_conflict=id", {
     method: "POST",
-    body: payload,
+    body: row,
     prefer: "return=representation,resolution=merge-duplicates"
   });
   return normaliseRow(Array.isArray(rows) ? rows[0] : rows) || { jobId, ...status };
@@ -69,6 +74,13 @@ export async function writeScoreJobStatus(jobId, status) {
 export async function readScoreJobStatus(jobId) {
   const rows = await rest(`score_jobs?id=eq.${encodeURIComponent(jobId)}&limit=1`);
   return normaliseRow(Array.isArray(rows) ? rows[0] : null);
+}
+
+// Đọc riêng payload (audio + tham số) cho background function — không trả về client.
+export async function readScoreJobPayload(jobId) {
+  const rows = await rest(`score_jobs?id=eq.${encodeURIComponent(jobId)}&select=payload&limit=1`);
+  const row = Array.isArray(rows) ? rows[0] : null;
+  return row?.payload || null;
 }
 
 export function isScoreJobsConfigured() {

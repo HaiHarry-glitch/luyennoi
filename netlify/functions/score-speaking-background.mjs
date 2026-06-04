@@ -1,5 +1,5 @@
 import { buildScorePrompt, applyOverallFloor, parseGeminiJson } from "./_lib/score.mjs";
-import { writeScoreJobStatus } from "./_lib/score-jobs.mjs";
+import { writeScoreJobStatus, readScoreJobPayload } from "./_lib/score-jobs.mjs";
 import { callGemini, MODELS_BY_PURPOSE, pickModelForKind } from "./api.mjs";
 
 function json(statusCode, body) {
@@ -23,8 +23,18 @@ export async function handler(event) {
   const body = parseBody(event);
   const jobId = body.jobId || event.queryStringParameters?.jobId || "";
   if (!jobId) return json(400, { ok: false, error: "Missing jobId" });
-  const payload = body.payload || body;
-  if (!payload.audioBase64) return json(400, { ok: false, error: "Missing audioBase64" });
+  // Ưu tiên payload trong body (tương thích cũ); nếu trống thì đọc từ score_jobs
+  // theo jobId — đây là đường chính giờ vì audio không còn gửi qua body trigger.
+  let payload = body.payload || (body.audioBase64 ? body : null);
+  if (!payload || !payload.audioBase64) {
+    try { payload = await readScoreJobPayload(jobId); } catch (e) {
+      console.warn("[score-bg] readScoreJobPayload failed", e?.message || e);
+    }
+  }
+  if (!payload || !payload.audioBase64) {
+    await writeScoreJobStatus(jobId, { status: "error", error: "Missing audio payload for job", clearPayload: true });
+    return json(400, { ok: false, error: "Missing audioBase64" });
+  }
 
   await writeScoreJobStatus(jobId, {
     status: "running",
@@ -55,14 +65,16 @@ export async function handler(event) {
     await writeScoreJobStatus(jobId, {
       status: "done",
       userId: payload.userId || "local-student",
-      result
+      result,
+      clearPayload: true
     });
     return json(200, { ok: true, jobId, status: "done" });
   } catch (error) {
     await writeScoreJobStatus(jobId, {
       status: "error",
       userId: payload.userId || "local-student",
-      error: error?.message || String(error || "Scoring failed")
+      error: error?.message || String(error || "Scoring failed"),
+      clearPayload: true
     });
     return json(200, { ok: true, jobId, status: "error" });
   }

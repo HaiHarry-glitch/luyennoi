@@ -2709,19 +2709,25 @@
       note: localStorage.getItem("ln.userNote") || "",
       durationMs: durationMs || 0
     };
+    // Gửi audio (payload lớn) tới /start (function thường, giới hạn 6MB) để lưu vào
+    // score_jobs. KHÔNG gửi audio qua body trigger nền vì Background Functions của
+    // Netlify giới hạn payload nhỏ (audio lớn -> HTTP 500).
     const started = await fetch("/api/gemini/score-speaking/start", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ clientHasApiKey: !!apiKey })
+      body: JSON.stringify({ clientHasApiKey: !!apiKey, payload })
     });
     if (!started.ok) throw new Error("Không tạo được job chấm điểm (HTTP " + started.status + ")");
     const job = await started.json();
     if (!job?.jobId) throw new Error("Server không trả jobId chấm điểm");
     toast.innerHTML = '<span style="display:inline-block;width:.85rem;height:.85rem;border:2px solid #fff;border-top-color:transparent;border-radius:50%;animation:ln-spin .9s linear infinite;"></span> Audio dài — đang chấm nền…';
+    // Body trigger chỉ còn {jobId} tí xíu -> 202. Nếu vì lý do nào đó server chưa
+    // lưu được payload (payloadStored=false) thì gửi kèm payload như fallback.
+    const kickBody = job.payloadStored ? { jobId: job.jobId } : { jobId: job.jobId, payload };
     const kicked = await fetch(job.backgroundUrl || "/api/gemini/score-speaking/background", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ jobId: job.jobId, payload })
+      body: JSON.stringify(kickBody)
     });
     if (!kicked.ok) throw new Error("Không chạy được job nền (HTTP " + kicked.status + ")");
 

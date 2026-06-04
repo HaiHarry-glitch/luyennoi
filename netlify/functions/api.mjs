@@ -665,13 +665,15 @@ Return ONLY this JSON (criterion scores integer 1-9 or "?" if not assessable; ov
 
 async function handleScoreStart(event) {
   const body = parseBody(event);
-  if (!body.clientHasApiKey && !(process.env.GEMINI_API_KEYS || "").trim()) {
+  // Payload chấm (audio base64 + tham số) gửi kèm khi /start, lưu vào score_jobs.
+  // Background function sẽ đọc lại theo jobId -> body trigger nền chỉ còn {jobId},
+  // tránh giới hạn payload nhỏ của Netlify Background Functions (audio lớn -> 500).
+  const payload = body.payload || {};
+  if (!body.clientHasApiKey && !payload.apiKey && !(process.env.GEMINI_API_KEYS || "").trim()) {
     return json(400, { ok: false, error: "Missing Gemini API key" });
   }
   const jobId = randomUUID();
-  // Persist a "queued" placeholder so /status returns something other than 404
-  // while the background function is still booting. If Supabase isn't
-  // configured we still return 202 — client will poll once and bail to sync.
+  let payloadStored = false;
   try {
     const { writeScoreJobStatus, isScoreJobsConfigured } = await import("./_lib/score-jobs.mjs");
     if (isScoreJobsConfigured()) {
@@ -680,8 +682,10 @@ async function handleScoreStart(event) {
         status: "queued",
         progress: "queued",
         userId: auth.userId,
-        authUserId: auth.isAuthenticated ? auth.userId : null
+        authUserId: auth.isAuthenticated ? auth.userId : null,
+        payload: payload.audioBase64 ? payload : undefined
       });
+      payloadStored = Boolean(payload.audioBase64);
     }
   } catch (err) {
     console.warn("[score-start] could not persist job status", err?.message || err);
@@ -690,6 +694,7 @@ async function handleScoreStart(event) {
     ok: true,
     jobId,
     status: "queued",
+    payloadStored,
     backgroundUrl: "/api/gemini/score-speaking/background"
   });
 }
