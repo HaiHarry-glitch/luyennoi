@@ -620,11 +620,12 @@
         if (norm(timings[ti + k].word) === want) { found = ti + k; break; }
       }
       if (found >= 0) {
-        alignedTimings[si] = timings[found];
+        // Clone để rescale không làm hỏng object trong cache/localStorage (chung tham chiếu).
+        alignedTimings[si] = { ...timings[found] };
         ti = found + 1;
       } else {
         // No match within window — assign next available timing
-        alignedTimings[si] = timings[ti];
+        alignedTimings[si] = { ...timings[ti] };
         ti++;
       }
     }
@@ -640,6 +641,38 @@
     const HIGHLIGHT_BG = "#fffbe6";
     const HIGHLIGHT_OUT = "2px solid #d9381e";
     let currentIdx = -1;
+
+    // Hiệu chỉnh TRÔI NHỊP: Gemini ước lượng mốc thời gian theo tổng độ dài nó
+    // tự đoán, thường lệch dần so với audio thật (càng dài càng lệch). Rescale
+    // tuyến tính toàn bộ mốc về đúng độ dài audio thật để highlight bám sát hơn.
+    let rescaled = false;
+    const rescaleToRealDuration = () => {
+      if (rescaled) return;
+      let realMs = Number(d.durationMs || d.audio_duration_ms || 0);
+      if (!(realMs > 0) && isFinite(a.duration) && a.duration > 0) realMs = a.duration * 1000;
+      if (!(realMs > 0)) return;
+      let lastEnd = 0;
+      for (const t of alignedTimings) {
+        if (!t) continue;
+        const e = Number(t.endMs ?? t.end ?? 0);
+        if (e > lastEnd) lastEnd = e;
+      }
+      if (!(lastEnd > 0)) return;
+      const scale = realMs / lastEnd;
+      // Chỉ rescale khi lệch đáng kể nhưng vẫn hợp lý (tránh phá khi Gemini đã đúng).
+      if (scale > 0.4 && scale < 2.5 && Math.abs(scale - 1) > 0.04) {
+        for (const t of alignedTimings) {
+          if (!t) continue;
+          if (t.startMs != null) t.startMs = Number(t.startMs) * scale;
+          if (t.endMs != null) t.endMs = Number(t.endMs) * scale;
+          if (t.start != null) t.start = Number(t.start) * scale;
+          if (t.end != null) t.end = Number(t.end) * scale;
+        }
+      }
+      rescaled = true;
+    };
+    if (a.readyState >= 1) rescaleToRealDuration();
+    else a.addEventListener("loadedmetadata", rescaleToRealDuration, { once: true });
 
     const clearAll = () => {
       wordSpans.forEach(s => { s.style.outline = ""; s.style.backgroundColor = ""; s.style.borderRadius = ""; });
@@ -2628,7 +2661,7 @@
     setTimeout(() => { cloudToast.style.opacity = "0"; setTimeout(() => cloudToast.remove(), 600); }, 3000);
   }
 
-  function applyScoreResult(data, audioUrl, audioDataUrl, mimeType, question, partLabel) {
+  function applyScoreResult(data, audioUrl, audioDataUrl, mimeType, question, partLabel, durationMs) {
     try {
       LN.addAnswer({
         ts: Date.now(),
@@ -2662,6 +2695,7 @@
     data.part = partLabel;
     data.audioDataUrl = audioDataUrl;
     data.audioUrl = audioUrl;
+    if (durationMs) data.durationMs = durationMs;
     renderScoreResult(data);
     showScoreDoneToast();
   }
@@ -2706,7 +2740,7 @@
       failStreak = 0;
       const status = await r.json();
       if (status.status === "done" && status.result) {
-        applyScoreResult(status.result, audioUrl, audioDataUrl, mimeType, question, partLabel);
+        applyScoreResult(status.result, audioUrl, audioDataUrl, mimeType, question, partLabel, durationMs);
         return true;
       }
       if (status.status === "error") throw new Error(status.error || "Gemini chấm nền thất bại");
@@ -2833,7 +2867,7 @@
       }
       toast.remove();
 
-      applyScoreResult(data, audioUrl, audioDataUrl, mimeType, question, partLabel);
+      applyScoreResult(data, audioUrl, audioDataUrl, mimeType, question, partLabel, durationMs);
       return true;
     } catch (e) {
       clearTimeout(abortTimer);
