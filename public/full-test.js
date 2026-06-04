@@ -1092,8 +1092,12 @@
     };
     // Phase 2: async background dùng Supabase score_jobs cho Part 2 / audio dài.
     // Phần còn lại (Part 1/3) đi sync 25s. Có thể opt-out bằng window.LN_ASYNC_SCORE === false.
+    // Ưu tiên chấm trực tiếp (sync, nhanh); chỉ đẩy nền khi audio đủ dài để gần như
+    // chắc vượt 26s (base64 > ~450k ≈ >70s @32kbps). Câu ngắn (Part 1/3 và Part 2
+    // ngắn) -> sync; lỡ timeout vẫn tự fallback nền bên dưới.
     const asyncOptOut = typeof window !== "undefined" && window.LN_ASYNC_SCORE === false;
-    const useAsyncFirst = !asyncOptOut && (partLabel === "PART 2" || b64.length > 1800000);
+    const asyncForce = typeof window !== "undefined" && window.LN_ASYNC_SCORE === true;
+    const useAsyncFirst = asyncForce || (!asyncOptOut && b64.length > 450000);
     if (!useAsyncFirst) {
       try {
         const data = await trySyncScore();

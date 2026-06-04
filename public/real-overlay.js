@@ -2816,14 +2816,18 @@
     //     Nếu sync chạm trần 26s của Netlify -> tự fallback sang nền (xử lý bên dưới).
     //   - Audio DÀI / Part 2 / payload lớn -> chấm NỀN (background 900s) ngay từ đầu,
     //     vì sync gần như chắc chắn timeout.
-    // "Dài" = Part 2 (độc thoại ~2 phút), hoặc thời lượng > 30s, hoặc base64 > 600k.
-    // Manual opt-out: window.LN_ASYNC_SCORE === false.
+    // ƯU TIÊN CHẤM TRỰC TIẾP (sync) — nhanh hơn nhiều vì không qua cold-start + polling.
+    // Netlify cap sync 26s, nên chỉ đẩy NỀN khi audio đủ dài để Gemini gần như chắc
+    // chắn vượt 26s (tránh phí 26s rồi mới fallback). Audio ngắn/vừa (kể cả Part 2
+    // câu ngắn) -> sync trực tiếp; nếu lỡ timeout vẫn tự fallback nền ở dưới.
+    // Manual opt-out: window.LN_ASYNC_SCORE === false. Ép nền: window.LN_ASYNC_SCORE === true.
     const asyncOptOut = typeof window !== "undefined" && window.LN_ASYNC_SCORE === false;
-    const isPart2 = /^PART\s*2/i.test(String(partLabel || ""));
+    const asyncForce = typeof window !== "undefined" && window.LN_ASYNC_SCORE === true;
     const durationSec = (durationMs || 0) / 1000;
-    const isLongAudio = (audioDataUrl || "").length > 600000 || durationSec > 30;
-    const allowAsync = !asyncOptOut && (isPart2 || isLongAudio);
-    const useAsyncFirst = allowAsync;
+    const base64Len = (audioDataUrl || "").length;
+    // ~45s là ngưỡng an toàn để Gemini kịp xong trong 26s (audio 32kbps ~ 45s ≈ 240KB).
+    const isLongAudio = durationSec > 45 || base64Len > 1400000;
+    const useAsyncFirst = asyncForce || (!asyncOptOut && isLongAudio);
     if (useAsyncFirst) {
       try {
         const ok = await startAsyncScoreJob({ apiKey, audioUrl, audioDataUrl, mimeType, question, partLabel, toast, durationMs });
