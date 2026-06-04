@@ -9,4 +9,8 @@
 /reading/* /reading/index.html 200
 /settings /home/?openUserModal=1 302!
 /settings/ /home/?openUserModal=1 302!
+/favicon.ico /real/favicon.ico 200
+/favicon.svg /real/favicon.svg 200
+/apple-touch-icon.png /real/apple-touch-icon-iphone-retina-120x120.png 200
+/apple-touch-icon-precomposed.png /real/apple-touch-icon-iphone-retina-120x120.png 200
 /* /index.html 200
