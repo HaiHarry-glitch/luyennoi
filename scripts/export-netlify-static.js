@@ -4,7 +4,7 @@ import { dirname, join } from "node:path";
 const root = process.cwd();
 const publicDir = join(root, "public");
 const realDir = join(publicDir, "real");
-const ASSET_VERSION = "score-async-v16";
+const ASSET_VERSION = "score-async-v17";
 
 // ── Mojibake fix map (same as real-overlay.js fixMojibakeText) ──
 const MOJIBAKE = [
@@ -132,10 +132,10 @@ function injectOverlay(html) {
     .replace(/<link[^>]+rel=["']manifest["'][^>]*>/gi, "")
     .replace(/<meta[^>]+name=["']theme-color["'][^>]*>/gi, "");
   const iconTag = `
-<link rel="icon" type="image/png" sizes="32x32" href="/real/favicon.png?v=logo2">
-<link rel="icon" type="image/png" sizes="192x192" href="/real/icons/icon-192.png?v=logo2">
-<link rel="shortcut icon" href="/real/favicon.ico?v=logo2">
-<link rel="apple-touch-icon" sizes="180x180" href="/real/apple-touch-icon-iphone-retina-120x120.png?v=logo2">
+<link rel="icon" type="image/png" sizes="32x32" href="/real/favicon.png?v=logo3">
+<link rel="icon" type="image/png" sizes="192x192" href="/real/icons/icon-192.png?v=logo3">
+<link rel="shortcut icon" href="/real/favicon.ico?v=logo3">
+<link rel="apple-touch-icon" sizes="180x180" href="/real/apple-touch-icon-iphone-retina-120x120.png?v=logo3">
 <link rel="manifest" href="/real/manifest.webmanifest">
 <meta name="theme-color" content="#d9381e">`;
   const tag = `
@@ -185,13 +185,17 @@ function injectSeo(html, route) {
     .replace(/<link[^>]+rel=["']canonical["'][^>]*>/gi, "")
     .replace(/<meta[^>]+property=["']og:[^"']*["'][^>]*>/gi, "")
     .replace(/<meta[^>]+name=["']twitter:[^"']*["'][^>]*>/gi, "");
-  const seo = `
-<link rel="icon" type="image/png" sizes="32x32" href="/real/favicon.png?v=logo2">
-<link rel="icon" type="image/png" sizes="192x192" href="/real/icons/icon-192.png?v=logo2">
-<link rel="shortcut icon" href="/real/favicon.ico?v=logo2">
-<link rel="apple-touch-icon" sizes="180x180" href="/real/apple-touch-icon-iphone-retina-120x120.png?v=logo2">
+  // Favicon đặt NGAY ĐẦU <head> để trình duyệt phát hiện sớm -> không nháy favicon cũ.
+  // svg đứng đầu (trình duyệt hiện đại ưu tiên) + ico/png cho fallback. ?v=logo3 ép cache.
+  const faviconHead = `
+<link rel="icon" type="image/svg+xml" href="/real/favicon.svg?v=logo3">
+<link rel="icon" type="image/png" sizes="32x32" href="/real/favicon.png?v=logo3">
+<link rel="icon" type="image/png" sizes="192x192" href="/real/icons/icon-192.png?v=logo3">
+<link rel="shortcut icon" href="/real/favicon.ico?v=logo3">
+<link rel="apple-touch-icon" sizes="180x180" href="/real/apple-touch-icon-iphone-retina-120x120.png?v=logo3">
 <link rel="manifest" href="/real/manifest.webmanifest">
-<meta name="theme-color" content="#d9381e">
+<meta name="theme-color" content="#d9381e">`;
+  const seoMeta = `
 <link rel="canonical" href="${escAttr(url)}">
 <meta name="robots" content="index,follow">
 <meta property="og:type" content="website">
@@ -207,8 +211,11 @@ function injectSeo(html, route) {
 <meta name="twitter:title" content="${escAttr(title)}">
 <meta name="twitter:description" content="${escAttr(desc)}">
 <meta name="twitter:image" content="${SEO_IMAGE}">`;
-  if (out.includes("</head>")) return out.replace("</head>", seo + "\n</head>");
-  return out + seo;
+  // Chèn favicon ngay sau <head ...>; SEO meta trước </head>.
+  if (/<head[^>]*>/i.test(out)) out = out.replace(/(<head[^>]*>)/i, `$1${faviconHead}`);
+  else out = faviconHead + out;
+  if (out.includes("</head>")) return out.replace("</head>", seoMeta + "\n</head>");
+  return out + seoMeta;
 }
 
 function versionAssets(html) {
