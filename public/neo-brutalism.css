@@ -1840,3 +1840,62 @@ body.ln-question-detail-page [class*="w-2/5"] > div {
     order: -1 !important;
   }
 }
+
+/* ─────────────────────────────────────────────────────────────
+   Tối ưu cảm ứng trên điện thoại — chỉ tác động overlay (.ln-*),
+   không đụng layout SvelteKit. Tăng tap-target + vừa khung hẹp.
+   ───────────────────────────────────────────────────────────── */
+@media (max-width: 640px) {
+  /* Nút nhỏ (▶ nghe, ▼ thu gọn, × đóng) -> tối thiểu ~40px cho ngón tay */
+  .ln-tts-btn,
+  .ln-user-audio-btn,
+  .ln-score-toggle,
+  .ln-score-close {
+    min-width: 2.2rem !important;
+    min-height: 2.2rem !important;
+  }
+  .ln-crit-btn,
+  .ln-word-sync-btn {
+    min-height: 2.3rem !important;
+    padding-top: .45rem !important;
+    padding-bottom: .45rem !important;
+  }
+
+  /* Panel điểm: padding gọn lại cho màn hình hẹp */
+  #ln-score-panel,
+  .ln-score-panel {
+    padding: .85rem !important;
+  }
+
+  /* Banner "thử lại chấm": trải full chiều ngang, audio xuống dòng */
+  #ln-score-retry {
+    left: .5rem !important;
+    right: .5rem !important;
+    transform: none !important;
+    max-width: none !important;
+    width: auto !important;
+  }
+  #ln-score-retry audio {
+    flex: 1 1 100% !important;
+    min-width: 0 !important;
+  }
+
+  /* Thanh ghi âm: nút thumb-friendly, không bị bóp; chữ trạng thái nhỏ lại */
+  #ln-rec-bar {
+    gap: .55rem !important;
+    padding: .65rem .7rem !important;
+  }
+  #ln-rec-bar #ln-rec-cancel,
+  #ln-rec-bar #ln-rec-submit {
+    padding: .55rem .95rem !important;
+    min-height: 2.5rem !important;
+    white-space: nowrap !important;
+    font-size: .85rem !important;
+  }
+
+  /* Toast chấm điểm không vượt mép phải màn hình */
+  .ln-toast {
+    max-width: calc(100vw - 1.5rem) !important;
+    right: .75rem !important;
+  }
+}

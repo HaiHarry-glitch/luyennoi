@@ -4,7 +4,7 @@ import { dirname, join } from "node:path";
 const root = process.cwd();
 const publicDir = join(root, "public");
 const realDir = join(publicDir, "real");
-const ASSET_VERSION = "score-async-v15";
+const ASSET_VERSION = "score-async-v16";
 
 // ── Mojibake fix map (same as real-overlay.js fixMojibakeText) ──
 const MOJIBAKE = [
@@ -216,7 +216,8 @@ function versionAssets(html) {
     .replace(/(["'])\/auth\.js(?:\?[^"']*)?\1/g, `$1/auth.js?v=${ASSET_VERSION}$1`)
     .replace(/(["'])\/real-overlay\.js(?:\?[^"']*)?\1/g, `$1/real-overlay.js?v=${ASSET_VERSION}$1`)
     .replace(/(["'])\/sidebar\.js(?:\?[^"']*)?\1/g, `$1/sidebar.js?v=${ASSET_VERSION}$1`)
-    .replace(/(["'])\/full-test\.js(?:\?[^"']*)?\1/g, `$1/full-test.js?v=${ASSET_VERSION}$1`);
+    .replace(/(["'])\/full-test\.js(?:\?[^"']*)?\1/g, `$1/full-test.js?v=${ASSET_VERSION}$1`)
+    .replace(/(["'])\/neo-brutalism\.css(?:\?[^"']*)?\1/g, `$1/neo-brutalism.css?v=${ASSET_VERSION}$1`);
 }
 
 function wrapInLuyennoiShell(homeHtml, mountHtml, extraScripts = []) {
