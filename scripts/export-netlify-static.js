@@ -175,12 +175,23 @@ function injectSeo(html, route) {
   const url = SITE_URL + (route === "/" ? "/" : route);
   const title = (html.match(/<title[^>]*>([^<]*)<\/title>/i)?.[1] || "HIN Luyện Nói | IELTS Speaking AI").trim();
   const desc = (html.match(/<meta[^>]+name=["']description["'][^>]+content=["']([^"']*)["']/i)?.[1] || SEO_DEFAULT_DESC).trim();
-  // Bỏ các thẻ og/twitter/canonical cũ (nếu có) để tránh trùng lặp.
+  // Bỏ các thẻ favicon/manifest/theme/og/twitter/canonical cũ để tránh trùng + chèn lại
+  // bộ chuẩn (favicon theo logo). injectSeo chạy cho MỌI trang (kể cả landing/login
+  // skipOverlay) -> đảm bảo trang nào cũng có favicon logo + SEO đồng nhất.
   let out = html
+    .replace(/<link[^>]+rel=["'](?:shortcut icon|icon|apple-touch-icon|mask-icon)["'][^>]*>/gi, "")
+    .replace(/<link[^>]+rel=["']manifest["'][^>]*>/gi, "")
+    .replace(/<meta[^>]+name=["']theme-color["'][^>]*>/gi, "")
     .replace(/<link[^>]+rel=["']canonical["'][^>]*>/gi, "")
     .replace(/<meta[^>]+property=["']og:[^"']*["'][^>]*>/gi, "")
     .replace(/<meta[^>]+name=["']twitter:[^"']*["'][^>]*>/gi, "");
   const seo = `
+<link rel="icon" type="image/png" sizes="32x32" href="/real/favicon.png?v=logo2">
+<link rel="icon" type="image/png" sizes="192x192" href="/real/icons/icon-192.png?v=logo2">
+<link rel="shortcut icon" href="/real/favicon.ico?v=logo2">
+<link rel="apple-touch-icon" sizes="180x180" href="/real/apple-touch-icon-iphone-retina-120x120.png?v=logo2">
+<link rel="manifest" href="/real/manifest.webmanifest">
+<meta name="theme-color" content="#d9381e">
 <link rel="canonical" href="${escAttr(url)}">
 <meta name="robots" content="index,follow">
 <meta property="og:type" content="website">
